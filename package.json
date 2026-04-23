@@ -1,0 +1,22 @@
+{
+  "name": "omnicode",
+  "private": true,
+  "version": "0.1.0",
+  "description": "OmniCode monorepo: OpenCode plugin + launcher for the Omni workflow.",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "check": "npm run check --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3"
+  }
+}

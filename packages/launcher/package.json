@@ -1,0 +1,15 @@
+{
+  "name": "omnicode",
+  "version": "0.1.0",
+  "description": "Launcher that starts OpenCode with OmniCode config and plugin loading.",
+  "type": "module",
+  "bin": {
+    "omnicode": "./bin/omnicode.js"
+  },
+  "scripts": {
+    "check": "node --check ./bin/omnicode.js"
+  },
+  "dependencies": {
+    "@omnicode/plugin": "0.1.0"
+  }
+}
