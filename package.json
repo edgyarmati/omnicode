@@ -3,6 +3,14 @@
   "private": true,
   "version": "0.1.0",
   "description": "OmniCode monorepo: OpenCode plugin + launcher for the Omni workflow.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/edgyarmati/omnicode"
+  },
+  "homepage": "https://github.com/edgyarmati/omnicode#readme",
+  "bugs": {
+    "url": "https://github.com/edgyarmati/omnicode/issues"
+  },
   "type": "module",
   "workspaces": [
     "packages/*"
