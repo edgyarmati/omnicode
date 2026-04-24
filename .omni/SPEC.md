@@ -2,31 +2,25 @@
 
 ## Problem
 
-The omnicode agent should always operate in Omni mode (no opt-in required), should auto-bootstrap new projects on first session, the README should reflect how agentic coding actually works, and RTK should be installed and integrated for token savings.
+The omnicode agent should always operate in Omni mode, auto-bootstrap new projects, use RTK for token savings, and provide `/commit` and `/push` slash commands that follow conventional commit style and handle push failures gracefully.
 
 ## Requested Behavior
 
-1. **Omni mode always on**: when launched through the `omnicode` agent, Omni mode is always active. `session.created` forces Omni mode on.
-
-2. **Auto-bootstrap on first session**: if `.omni/` does not exist yet when a session starts, the agent automatically bootstraps before doing anything else.
-
-3. **README reflects agentic workflow**: the Quick Usage section shows that you run `omnicode` and then have a conversation.
-
-4. **RTK integration**: the setup script installs RTK, the OmniCode plugin rewrites bash tool calls through RTK when available for 60-90% token savings, and the agent instructions mention RTK.
+1. **Omni mode always on** + **auto-bootstrap**: done.
+2. **RTK integration**: done — plugin rewrites bash commands through RTK when available.
+3. **`/commit` command**: review local changes, stage, and create a descriptive conventional commit. Follow strict conventional commit style (`feat:`, `fix:`, `refactor:`, etc.). Do not push.
+4. **`/push` command**: push the current branch. If it fails, diagnose, make minimum safe fixes, and retry. Non-destructive — no force-push, no history rewriting unless clearly necessary.
+5. **Conventional commits everywhere**: the omnicode agent should default to conventional commit style for all commits, not just `/commit`.
 
 ## Constraints
 
-- RTK integration must degrade gracefully — if `rtk` is not on PATH, everything works normally without it.
-- The plugin detects RTK availability once at init time and caches the result.
-- Only rewrite commands that RTK is known to handle well. Unknown commands pass through unchanged.
-- Do not remove the `omnicode_set_mode` tool (still useful for power users).
+- `/push` must be non-destructive and graceful. If the issue can't be resolved safely, stop and explain.
+- No `run`/`handoff` pre-execution mechanism available in OpenCode commands — the agent itself handles the push-and-retry loop.
+- Commands are `.md` files in `packages/plugin/src/resources/commands/` with frontmatter.
 
 ## Success Criteria
 
-- `session.created` always sets Omni mode to `on`
-- the omnicode agent instructions say Omni mode is always on and bootstrap first
-- README Quick Usage shows conversational usage
-- `scripts/setup` installs RTK (brew or curl)
-- the OmniCode plugin rewrites bash tool calls through RTK when available
-- agent instructions mention RTK
-- existing tests still pass
+- `/commit` command available, produces conventional commits
+- `/push` command available, handles failures gracefully
+- Agent instructions mention conventional commit style as the default
+- Existing tests still pass

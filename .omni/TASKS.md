@@ -11,12 +11,14 @@
 - [x] Force Omni mode on in `session.created` handler
 - [x] Update agent instructions: Omni mode always on, auto-bootstrap first
 - [x] Fix README Quick Usage to reflect conversational agentic workflow
-- [ ] Install RTK in `scripts/setup` (brew or curl fallback)
-- [ ] Add RTK bash command rewriting in OmniCode plugin (`tool.execute.before`)
-- [ ] Update agent instructions to mention RTK
-- [ ] Update README to mention RTK integration
-- [ ] Add test for RTK command rewriting logic
+- [x] Install RTK in `scripts/setup`
+- [x] Add RTK bash command rewriting in OmniCode plugin
+- [x] Update agent instructions to mention RTK
+- [x] Update README to mention RTK integration
+- [x] Add `/commit` command — conventional commit with inspection and verification
+- [x] Add `/push` command — push with graceful failure recovery
+- [x] Add conventional commit rules to agent instructions as the default
 
 ## Notes
 
-Slices 10-14 are the current work: RTK integration.
+All planned slices complete. /commit and /push adapted from Omni-Pi's implementations.

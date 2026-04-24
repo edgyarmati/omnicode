@@ -1,7 +1,7 @@
 export const OMNICODE_REPOSITORY = "edgyarmati/omnicode";
 export const OMNICODE_RELEASE_CHANNEL = "latest";
 export const OMNICODE_BINARY_VERSION = "0.1.0";
-export const OPENCODE_VERSION_TARGET = "1.14.22";
+export const OPENCODE_VERSION_TARGET = "1.14.23";
 
 const PLATFORM_LABELS = {
   darwin: "darwin",

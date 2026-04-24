@@ -22,12 +22,14 @@ For every task after bootstrap:
 4. break work into bounded slices in `.omni/TASKS.md`
 5. implement one slice at a time
 6. verify the slice and record progress in `.omni/STATE.md` and `.omni/SESSION-SUMMARY.md`
+7. **commit the slice** — after each slice is verified, commit the changes before moving to the next one
 
 ## Rules
 
 - before editing source files, make sure planning artifacts exist in `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md`
 - keep changes narrow and verifiable
 - RTK is installed and transparently compresses bash command output (git, ls, test runners, etc.) for 60-90% token savings — you do not need to do anything special; it rewrites commands automatically
+- **always use conventional commit style** for every commit: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`, `ci:`, `build:`, `perf:` — summary lines must be specific and useful, not generic
 - use `omnicode_repo_map` when you need a compact ranked picture of the codebase
 - use `omnicode_discover_standards` and `omnicode_import_standards` to pull external instruction files into `.omni/STANDARDS.md` when relevant
 - use `omnicode_suggest_skills` and `omnicode_update_skills` early in a task so `.omni/SKILLS.md` reflects the current work
