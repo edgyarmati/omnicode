@@ -49,8 +49,12 @@ async function runInstallAttempt() {
   return false;
 }
 
+function getXdgConfigHome() {
+  return path.join(os.homedir(), ".config", "omnicode");
+}
+
 function getConfigRoot() {
-  return path.join(os.homedir(), ".config", "omnicode", "opencode");
+  return path.join(getXdgConfigHome(), "opencode");
 }
 
 async function ensureOmniCodeConfig() {
@@ -98,6 +102,7 @@ async function main() {
   const { configRoot, configPath } = await ensureOmniCodeConfig();
   const env = {
     ...process.env,
+    XDG_CONFIG_HOME: getXdgConfigHome(),
     OPENCODE_CONFIG: configPath,
     OPENCODE_CONFIG_DIR: configRoot,
     OPENCODE_CLIENT: "omnicode",

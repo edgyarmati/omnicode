@@ -24,13 +24,36 @@ OmniCode is an **OpenCode plugin + launcher** that brings the Omni workflow into
 
 ## Current status
 
-Initial scaffold complete. The first build focuses on:
+Working first cut complete.
+
+Implemented and smoke-tested:
 
 1. isolated OpenCode launch path
 2. `.omni` bootstrap
 3. custom OmniCode tools
 4. default OmniCode agent instructions
 5. workflow guardrails for planning before editing
+6. real OpenCode plugin loading via the `omnicode` launcher
+
+## Launcher behavior
+
+`omnicode` starts OpenCode with an OmniCode-specific config home so it does not inherit unrelated global OpenCode plugins/config:
+
+- `XDG_CONFIG_HOME=~/.config/omnicode`
+- `OPENCODE_CONFIG=~/.config/omnicode/opencode/opencode.json`
+- `OPENCODE_CONFIG_DIR=~/.config/omnicode/opencode`
+- `OPENCODE_CLIENT=omnicode`
+
+That keeps normal `opencode` usage separate while still using the same installed OpenCode binary.
+
+## Quick usage
+
+```bash
+npm install
+node packages/launcher/bin/omnicode.js --help
+node packages/launcher/bin/omnicode.js agent list
+node packages/launcher/bin/omnicode.js run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project for OmniCode and summarize the current state."
+```
 
 ## Development
 

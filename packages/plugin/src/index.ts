@@ -26,14 +26,10 @@ type SkillInfo = {
 };
 
 const OMNI_VERSION = "1";
-const SKILL_DIR = path.join(import.meta.dirname, "resources", "skills");
-const COMMAND_DIR = path.join(import.meta.dirname, "resources", "commands");
-const INSTRUCTION_FILE = path.join(
-  import.meta.dirname,
-  "resources",
-  "instructions",
-  "omnicode-agent.md",
-);
+const RESOURCE_ROOT_CANDIDATES = [
+  path.join(import.meta.dirname, "resources"),
+  path.join(import.meta.dirname, "..", "src", "resources"),
+];
 
 const OMNI_FILES: Record<string, string> = {
   "PROJECT.md": "# Project\n\n## Goal\n\nDocument the project goal here.\n",
@@ -73,13 +69,30 @@ function parseFrontmatter(content: string): {
   return { frontmatter, body: body.trim() };
 }
 
+async function resolveResourcePath(...parts: string[]): Promise<string> {
+  for (const candidateRoot of RESOURCE_ROOT_CANDIDATES) {
+    const candidate = path.join(candidateRoot, ...parts);
+    try {
+      await stat(candidate);
+      return candidate;
+    } catch {
+      // try next candidate
+    }
+  }
+
+  throw new Error(
+    `OmniCode resources not found for ${parts.join("/")}. Checked: ${RESOURCE_ROOT_CANDIDATES.join(", ")}`,
+  );
+}
+
 async function loadCommands(): Promise<ParsedCommand[]> {
-  const entries = await readdir(COMMAND_DIR, { withFileTypes: true });
+  const commandDir = await resolveResourcePath("commands");
+  const entries = await readdir(commandDir, { withFileTypes: true });
   const commands: ParsedCommand[] = [];
 
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
-    const filePath = path.join(COMMAND_DIR, entry.name);
+    const filePath = path.join(commandDir, entry.name);
     const content = await readFile(filePath, "utf8");
     const { frontmatter, body } = parseFrontmatter(content);
     commands.push({
@@ -137,12 +150,13 @@ async function readStateSummary(directory: string): Promise<string> {
 }
 
 async function listSkills(): Promise<SkillInfo[]> {
-  const entries = await readdir(SKILL_DIR, { withFileTypes: true });
+  const skillDir = await resolveResourcePath("skills");
+  const entries = await readdir(skillDir, { withFileTypes: true });
   const skills: SkillInfo[] = [];
 
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
-    const filePath = path.join(SKILL_DIR, entry.name);
+    const filePath = path.join(skillDir, entry.name);
     const content = await readFile(filePath, "utf8");
     const lines = content.split("\n");
     const title = lines[0]?.replace(/^#\s*/u, "").trim() || entry.name;
@@ -158,7 +172,7 @@ async function listSkills(): Promise<SkillInfo[]> {
 }
 
 async function readSkill(name: string): Promise<string> {
-  const filePath = path.join(SKILL_DIR, `${name}.md`);
+  const filePath = await resolveResourcePath("skills", `${name}.md`);
   return readFile(filePath, "utf8");
 }
 
@@ -213,15 +227,37 @@ async function buildRepoMap(directory: string): Promise<string> {
 }
 
 async function readInstructionPrompt(): Promise<string> {
-  return readFile(INSTRUCTION_FILE, "utf8");
+  const instructionFile = await resolveResourcePath(
+    "instructions",
+    "omnicode-agent.md",
+  );
+  return readFile(instructionFile, "utf8");
 }
 
-function planningArtifactsExist(directory: string): Promise<boolean> {
+async function planningArtifactsReady(directory: string): Promise<boolean> {
   const specPath = path.join(directory, ".omni", "SPEC.md");
   const tasksPath = path.join(directory, ".omni", "TASKS.md");
-  return Promise.all([stat(specPath), stat(tasksPath)])
-    .then(() => true)
-    .catch(() => false);
+
+  try {
+    const [specContent, tasksContent] = await Promise.all([
+      readFile(specPath, "utf8"),
+      readFile(tasksPath, "utf8"),
+    ]);
+
+    const normalizedSpec = specContent.trim();
+    const normalizedTasks = tasksContent.trim();
+    const defaultSpec = OMNI_FILES["SPEC.md"].trim();
+    const defaultTasks = OMNI_FILES["TASKS.md"].trim();
+
+    return (
+      normalizedSpec.length > defaultSpec.length &&
+      normalizedTasks.length > defaultTasks.length &&
+      normalizedSpec !== defaultSpec &&
+      normalizedTasks !== defaultTasks
+    );
+  } catch {
+    return false;
+  }
 }
 
 function extractFilePath(args: Record<string, unknown>): string | null {
@@ -296,10 +332,10 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
         return;
       }
 
-      const hasPlanningArtifacts = await planningArtifactsExist(directory);
+      const hasPlanningArtifacts = await planningArtifactsReady(directory);
       if (!hasPlanningArtifacts) {
         throw new Error(
-          "OmniCode guard: before editing source files, bootstrap .omni/, write SPEC.md, and break the work into TASKS.md.",
+          "OmniCode guard: before editing source files, write real planning content into .omni/SPEC.md and .omni/TASKS.md (placeholder bootstrap files are not enough).",
         );
       }
     },
