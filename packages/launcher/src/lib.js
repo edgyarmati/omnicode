@@ -153,7 +153,18 @@ export async function ensureOmniCodeConfig({
   const pluginShimPath = path.join(pluginDir, "omnicode-plugin.js");
   const configPath = path.join(configRoot, "opencode.json");
 
-  const shimSource = `export { OmniCodePlugin, default } from ${JSON.stringify(pluginEntry)};\n`;
+  // Normalize file:// URLs to plain paths for the shim import
+  let resolvedEntry = String(pluginEntry);
+  if (resolvedEntry.startsWith("file://")) {
+    try {
+      const { fileURLToPath } = await import("node:url");
+      resolvedEntry = fileURLToPath(resolvedEntry);
+    } catch {
+      // keep as-is
+    }
+  }
+
+  const shimSource = `export { OmniCodePlugin, default } from ${JSON.stringify(resolvedEntry)};\n`;
   await writeFile(pluginShimPath, shimSource, "utf8");
 
   const config = {

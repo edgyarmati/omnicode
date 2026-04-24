@@ -25,7 +25,5 @@
   "engines": {
     "node": ">=22"
   },
-  "dependencies": {
-    "@omnicode/plugin": "0.1.0"
-  }
+  "dependencies": {}
 }

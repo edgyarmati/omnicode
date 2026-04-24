@@ -18,22 +18,8 @@ permissions:
   contents: write
 
 jobs:
-  build-release-assets:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: ubuntu-latest
-            build_set: linux
-            artifact_name: omnicode-release-linux
-          - runner: macos-14
-            build_set: darwin
-            artifact_name: omnicode-release-darwin
-          - runner: windows-latest
-            build_set: windows
-            artifact_name: omnicode-release-windows
-
-    runs-on: ${{ matrix.runner }}
+  build-and-release:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,46 +33,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build release archives
+      - name: Build release bundle
         env:
           OMNICODE_VERSION: ${{ github.event.inputs.version || github.ref_name }}
-          BUILD_SET: ${{ matrix.build_set }}
-        shell: bash
         run: |
           if [[ "$OMNICODE_VERSION" == v* ]]; then
             export OMNICODE_VERSION="${OMNICODE_VERSION#v}"
           fi
-          bash ./scripts/release/build-binaries.sh
+          bash ./scripts/release/bundle.sh
 
-      - name: Upload release assets artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: dist/omnicode-*
-
-  publish-release:
-    needs: build-release-assets
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download release assets
-        uses: actions/download-artifact@v4
-        with:
-          pattern: omnicode-release-*
-          merge-multiple: true
-          path: dist
-
-      - name: Generate SHA256SUMS
-        shell: bash
+      - name: Compute SHA256SUMS
         run: |
           cd dist
-          shasum -a 256 omnicode-* > SHA256SUMS
+          shasum -a 256 omnicode-*.tar.gz > SHA256SUMS
+          cat SHA256SUMS
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ startsWith(github.ref_name, 'v') && github.ref_name || format('v{0}', github.event.inputs.version) }}
           files: |
-            dist/omnicode-*
+            dist/omnicode-*.tar.gz
             dist/SHA256SUMS
           generate_release_notes: true
           draft: false

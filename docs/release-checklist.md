@@ -1,52 +1,43 @@
-# OmniCode Release Checklist
+# Release Checklist
 
-Use this checklist for each public release.
+## Pre-release
 
-## 1) Prepare version metadata
+- [ ] all tests pass: `npm test`
+- [ ] type check passes: `npm run check`
+- [ ] local bundle builds cleanly: `bash scripts/release/bundle.sh`
 
-- [ ] bump root `package.json` version
-- [ ] bump `packages/launcher/package.json` version
-- [ ] bump `packages/plugin/package.json` version
-- [ ] update `packages/launcher/src/release.js`
-  - [ ] `OMNICODE_BINARY_VERSION`
-  - [ ] `OPENCODE_VERSION_TARGET` (if changed)
-- [ ] ensure `install.sh` and `install.ps1` default `OMNICODE_VERSION` match the release
+## Version bump
 
-## 2) Verify locally
+- [ ] update `OMNICODE_BINARY_VERSION` in `packages/launcher/src/release.js`
+- [ ] update `version` in `package.json`
+- [ ] update `version` in `packages/launcher/package.json`
+- [ ] update `version` in `packages/plugin/package.json`
+- [ ] update `VERSION` default in `install.sh` and `install.ps1`
+- [ ] commit: `chore: bump version to X.Y.Z`
 
-- [ ] `npm run check`
-- [ ] `npm run build`
-- [ ] `npm test`
-- [ ] `node packages/launcher/bin/omnicode.js --help`
-- [ ] confirm managed runtime metadata at:
-  - macOS: `~/Library/Application Support/omnicode/runtimes/opencode/current.json`
-  - Linux: `${XDG_DATA_HOME:-~/.local/share}/omnicode/runtimes/opencode/current.json`
-  - Windows: `%LOCALAPPDATA%\OmniCode\runtimes\opencode\current.json`
+## Tag and push
 
-## 3) Tag and publish
+- [ ] `git tag vX.Y.Z`
+- [ ] `git push origin main --tags`
 
-- [ ] create and push tag: `vX.Y.Z`
-- [ ] verify GitHub Action `Release` completed
-- [ ] verify assets exist in the release:
-  - `omnicode-X.Y.Z-darwin-x64.tar.gz`
-  - `omnicode-X.Y.Z-darwin-arm64.tar.gz`
-  - `omnicode-X.Y.Z-linux-x64.tar.gz`
-  - `omnicode-X.Y.Z-linux-arm64.tar.gz`
-  - `omnicode-X.Y.Z-windows-x64.zip`
-  - `omnicode-X.Y.Z-windows-arm64.zip`
+## Verify CI
+
+- [ ] release workflow completes (single job: build-and-release)
+- [ ] release assets exist:
+  - `omnicode-X.Y.Z.tar.gz`
   - `SHA256SUMS`
 
-## 4) Post-release smoke
+## Post-release smoke test
 
-- [ ] macOS/Linux installer:
-  - `curl -fsSL https://raw.githubusercontent.com/edgyarmati/omnicode/main/install.sh | bash`
-- [ ] Windows installer:
-  - `irm https://raw.githubusercontent.com/edgyarmati/omnicode/main/install.ps1 | iex`
-- [ ] run `omnicode --help`
-- [ ] run `omnicode agent list`
-- [ ] verify first run installs/reuses managed OpenCode runtime
-
-## 5) Documentation
-
-- [ ] update README install examples if needed
-- [ ] append release note summary to docs/changelog (if/when added)
+- [ ] macOS:
+  ```sh
+  OMNICODE_VERSION=X.Y.Z bash install.sh
+  omnicode
+  ```
+- [ ] Windows (PowerShell):
+  ```powershell
+  $env:OMNICODE_VERSION = 'X.Y.Z'; irm https://github.com/edgyarmati/omnicode/releases/latest/download/install.ps1 | iex
+  omnicode
+  ```
+- [ ] verify managed OpenCode installs and launches
+- [ ] verify plugin loads (agent name is `omnicode`)

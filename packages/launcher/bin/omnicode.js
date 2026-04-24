@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 import os from "node:os";
+import path from "node:path";
 import process from "node:process";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 import {
   MINIMUM_NODE_MAJOR,
@@ -201,6 +203,25 @@ async function runSetup() {
   process.stderr.write("OmniCode setup complete. Next step: run `omnicode`.\n");
 }
 
+async function resolvePluginPath() {
+  // Try bundled plugin first (installed via install.sh / install.ps1)
+  const binDir = path.dirname(fileURLToPath(import.meta.url));
+  const bundledPlugin = path.join(binDir, "..", "plugin", "index.js");
+  if (await fileExists(bundledPlugin)) {
+    return bundledPlugin;
+  }
+
+  // Fall back to npm resolution (dev / npm install -g mode)
+  try {
+    return import.meta.resolve("@omnicode/plugin");
+  } catch {
+    process.stderr.write(
+      "Cannot find the OmniCode plugin. Reinstall OmniCode or run 'omnicode setup'.\n",
+    );
+    process.exit(1);
+  }
+}
+
 async function main() {
   if (process.argv[2] === "setup") {
     await runSetup();
@@ -213,9 +234,10 @@ async function main() {
 
   const opencodeBin = explicitBin || (await ensureManagedOpenCodeRuntime(release.opencodeVersion, homeDir));
 
+  const pluginPath = await resolvePluginPath();
   const { configRoot, configPath } = await ensureOmniCodeConfig({
     homeDir,
-    pluginEntry: import.meta.resolve("@omnicode/plugin"),
+    pluginEntry: pluginPath,
   });
   const env = buildLauncherEnv(process.env, configPath, configRoot, homeDir);
 

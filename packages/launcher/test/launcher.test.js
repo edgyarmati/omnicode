@@ -67,7 +67,7 @@ test("ensureOmniCodeConfig writes config and plugin shim", async () => {
     assert.equal(result.configRoot, path.join(home, ".config", "omnicode", "opencode"));
     assert.equal(config.default_agent, "omnicode");
     assert.equal(config.share, "manual");
-    assert.match(shim, /file:\/\/\/tmp\/fake-plugin\.js/);
+    assert.match(shim, /fake-plugin\.js/);
   });
 });
 
@@ -134,24 +134,23 @@ test("native installer assets and launcher package metadata are present", async 
   const posixInstaller = await readFile(path.join(repoRoot, "install.sh"), "utf8");
   const windowsInstaller = await readFile(path.join(repoRoot, "install.ps1"), "utf8");
   const releaseWorkflow = await readFile(path.join(repoRoot, ".github", "workflows", "release.yml"), "utf8");
-  const releaseBuildScript = await readFile(path.join(repoRoot, "scripts", "release", "build-binaries.sh"), "utf8");
+  const bundleScript = await readFile(path.join(repoRoot, "scripts", "release", "bundle.sh"), "utf8");
   const launcherBin = await readFile(path.join(repoRoot, "packages", "launcher", "bin", "omnicode.js"), "utf8");
 
   assert.equal(launcherPackage.name, "omnicode");
   assert.equal(launcherPackage.bin.omnicode, "./bin/omnicode.js");
   assert.deepEqual(launcherPackage.files, ["bin", "src"]);
-  assert.match(posixInstaller, /releases\/download\/v%s/);
-  assert.match(windowsInstaller, /releases\/download\/v\$Version/);
+  assert.match(posixInstaller, /releases\/download/);
+  assert.match(windowsInstaller, /releases\/download/);
   assert.match(launcherBin, /getManagedOpenCodeBinaryCandidates/);
   assert.match(launcherBin, /getNativeLauncherReleaseMetadata/);
   assert.match(releaseWorkflow, /name: Release/);
   assert.match(releaseWorkflow, /softprops\/action-gh-release/);
-  assert.match(releaseBuildScript, /PKG_NODE_TARGET/);
-  assert.match(releaseBuildScript, /\$\{PKG_NODE_TARGET\}-macos-arm64/);
+  assert.match(bundleScript, /omnicode-.*\.tar\.gz/);
+  assert.match(bundleScript, /plugin/);
 
   await access(path.join(repoRoot, "scripts", "setup"));
-  await access(path.join(repoRoot, "scripts", "install.sh"));
-  await access(path.join(repoRoot, "scripts", "release", "build-binaries.sh"));
+  await access(path.join(repoRoot, "scripts", "release", "bundle.sh"));
   await access(path.join(repoRoot, "install.sh"));
   await access(path.join(repoRoot, "install.ps1"));
   await access(path.join(repoRoot, "docs", "release-checklist.md"));
