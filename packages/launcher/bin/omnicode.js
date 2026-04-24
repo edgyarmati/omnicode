@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 
 import os from "node:os";
+import process from "node:process";
 import { spawn } from "node:child_process";
 
 import {
+  MINIMUM_NODE_MAJOR,
   buildLauncherEnv,
   ensureOmniCodeConfig,
+  getOmniCodeSetupTarget,
+  isSupportedNodeVersion,
 } from "../src/lib.js";
 
 function isWindows() {
@@ -52,10 +56,77 @@ async function runInstallAttempt() {
   return false;
 }
 
+function runCommand(command, args) {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, { stdio: "inherit", shell: false });
+    child.on("exit", (code) => resolve(code === 0));
+    child.on("error", () => resolve(false));
+  });
+}
+
+function captureCommand(command, args) {
+  return new Promise((resolve) => {
+    let stdout = "";
+    const child = spawn(command, args, { stdio: ["ignore", "pipe", "ignore"], shell: false });
+    child.stdout?.on("data", (chunk) => {
+      stdout += String(chunk);
+    });
+    child.on("exit", (code) => resolve(code === 0 ? stdout.trim() : null));
+    child.on("error", () => resolve(null));
+  });
+}
+
+async function runSetup() {
+  const version = process.version;
+  if (!isSupportedNodeVersion(version)) {
+    process.stderr.write(
+      `Node.js ${MINIMUM_NODE_MAJOR}+ is required, but found ${version}. Please upgrade Node and rerun setup.\n`,
+    );
+    process.exit(1);
+  }
+
+  const npmCommand = isWindows() ? "npm.cmd" : "npm";
+  if (!(await existsOnPath(npmCommand))) {
+    process.stderr.write("npm is required for OmniCode setup. Install npm and rerun `npx omnicode@latest setup`.\n");
+    process.exit(1);
+  }
+
+  const target = getOmniCodeSetupTarget();
+  process.stderr.write(`Installing ${target} globally so the omnicode command is available...\n`);
+  const installed = await runCommand(npmCommand, ["install", "-g", target]);
+  if (!installed) {
+    process.stderr.write(
+      `Failed to install ${target} globally. Try 'npm install -g ${target}' manually and rerun OmniCode.\n`,
+    );
+    process.exit(1);
+  }
+
+  const omnicodePresent = await existsOnPath(isWindows() ? "omnicode.cmd" : "omnicode");
+  if (!omnicodePresent) {
+    const prefix = await captureCommand(npmCommand, ["prefix", "-g"]);
+    const binHint = prefix
+      ? isWindows()
+        ? `${prefix}`
+        : `${prefix}/bin`
+      : "npm's global bin directory";
+    process.stderr.write(
+      `OmniCode was installed, but the 'omnicode' command is not on PATH yet. Restart your shell or add ${binHint} to PATH.\n`,
+    );
+    process.exit(1);
+  }
+
+  process.stderr.write("OmniCode setup complete. Next step: run `omnicode`.\n");
+  return;
+}
 
 async function main() {
+  if (process.argv[2] === "setup") {
+    await runSetup();
+    return;
+  }
+
   const explicitBin = process.env.OMNICODE_OPENCODE_BIN;
-  let opencodeBin = explicitBin || opencodeCommandName();
+  const opencodeBin = explicitBin || opencodeCommandName();
 
   const present = explicitBin ? true : await existsOnPath(opencodeBin);
   if (!present) {

@@ -6,9 +6,11 @@ import { access, mkdtemp, readFile, rm } from "node:fs/promises";
 
 import {
   MINIMUM_NODE_MAJOR,
+  OMNICODE_SETUP_TARGET,
   buildLauncherEnv,
   ensureOmniCodeConfig,
   getConfigRoot,
+  getOmniCodeSetupTarget,
   getXdgConfigHome,
   isSupportedNodeVersion,
   parseNodeMajorVersion,
@@ -67,6 +69,7 @@ test("node version helpers enforce the minimum supported release", () => {
   assert.equal(parseNodeMajorVersion("not-a-version"), null);
   assert.equal(isSupportedNodeVersion(`v${MINIMUM_NODE_MAJOR}.0.0`), true);
   assert.equal(isSupportedNodeVersion(`v${MINIMUM_NODE_MAJOR - 1}.9.9`), false);
+  assert.equal(getOmniCodeSetupTarget(), OMNICODE_SETUP_TARGET);
 });
 
 test("release setup assets and launcher package metadata are present", async () => {
@@ -74,10 +77,14 @@ test("release setup assets and launcher package metadata are present", async () 
   const launcherPackage = JSON.parse(
     await readFile(path.join(repoRoot, "packages", "launcher", "package.json"), "utf8"),
   );
+  const installer = await readFile(path.join(repoRoot, "scripts", "install.sh"), "utf8");
+  const launcherBin = await readFile(path.join(repoRoot, "packages", "launcher", "bin", "omnicode.js"), "utf8");
 
   assert.equal(launcherPackage.name, "omnicode");
   assert.equal(launcherPackage.bin.omnicode, "./bin/omnicode.js");
   assert.deepEqual(launcherPackage.files, ["bin", "src"]);
+  assert.match(installer, /npx .* setup/);
+  assert.match(launcherBin, /process\.argv\[2\] === "setup"/);
 
   await access(path.join(repoRoot, "scripts", "setup"));
   await access(path.join(repoRoot, "scripts", "install.sh"));

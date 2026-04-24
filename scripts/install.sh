@@ -2,6 +2,7 @@
 set -euo pipefail
 
 PACKAGE_NAME="omnicode"
+SETUP_TARGET="${OMNICODE_SETUP_TARGET:-${PACKAGE_NAME}@latest}"
 MINIMUM_NODE_MAJOR=22
 
 info() {
@@ -32,14 +33,9 @@ if ! command -v npm >/dev/null 2>&1; then
   fail "npm is required but was not found. Install npm for your Node.js setup and rerun this installer."
 fi
 
-info "Installing OmniCode globally from npm"
-npm install -g "$PACKAGE_NAME"
-
-if ! command -v omnicode >/dev/null 2>&1; then
-  fail "OmniCode installed, but the 'omnicode' command was not found on PATH. You may need to restart your shell or add npm's global bin directory to PATH."
+if ! command -v npx >/dev/null 2>&1; then
+  fail "npx is required for the one-command installer. Install npm/npx for your Node.js setup and rerun this installer."
 fi
 
-info "OmniCode installed successfully"
-printf '\nNext step:\n'
-printf '  omnicode\n\n'
-printf 'On first launch, OmniCode will create its isolated OpenCode config and attempt to install OpenCode if needed.\n'
+info "Running OmniCode setup via npx (${SETUP_TARGET})"
+npx "$SETUP_TARGET" setup

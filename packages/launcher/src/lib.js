@@ -4,6 +4,7 @@ import path from "node:path";
 
 export const MINIMUM_NODE_MAJOR = 22;
 export const OMNICODE_PACKAGE_NAME = "omnicode";
+export const OMNICODE_SETUP_TARGET = `${OMNICODE_PACKAGE_NAME}@latest`;
 
 export function parseNodeMajorVersion(version) {
   const match = /^v?(\d+)/u.exec(String(version).trim());
@@ -15,6 +16,10 @@ export function parseNodeMajorVersion(version) {
 export function isSupportedNodeVersion(version, minimumMajor = MINIMUM_NODE_MAJOR) {
   const major = parseNodeMajorVersion(version);
   return major !== null && major >= minimumMajor;
+}
+
+export function getOmniCodeSetupTarget() {
+  return process.env.OMNICODE_SETUP_TARGET || OMNICODE_SETUP_TARGET;
 }
 
 export function getXdgConfigHome(homeDir = os.homedir()) {

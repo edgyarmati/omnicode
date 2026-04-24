@@ -7,7 +7,8 @@ OmniCode needs a release-ready setup flow so a new user can install it with one 
 ## Requested Behavior
 
 - provide a headline one-command installer via `scripts/install.sh`
-- support an npm-based fallback install path
+- make `npx omnicode@latest setup` the real bootstrap path behind that installer
+- keep an npm-based global install as a fallback, not the primary story
 - provide a repo-local `scripts/setup` path for contributors and pre-release testing
 - keep runtime responsibility in the existing `omnicode` launcher so first run still creates isolated config and handles missing OpenCode
 

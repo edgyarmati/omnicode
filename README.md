@@ -52,17 +52,26 @@ That keeps normal `opencode` usage separate while still using the same installed
 
 ## Install
 
-### One-command install
+### Primary: one-command install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/edgyarmati/omnicode/main/scripts/install.sh | bash
 omnicode
 ```
 
+This uses `npx omnicode@latest setup` under the hood.
+
+### Direct setup fallback
+
+```bash
+npx omnicode@latest setup
+omnicode
+```
+
 ### npm fallback
 
 ```bash
-npm install -g omnicode
+npm install -g omnicode@latest
 omnicode
 ```
 
@@ -126,7 +135,8 @@ Runtime/generated `.omni` files stay out of git by default:
 ## Troubleshooting
 
 - If the installer says Node is missing or too old, install Node.js 22+ and rerun it.
-- If `omnicode` is not found after `npm install -g omnicode`, restart your shell or add npm's global bin directory to your `PATH`.
+- If the one-command installer fails, run `npx omnicode@latest setup` directly.
+- If `omnicode` is not found after setup, restart your shell or add the npm global bin directory reported by setup to your `PATH`.
 - If first-run OpenCode installation fails, install it manually with `npm install -g opencode-ai` and run `omnicode` again.
 
 ## Development

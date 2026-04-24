@@ -30,12 +30,25 @@ curl -fsSL https://raw.githubusercontent.com/edgyarmati/omnicode/main/scripts/in
 omnicode
 ```
 
-### Fallback path
+The installer should delegate to:
+
+```bash
+npx omnicode@latest setup
+```
+
+### Fallback paths
 
 Users should also be able to run:
 
 ```bash
-npm install -g omnicode
+npx omnicode@latest setup
+omnicode
+```
+
+or:
+
+```bash
+npm install -g omnicode@latest
 omnicode
 ```
 
@@ -52,11 +65,12 @@ omnicode
 
 ## Recommended Approach
 
-Use a **thin remote installer + npm fallback**.
+Use a **thin remote installer + npx bootstrap + npm fallback**.
 
 ### Why this approach
 
 - gives OmniCode a polished one-command headline install
+- uses `npx` for the one-time bootstrap step, which matches the setup mental model better than making global install the primary entrypoint
 - keeps distribution concerns separate from runtime concerns
 - preserves the current thin-launcher / thick-plugin architecture
 - avoids turning OmniCode into a full machine bootstrapper
@@ -92,9 +106,8 @@ Add `scripts/install.sh` as the public one-command installer.
 Responsibilities:
 
 - verify `node` is available and meets the minimum supported version
-- verify `npm` is available
-- install OmniCode globally from npm
-- verify `omnicode` is available afterwards
+- verify `npm` and `npx` are available
+- delegate to `npx omnicode@latest setup`
 - print clear next steps and actionable troubleshooting if verification fails
 
 Non-responsibilities:
@@ -104,7 +117,20 @@ Non-responsibilities:
 - do not mutate the user’s normal OpenCode config
 - do not replace launcher-owned runtime setup behavior
 
-### 3. Repo-local setup script
+### 3. CLI setup subcommand
+
+Add a real `setup` subcommand to the published `omnicode` CLI.
+
+Responsibilities:
+
+- validate Node/npm prerequisites
+- install `omnicode` globally so the steady-state `omnicode` command exists after bootstrap
+- verify `omnicode` is available, or report the exact npm global bin path to add to `PATH`
+- print the next step to start OmniCode
+
+This is the core one-time bootstrap path used by direct `npx` installs and by the curl installer.
+
+### 4. Repo-local setup script
 
 Add `scripts/setup` for contributors and local release testing.
 
@@ -118,7 +144,7 @@ Responsibilities:
 
 This script is for local setup and smoke-testing, not the public release UX.
 
-### 4. Launcher runtime responsibility
+### 5. Launcher runtime responsibility
 
 The `omnicode` launcher should continue to own runtime setup on first launch.
 

@@ -166,8 +166,8 @@ npm test
 ## Release setup assets
 
 - `scripts/setup` bootstraps a fresh checkout for contributors and pre-release testing.
-- `scripts/install.sh` is the public one-command installer for release onboarding.
-- the `omnicode` launcher package in `packages/launcher/` is the public installable package and must keep exposing the `omnicode` bin cleanly.
+- `scripts/install.sh` is the public one-command installer for release onboarding and should delegate to the same `omnicode setup` flow used by direct `npx` installs.
+- the `omnicode` launcher package in `packages/launcher/` is the public installable package, must keep exposing the `omnicode` bin cleanly, and should support `npx omnicode@latest setup` as the one-time bootstrap path.
 
 ## Repo hygiene
 
