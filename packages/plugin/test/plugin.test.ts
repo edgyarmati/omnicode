@@ -6,10 +6,13 @@ import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 
 import {
   OMNI_FILES,
+  buildRepoMap,
   discoverStandards,
   ensureOmniDir,
   importStandards,
   planningArtifactsReady,
+  suggestSkills,
+  updateSkillsFile,
 } from "../src/index.ts";
 
 async function withTempDir(run: (dir: string) => Promise<void>) {
@@ -75,5 +78,45 @@ test("planningArtifactsReady rejects placeholders and accepts real planning cont
     );
 
     assert.equal(await planningArtifactsReady(dir), true);
+  });
+});
+
+test("buildRepoMap ranks important files and writes both markdown and json outputs", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, "src"), { recursive: true });
+    await writeFile(path.join(dir, "README.md"), "# Test Repo\n", "utf8");
+    await writeFile(
+      path.join(dir, "package.json"),
+      JSON.stringify({ name: "repo", description: "sample" }, null, 2),
+      "utf8",
+    );
+    await writeFile(path.join(dir, "src", "index.ts"), "export function main() {}\n", "utf8");
+
+    const markdown = await buildRepoMap(dir);
+    const json = JSON.parse(await readFile(path.join(dir, ".omni", "REPO-MAP.json"), "utf8"));
+
+    assert.match(markdown, /## Ranked files/);
+    assert.equal(json[0].path, "package.json");
+    assert.ok(json.some((entry: { path: string }) => entry.path === "src/index.ts"));
+  });
+});
+
+test("suggestSkills and updateSkillsFile infer workflow skills from task text", async () => {
+  await withTempDir(async (dir) => {
+    const task = "Design a feature, plan the slices, implement it, and verify the result";
+    const suggestions = await suggestSkills(task);
+
+    assert.deepEqual(
+      [...suggestions.map((item) => item.name)].sort(),
+      ["brainstorming", "omni-execution", "omni-planning", "omni-verification"],
+    );
+
+    const result = await updateSkillsFile(dir, task);
+    const skillsFile = await readFile(path.join(dir, ".omni", "SKILLS.md"), "utf8");
+
+    assert.equal(result.suggested.length, 4);
+    assert.match(skillsFile, /## Suggested For Current Work/);
+    assert.match(skillsFile, /brainstorming/);
+    assert.match(skillsFile, /omni-verification/);
   });
 });

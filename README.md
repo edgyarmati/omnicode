@@ -35,6 +35,8 @@ Implemented and smoke-tested:
 5. workflow guardrails for planning before editing
 6. real OpenCode plugin loading via the `omnicode` launcher
 7. standards discovery/import into `.omni/STANDARDS.md`
+8. ranked repo map output into `.omni/REPO-MAP.md` and `.omni/REPO-MAP.json`
+9. basic skill routing and `.omni/SKILLS.md` syncing for current work
 
 ## Launcher behavior
 
@@ -55,6 +57,7 @@ node packages/launcher/bin/omnicode.js --help
 node packages/launcher/bin/omnicode.js agent list
 node packages/launcher/bin/omnicode.js run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project for OmniCode and summarize the current state."
 node packages/launcher/bin/omnicode.js run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project, discover external standards, import them, and tell me what was imported."
+node packages/launcher/bin/omnicode.js run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project, generate the repo map, suggest skills for implementing and verifying a repo map improvement, and summarize the results."
 ```
 
 ## Automated coverage
@@ -62,6 +65,8 @@ node packages/launcher/bin/omnicode.js run --agent omnicode --model opencode/hy3
 Current automated tests cover:
 - launcher config isolation and generated shim/config files
 - standards discovery/import
+- ranked repo map generation
+- skill suggestion and `.omni/SKILLS.md` syncing
 - planning-artifact readiness checks for the write/edit guard
 
 ## Development

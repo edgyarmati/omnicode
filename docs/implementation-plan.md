@@ -16,12 +16,15 @@
 - OpenCode resolves `default_agent: omnicode`
 - OmniCode commands and tools are registered in a real OpenCode runtime
 - end-to-end run succeeded: bootstrap → guard blocks early write → planning files updated → write succeeds
-- automated tests cover launcher config isolation, standards discovery/import, and planning-artifact guard readiness
+- standards import works in a live run and writes `.omni/STANDARDS.md`
+- ranked repo map output works in a live run and writes `.omni/REPO-MAP.md` plus `.omni/REPO-MAP.json`
+- skill suggestion/sync works in a live run and writes `.omni/SKILLS.md`
+- automated tests cover launcher config isolation, standards discovery/import, repo map generation, skill suggestion, and planning-artifact guard readiness
 
 ## Next slices
 
-1. Make repo map incremental instead of fully regenerated per call
-2. Expand skill routing and project-skill lifecycle
-3. Refine `.omni` bootstrap defaults and mode switching UX
-4. Improve standards-import selection UX beyond import-all or explicit paths
-5. Add more end-to-end runtime tests beyond the current unit-level coverage
+1. Refine `.omni` bootstrap defaults and mode switching UX
+2. Improve standards-import selection UX beyond import-all or explicit paths
+3. Add more end-to-end runtime tests beyond the current unit-level coverage
+4. Improve repo-map incrementality/ranking further if needed
+5. Improve skill routing beyond the current heuristic suggestion model if needed

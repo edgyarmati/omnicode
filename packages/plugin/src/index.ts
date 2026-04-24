@@ -25,6 +25,18 @@ type SkillInfo = {
   path: string;
 };
 
+export type SuggestedSkill = {
+  name: string;
+  reason: string;
+  score: number;
+};
+
+export type RepoMapEntry = {
+  path: string;
+  score: number;
+  summary: string;
+};
+
 export type StandardCandidate = {
   path: string;
   kind: string;
@@ -71,6 +83,48 @@ const STANDARD_RULES: Array<{ kind: string; match(relativePath: string, basename
   {
     kind: "Continue Rules",
     match: (relativePath) => relativePath.startsWith(".continue/rules/"),
+  },
+];
+
+export const REPO_MAP_IGNORE = new Set([
+  ".git",
+  "node_modules",
+  ".next",
+  "dist",
+  "build",
+  ".pi",
+  ".omni",
+  ".turbo",
+  "coverage",
+]);
+
+const SKILL_RULES: Array<{ name: string; patterns: RegExp[]; reason: string; score: number }> = [
+  {
+    name: "brainstorming",
+    patterns: [
+      /\b(brainstorm|design|approach|option|trade-?off|migration|feature|behavior change|refactor)\b/iu,
+      /\b(create|build|add|modify|change)\b/iu,
+    ],
+    reason: "use before creative work, migrations, or behavior changes",
+    score: 3,
+  },
+  {
+    name: "omni-planning",
+    patterns: [/\b(plan|spec|task|slice|break down|roadmap|implementation plan)\b/iu],
+    reason: "use before implementation to refine spec, tasks, and tests",
+    score: 4,
+  },
+  {
+    name: "omni-execution",
+    patterns: [/\b(implement|execute|code|fix|do the task|build it|make it work)\b/iu],
+    reason: "use when implementing a planned slice",
+    score: 4,
+  },
+  {
+    name: "omni-verification",
+    patterns: [/\b(test|verify|check|validate|did it work|smoke test|regression)\b/iu],
+    reason: "use after implementation to verify and summarize pass/fail",
+    score: 4,
   },
 ];
 
@@ -219,54 +273,159 @@ async function readSkill(name: string): Promise<string> {
   return readFile(filePath, "utf8");
 }
 
-async function buildRepoMap(directory: string): Promise<string> {
-  const ignore = new Set([
-    ".git",
-    "node_modules",
-    ".next",
-    "dist",
-    "build",
-    ".pi",
-    ".omni",
-    ".turbo",
-    "coverage",
-  ]);
-  const lines: string[] = [];
+function isRepoMapFile(name: string): boolean {
+  return /\.(ts|tsx|js|jsx|json|md|sh|yml|yaml)$/u.test(name);
+}
+
+function scoreRepoMapPath(relativePath: string): number {
+  let score = 0;
+  const depth = relativePath.split("/").length - 1;
+  const basename = path.posix.basename(relativePath);
+
+  if (basename === "package.json") score += 15;
+  if (basename === "README.md") score += 12;
+  if (basename === "AGENTS.md") score += 11;
+  if (basename === "tsconfig.json") score += 8;
+  if (basename === "opencode.json") score += 8;
+  if (relativePath.startsWith("src/")) score += 8;
+  if (relativePath.startsWith("packages/")) score += 7;
+  if (relativePath.startsWith("docs/")) score += 5;
+  if (relativePath.includes("index.")) score += 4;
+  if (/\b(test|spec)\b/u.test(relativePath)) score += 2;
+  score += Math.max(0, 5 - depth);
+
+  return score;
+}
+
+async function summarizeRepoMapFile(directory: string, relativePath: string): Promise<string> {
+  const fullPath = path.join(directory, relativePath);
+  const content = await readFile(fullPath, "utf8");
+  const basename = path.posix.basename(relativePath);
+
+  if (basename === "package.json") {
+    try {
+      const parsed = JSON.parse(content) as { name?: string; description?: string };
+      return [parsed.name, parsed.description].filter(Boolean).join(" — ") || "package manifest";
+    } catch {
+      return "package manifest";
+    }
+  }
+
+  if (basename.endsWith(".md")) {
+    const heading = content.match(/^#\s+(.+)$/mu)?.[1]?.trim();
+    return heading ? `markdown: ${heading}` : "markdown document";
+  }
+
+  const exportMatch = content.match(/export\s+(?:default\s+)?(?:async\s+)?(?:function|const|class)\s+([A-Za-z0-9_]+)/u);
+  if (exportMatch) {
+    return `exports ${exportMatch[1]}`;
+  }
+
+  const importCount = (content.match(/^import\s/gu) ?? []).length;
+  if (importCount > 0) {
+    return `${importCount} imports`;
+  }
+
+  return "source/config file";
+}
+
+async function collectRepoMapEntries(directory: string): Promise<RepoMapEntry[]> {
+  const entries: RepoMapEntry[] = [];
 
   async function walk(currentDir: string, depth: number): Promise<void> {
-    if (depth > 3) return;
-    const entries = await readdir(currentDir, { withFileTypes: true });
-    const sorted = entries
-      .filter((entry) => !ignore.has(entry.name))
-      .sort((a, b) => Number(b.isDirectory()) - Number(a.isDirectory()) || a.name.localeCompare(b.name));
-
-    for (const entry of sorted) {
+    if (depth > 4) return;
+    const dirEntries = await readdir(currentDir, { withFileTypes: true });
+    for (const entry of dirEntries) {
+      if (REPO_MAP_IGNORE.has(entry.name)) continue;
       const fullPath = path.join(currentDir, entry.name);
-      const relativePath = path.relative(directory, fullPath) || ".";
+      const relativePath = path.relative(directory, fullPath).split(path.sep).join("/");
+
       if (entry.isDirectory()) {
-        lines.push(`${"  ".repeat(depth)}- ${relativePath}/`);
         await walk(fullPath, depth + 1);
         continue;
       }
 
-      if (/\.(ts|tsx|js|jsx|json|md|sh|yml|yaml)$/u.test(entry.name)) {
-        lines.push(`${"  ".repeat(depth)}- ${relativePath}`);
-      }
+      if (!isRepoMapFile(entry.name)) continue;
+      const summary = await summarizeRepoMapFile(directory, relativePath);
+      entries.push({
+        path: relativePath,
+        score: scoreRepoMapPath(relativePath),
+        summary,
+      });
     }
   }
 
   await walk(directory, 0);
+  return entries.sort((a, b) => b.score - a.score || a.path.localeCompare(b.path));
+}
+
+export async function buildRepoMap(directory: string): Promise<string> {
+  const omniDir = await ensureOmniDir(directory);
+  const entries = await collectRepoMapEntries(directory);
+  const topEntries = entries.slice(0, 60);
   const summary = [
     "# Repo Map",
     "",
     `Root: ${directory}`,
+    `Indexed files: ${entries.length}`,
     "",
-    ...lines.slice(0, 250),
+    "## Ranked files",
+    "",
+    ...topEntries.map((entry) => `- [${entry.score}] ${entry.path} — ${entry.summary}`),
   ].join("\n");
 
-  const omniDir = await ensureOmniDir(directory);
   await writeFile(path.join(omniDir, "REPO-MAP.md"), `${summary}\n`, "utf8");
+  await writeFile(path.join(omniDir, "REPO-MAP.json"), `${JSON.stringify(topEntries, null, 2)}\n`, "utf8");
   return summary;
+}
+
+export async function suggestSkills(task: string): Promise<SuggestedSkill[]> {
+  const normalized = task.trim();
+  const results = new Map<string, SuggestedSkill>();
+
+  for (const rule of SKILL_RULES) {
+    const matches = rule.patterns.filter((pattern) => pattern.test(normalized)).length;
+    if (matches === 0) continue;
+    results.set(rule.name, {
+      name: rule.name,
+      reason: rule.reason,
+      score: rule.score + matches - 1,
+    });
+  }
+
+  return [...results.values()].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+}
+
+export async function updateSkillsFile(
+  directory: string,
+  task: string,
+): Promise<{ suggested: SuggestedSkill[]; outputPath: string }> {
+  const omniDir = await ensureOmniDir(directory);
+  const suggested = await suggestSkills(task);
+  const sections = [
+    "# Skills",
+    "",
+    "## Bundled",
+    "",
+    "- brainstorming",
+    "- omni-planning",
+    "- omni-execution",
+    "- omni-verification",
+    "",
+    "## Suggested For Current Work",
+    "",
+  ];
+
+  if (suggested.length === 0) {
+    sections.push("- None inferred from the current task yet.");
+  } else {
+    sections.push(...suggested.map((skill) => `- ${skill.name}: ${skill.reason}`));
+  }
+
+  sections.push("", "Record required and project-specific skills here.");
+  const outputPath = path.join(omniDir, "SKILLS.md");
+  await writeFile(outputPath, `${sections.join("\n")}\n`, "utf8");
+  return { suggested, outputPath };
 }
 
 export async function discoverStandards(directory: string): Promise<StandardCandidate[]> {
@@ -541,6 +700,41 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
           return [
             `Imported ${result.imported.length} standards into ${result.outputPath}:`,
             ...result.imported.map((candidate) => `- ${candidate.path} (${candidate.kind})`),
+          ].join("\n");
+        },
+      }),
+
+      omnicode_suggest_skills: tool({
+        description:
+          "Suggest bundled OmniCode skills based on the current task or request text.",
+        args: {
+          task: tool.schema.string().describe("Task, request, or work summary to analyze."),
+        },
+        async execute(args) {
+          const suggestions = await suggestSkills(args.task);
+          if (suggestions.length === 0) {
+            return "No specific bundled skills inferred from the task.";
+          }
+          return suggestions
+            .map((skill) => `- ${skill.name} [${skill.score}]: ${skill.reason}`)
+            .join("\n");
+        },
+      }),
+
+      omnicode_update_skills: tool({
+        description:
+          "Update .omni/SKILLS.md with bundled skills and suggestions for the current work.",
+        args: {
+          task: tool.schema.string().describe("Task, request, or work summary to analyze."),
+        },
+        async execute(args) {
+          const result = await updateSkillsFile(directory, args.task);
+          if (result.suggested.length === 0) {
+            return `Updated ${result.outputPath} with no additional suggested skills.`;
+          }
+          return [
+            `Updated ${result.outputPath} with suggested skills:`,
+            ...result.suggested.map((skill) => `- ${skill.name} [${skill.score}]: ${skill.reason}`),
           ].join("\n");
         },
       }),
