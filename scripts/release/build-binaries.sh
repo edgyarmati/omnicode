@@ -32,7 +32,14 @@ build_target() {
   cp "$out_path" "$stage_dir/$bin_name"
 
   if [[ "$ext" == ".exe" ]]; then
-    (cd "$stage_dir" && zip -q "$DIST_DIR/omnicode-${VERSION}-${os}-${arch}.zip" "$bin_name")
+    if command -v zip >/dev/null 2>&1; then
+      (cd "$stage_dir" && zip -q "$DIST_DIR/omnicode-${VERSION}-${os}-${arch}.zip" "$bin_name")
+    else
+      (
+        cd "$stage_dir"
+        powershell -NoProfile -Command "Compress-Archive -Path '$bin_name' -DestinationPath '$DIST_DIR/omnicode-${VERSION}-${os}-${arch}.zip' -Force"
+      )
+    fi
   else
     tar -czf "$DIST_DIR/omnicode-${VERSION}-${os}-${arch}.tar.gz" -C "$stage_dir" "$bin_name"
   fi
