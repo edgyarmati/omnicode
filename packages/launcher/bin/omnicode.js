@@ -241,6 +241,14 @@ async function main() {
   });
   const env = buildLauncherEnv(process.env, configPath, configRoot, homeDir);
 
+  // Handle --dangerously-skip-permissions: set OPENCODE_PERMISSION env var
+  // so it works across all OpenCode versions (the CLI flag was added later)
+  const skipPermIdx = process.argv.indexOf("--dangerously-skip-permissions");
+  if (skipPermIdx !== -1) {
+    env.OPENCODE_PERMISSION = JSON.stringify({ "*": "allow" });
+    process.argv.splice(skipPermIdx, 1);
+  }
+
   const child = spawn(opencodeBin, process.argv.slice(2), {
     stdio: "inherit",
     env,
