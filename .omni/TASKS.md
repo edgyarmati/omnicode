@@ -2,13 +2,21 @@
 
 ## Planned slices
 
-- [x] Design and implement a standalone OmniCode launcher binary build/publish pipeline scaffold (GitHub release workflow + build script + checklist)
-- [x] Add platform-native installer scaffolding: `install.sh` for macOS/Linux and `install.ps1` for Windows
-- [x] Add a per-user managed OpenCode runtime location and version metadata helpers
-- [x] Implement managed OpenCode acquisition and version checks in the launcher (current mechanism: npm prefix install into managed runtime paths)
+- [x] Design and implement a standalone OmniCode launcher binary build/publish pipeline scaffold
+- [x] Add platform-native installer scaffolding
+- [x] Add per-user managed OpenCode runtime location and version metadata helpers
+- [x] Implement managed OpenCode acquisition and version checks in the launcher
 - [x] Keep isolated OmniCode config/plugin wiring for managed OpenCode launches
 - [x] Update docs and tests for the native-launcher install model
+- [x] Force Omni mode on in `session.created` handler
+- [x] Update agent instructions: Omni mode always on, auto-bootstrap first
+- [x] Fix README Quick Usage to reflect conversational agentic workflow
+- [ ] Install RTK in `scripts/setup` (brew or curl fallback)
+- [ ] Add RTK bash command rewriting in OmniCode plugin (`tool.execute.before`)
+- [ ] Update agent instructions to mention RTK
+- [ ] Update README to mention RTK integration
+- [ ] Add test for RTK command rewriting logic
 
 ## Notes
 
-The native release operations scaffold is now in place: workflow, build script, installer naming alignment, and release checklist. Remaining work is validating the first real tagged release artifacts and adding release-artifact-based managed OpenCode download/integrity checks.
+Slices 10-14 are the current work: RTK integration.

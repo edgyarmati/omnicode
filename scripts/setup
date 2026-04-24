@@ -19,6 +19,24 @@ if ! command -v omnicode >/dev/null 2>&1; then
   exit 1
 fi
 
+printf '\n==> OmniCode setup: installing RTK (token optimization proxy)\n'
+if command -v rtk >/dev/null 2>&1; then
+  printf 'RTK already installed: %s\n' "$(rtk --version 2>/dev/null || echo 'present')"
+else
+  if command -v brew >/dev/null 2>&1; then
+    brew install rtk
+  else
+    printf 'Installing RTK via official installer...\n'
+    curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+  fi
+  if command -v rtk >/dev/null 2>&1; then
+    printf 'RTK installed successfully.\n'
+  else
+    printf 'Warning: RTK installation failed. OmniCode works without it, but token savings will be unavailable.\n' >&2
+    printf 'You can install RTK later: https://github.com/rtk-ai/rtk\n' >&2
+  fi
+fi
+
 printf '\n==> OmniCode setup complete\n'
 printf 'Next steps:\n'
 printf '  1. Optionally run: npm test\n'

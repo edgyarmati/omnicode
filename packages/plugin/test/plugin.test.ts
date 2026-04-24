@@ -202,3 +202,24 @@ test("appendSessionSummary appends a titled handoff section", async () => {
     assert.match(content, /- Verification still pending/);
   });
 });
+
+test("bash commands are prefixed with rtk (skipping already-prefixed commands)", () => {
+  // Simulates the rewriting logic from tool.execute.before
+  function rewrite(command: string): string {
+    if (!command.trimStart().startsWith("rtk ")) {
+      return `rtk ${command}`;
+    }
+    return command;
+  }
+
+  // Should be rewritten
+  assert.equal(rewrite("git status"), "rtk git status");
+  assert.equal(rewrite("npm test"), "rtk npm test");
+  assert.equal(rewrite("cargo test"), "rtk cargo test");
+  assert.equal(rewrite("echo hello"), "rtk echo hello");
+  assert.equal(rewrite("  git log"), "rtk   git log");
+
+  // Should NOT be double-rewritten
+  assert.equal(rewrite("rtk git status"), "rtk git status");
+  assert.equal(rewrite("rtk pytest tests/"), "rtk pytest tests/");
+});

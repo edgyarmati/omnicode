@@ -1,5 +1,6 @@
 import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { spawn } from "node:child_process";
 
 import type { Plugin } from "@opencode-ai/plugin";
 import { tool } from "@opencode-ai/plugin";
@@ -689,6 +690,15 @@ async function readInstructionPrompt(): Promise<string> {
   return readFile(instructionFile, "utf8");
 }
 
+async function checkRtkAvailable(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const cmd = process.platform === "win32" ? "where" : "which";
+    const probe = spawn(cmd, ["rtk"], { stdio: "ignore", shell: false });
+    probe.on("exit", (code) => resolve(code === 0));
+    probe.on("error", () => resolve(false));
+  });
+}
+
 export async function planningArtifactsReady(directory: string): Promise<boolean> {
   const specPath = path.join(directory, ".omni", "SPEC.md");
   const tasksPath = path.join(directory, ".omni", "TASKS.md");
@@ -733,6 +743,7 @@ function extractFilePath(args: Record<string, unknown>): string | null {
 export const OmniCodePlugin: Plugin = async ({ directory }) => {
   const commands = await loadCommands();
   const instructionPrompt = await readInstructionPrompt();
+  const rtkAvailable = await checkRtkAvailable();
 
   return {
     async config(config) {
@@ -767,6 +778,8 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
     event: async ({ event }) => {
       if (event.type === "session.created") {
         await ensureOmniDir(directory);
+        await initializeProjectFile(directory);
+        await setOmniMode(directory, "on");
       }
     },
 
@@ -780,6 +793,23 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
     },
 
     "tool.execute.before": async (input, output) => {
+      // RTK integration: rewrite bash commands through RTK for token savings.
+      // RTK handles passthrough for commands it doesn't recognize, so we
+      // prefix all bash commands and let RTK decide what to compress.
+      if (rtkAvailable && input.tool === "bash") {
+        const args = (output.args ?? {}) as Record<string, unknown>;
+        const commandKey = Object.keys(args).find(
+          (k) => typeof args[k] === "string" && (k === "command" || k === "cmd"),
+        );
+        if (commandKey && typeof args[commandKey] === "string") {
+          const originalCommand = args[commandKey] as string;
+          if (!originalCommand.trimStart().startsWith("rtk ")) {
+            args[commandKey] = `rtk ${originalCommand}`;
+          }
+        }
+        return;
+      }
+
       const activeMode = await readOmniMode(directory);
       if (activeMode === "off") return;
 
