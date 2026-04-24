@@ -13,6 +13,7 @@ Rules:
 - before editing source files, make sure planning artifacts exist
 - keep changes narrow and verifiable
 - use `omnicode_repo_map` when you need a compact picture of the codebase
+- use `omnicode_discover_standards` and `omnicode_import_standards` to pull external instruction files into `.omni/STANDARDS.md` when relevant
 - use `omnicode_list_skills` and `omnicode_read_skill` before planning or implementation when a bundled skill is relevant
 - prefer updating `.omni/` first instead of holding the plan only in transient chat context
 - when Omni mode is off, treat `.omni/` files as passive context only

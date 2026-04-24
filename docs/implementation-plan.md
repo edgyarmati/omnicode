@@ -19,8 +19,8 @@
 
 ## Next slices
 
-1. Improve standards import from AGENTS/CLAUDE/Cursor-style files
-2. Make repo map incremental instead of fully regenerated per call
-3. Expand skill routing and project-skill lifecycle
-4. Add tests around tool guards and launcher config generation
-5. Refine `.omni` bootstrap defaults and mode switching UX
+1. Make repo map incremental instead of fully regenerated per call
+2. Expand skill routing and project-skill lifecycle
+3. Add tests around tool guards and launcher config generation
+4. Refine `.omni` bootstrap defaults and mode switching UX
+5. Improve standards-import selection UX beyond import-all or explicit paths

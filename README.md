@@ -34,6 +34,7 @@ Implemented and smoke-tested:
 4. default OmniCode agent instructions
 5. workflow guardrails for planning before editing
 6. real OpenCode plugin loading via the `omnicode` launcher
+7. standards discovery/import into `.omni/STANDARDS.md`
 
 ## Launcher behavior
 
@@ -53,6 +54,7 @@ npm install
 node packages/launcher/bin/omnicode.js --help
 node packages/launcher/bin/omnicode.js agent list
 node packages/launcher/bin/omnicode.js run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project for OmniCode and summarize the current state."
+node packages/launcher/bin/omnicode.js run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project, discover external standards, import them, and tell me what was imported."
 ```
 
 ## Development

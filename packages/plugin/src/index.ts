@@ -25,10 +25,53 @@ type SkillInfo = {
   path: string;
 };
 
+type StandardCandidate = {
+  path: string;
+  kind: string;
+};
+
 const OMNI_VERSION = "1";
 const RESOURCE_ROOT_CANDIDATES = [
   path.join(import.meta.dirname, "resources"),
   path.join(import.meta.dirname, "..", "src", "resources"),
+];
+
+const STANDARD_RULES: Array<{ kind: string; match(relativePath: string, basename: string): boolean }> = [
+  {
+    kind: "AGENTS",
+    match: (_relativePath, basename) => basename === "AGENTS.md",
+  },
+  {
+    kind: "CLAUDE",
+    match: (_relativePath, basename) => basename === "CLAUDE.md",
+  },
+  {
+    kind: "GEMINI",
+    match: (_relativePath, basename) => basename === "GEMINI.md",
+  },
+  {
+    kind: "Copilot",
+    match: (relativePath) => relativePath === ".github/copilot-instructions.md",
+  },
+  {
+    kind: "GitHub Instructions",
+    match: (relativePath, basename) =>
+      relativePath.startsWith(".github/instructions/") && basename.endsWith(".instructions.md"),
+  },
+  {
+    kind: "Cursor Rules",
+    match: (relativePath, basename) =>
+      basename === ".cursorrules" ||
+      (relativePath.startsWith(".cursor/rules/") && basename.endsWith(".mdc")),
+  },
+  {
+    kind: "Windsurf Rules",
+    match: (relativePath) => relativePath.startsWith(".windsurf/rules/"),
+  },
+  {
+    kind: "Continue Rules",
+    match: (relativePath) => relativePath.startsWith(".continue/rules/"),
+  },
 ];
 
 const OMNI_FILES: Record<string, string> = {
@@ -226,6 +269,89 @@ async function buildRepoMap(directory: string): Promise<string> {
   return summary;
 }
 
+async function discoverStandards(directory: string): Promise<StandardCandidate[]> {
+  const ignore = new Set([
+    ".git",
+    "node_modules",
+    ".next",
+    "dist",
+    "build",
+    ".pi",
+    ".omni",
+    ".turbo",
+    "coverage",
+  ]);
+  const found = new Map<string, StandardCandidate>();
+
+  async function walk(currentDir: string): Promise<void> {
+    const entries = await readdir(currentDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (ignore.has(entry.name)) continue;
+
+      const fullPath = path.join(currentDir, entry.name);
+      const relativePath = path.relative(directory, fullPath).split(path.sep).join("/");
+
+      if (entry.isDirectory()) {
+        await walk(fullPath);
+        continue;
+      }
+
+      for (const rule of STANDARD_RULES) {
+        if (rule.match(relativePath, entry.name)) {
+          found.set(relativePath, {
+            path: relativePath,
+            kind: rule.kind,
+          });
+          break;
+        }
+      }
+    }
+  }
+
+  await walk(directory);
+  return [...found.values()].sort((a, b) => a.path.localeCompare(b.path));
+}
+
+async function importStandards(
+  directory: string,
+  selectedPaths?: string[],
+): Promise<{ imported: StandardCandidate[]; outputPath: string }> {
+  const omniDir = await ensureOmniDir(directory);
+  const candidates = await discoverStandards(directory);
+  const normalizedSelected = new Set((selectedPaths ?? []).map((item) => item.replaceAll("\\", "/")));
+  const imported =
+    normalizedSelected.size > 0
+      ? candidates.filter((candidate) => normalizedSelected.has(candidate.path))
+      : candidates;
+
+  const sections: string[] = ["# Imported Standards", ""];
+
+  if (imported.length === 0) {
+    sections.push("No external standards were discovered.");
+  } else {
+    sections.push(
+      "These standards were discovered from common agent-instruction locations and imported into OmniCode durable memory.",
+      "",
+    );
+
+    for (const candidate of imported) {
+      const content = await readFile(path.join(directory, candidate.path), "utf8");
+      sections.push(
+        `## ${candidate.kind}: ${candidate.path}`,
+        "",
+        "```md",
+        content.replace(/```/gu, "\\`\\`\\`"),
+        "```",
+        "",
+      );
+    }
+  }
+
+  const outputPath = path.join(omniDir, "STANDARDS.md");
+  await writeFile(outputPath, `${sections.join("\n").trimEnd()}\n`, "utf8");
+  return { imported, outputPath };
+}
+
 async function readInstructionPrompt(): Promise<string> {
   const instructionFile = await resolveResourcePath(
     "instructions",
@@ -380,6 +506,42 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
         args: {},
         async execute() {
           return buildRepoMap(directory);
+        },
+      }),
+
+      omnicode_discover_standards: tool({
+        description:
+          "Discover external instruction files such as AGENTS.md, CLAUDE.md, Cursor rules, and similar standards files in the current project.",
+        args: {},
+        async execute() {
+          const candidates = await discoverStandards(directory);
+          if (candidates.length === 0) {
+            return "No external standards files found.";
+          }
+          return candidates
+            .map((candidate) => `- ${candidate.path} (${candidate.kind})`)
+            .join("\n");
+        },
+      }),
+
+      omnicode_import_standards: tool({
+        description:
+          "Import discovered external standards into .omni/STANDARDS.md. Optionally limit the import to selected relative paths.",
+        args: {
+          paths: tool.schema
+            .array(tool.schema.string())
+            .optional()
+            .describe("Optional list of relative file paths to import. When omitted, import all discovered standards."),
+        },
+        async execute(args) {
+          const result = await importStandards(directory, args.paths);
+          if (result.imported.length === 0) {
+            return `No standards imported. Wrote ${result.outputPath}.`;
+          }
+          return [
+            `Imported ${result.imported.length} standards into ${result.outputPath}:`,
+            ...result.imported.map((candidate) => `- ${candidate.path} (${candidate.kind})`),
+          ].join("\n");
         },
       }),
 
