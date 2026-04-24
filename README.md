@@ -29,7 +29,7 @@ Working first cut complete.
 Implemented and smoke-tested:
 
 1. isolated OpenCode launch path
-2. `.omni` bootstrap
+2. `.omni` bootstrap with better starter templates and selective `.omni/.gitignore`
 3. custom OmniCode tools
 4. default OmniCode agent instructions
 5. workflow guardrails for planning before editing
@@ -37,6 +37,7 @@ Implemented and smoke-tested:
 7. standards discovery/import into `.omni/STANDARDS.md`
 8. ranked repo map output into `.omni/REPO-MAP.md` and `.omni/REPO-MAP.json`
 9. basic skill routing and `.omni/SKILLS.md` syncing for current work
+10. explicit lifecycle updates for `.omni/STATE.md` and `.omni/SESSION-SUMMARY.md`
 
 ## Launcher behavior
 
@@ -67,7 +68,8 @@ Current automated tests cover:
 - standards discovery/import
 - ranked repo map generation
 - skill suggestion and `.omni/SKILLS.md` syncing
-- planning-artifact readiness checks for the write/edit guard
+- state/session-summary lifecycle updates
+- planning-artifact readiness checks for the write/edit guard (`SPEC.md`, `TASKS.md`, and `TESTS.md`)
 
 ## Repo hygiene
 

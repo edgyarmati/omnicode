@@ -13,6 +13,7 @@ import {
   ensureOmniDir,
   importStandards,
   planningArtifactsReady,
+  setOmniMode,
   suggestSkills,
   updateSkillsFile,
   updateStateFile,
@@ -158,6 +159,33 @@ test("updateStateFile writes structured current workflow state", async () => {
     assert.match(content, /Active Task: Slice 2/);
     assert.match(content, /Status Summary: Implemented the current slice\./);
     assert.match(content, /Next Step: Run verification\./);
+  });
+});
+
+test("ensureOmniDir preserves templates and setOmniMode updates state coherently", async () => {
+  await withTempDir(async (dir) => {
+    await writeFile(
+      path.join(dir, "package.json"),
+      JSON.stringify({ name: "omnicode-test", description: "sample project" }, null, 2),
+      "utf8",
+    );
+
+    await ensureOmniDir(dir);
+    await setOmniMode(dir, "on");
+    let state = await readFile(path.join(dir, ".omni", "STATE.md"), "utf8");
+    let config = await readFile(path.join(dir, ".omni", "CONFIG.md"), "utf8");
+
+    assert.match(config, /Omni Mode: on/);
+    assert.match(state, /Current Phase: discovery/);
+    assert.match(state, /Workspace ready for planning/);
+
+    await setOmniMode(dir, "off");
+    state = await readFile(path.join(dir, ".omni", "STATE.md"), "utf8");
+    config = await readFile(path.join(dir, ".omni", "CONFIG.md"), "utf8");
+
+    assert.match(config, /Omni Mode: off/);
+    assert.match(state, /Current Phase: passive/);
+    assert.match(state, /Omni mode disabled/);
   });
 });
 

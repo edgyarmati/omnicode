@@ -266,13 +266,80 @@ async function readOmniMode(directory: string): Promise<OmniMode> {
   return /Omni Mode:\s*off/iu.test(config) ? "off" : "on";
 }
 
-async function setOmniMode(directory: string, mode: OmniMode): Promise<void> {
+async function inferProjectGoal(directory: string): Promise<string> {
+  try {
+    const packageJson = JSON.parse(
+      await readFile(path.join(directory, "package.json"), "utf8"),
+    ) as { name?: string; description?: string };
+    const pieces = [packageJson.name, packageJson.description].filter(Boolean);
+    if (pieces.length > 0) {
+      return pieces.join(" — ");
+    }
+  } catch {
+    // ignore missing/invalid package.json
+  }
+
+  return "Describe what this project is trying to achieve.";
+}
+
+async function initializeProjectFile(directory: string): Promise<void> {
+  const omniDir = await ensureOmniDir(directory);
+  const projectPath = path.join(omniDir, "PROJECT.md");
+  const current = await readFile(projectPath, "utf8").catch(() => OMNI_FILES["PROJECT.md"]);
+  if (current.trim() !== OMNI_FILES["PROJECT.md"].trim()) {
+    return;
+  }
+
+  const inferredGoal = await inferProjectGoal(directory);
+  const content = [
+    "# Project",
+    "",
+    "## Goal",
+    "",
+    inferredGoal,
+    "",
+    "## Users",
+    "",
+    "Describe the primary users or stakeholders.",
+    "",
+    "## Constraints",
+    "",
+    "List important product, technical, or workflow constraints.",
+    "",
+    "## Success Criteria",
+    "",
+    "List the observable outcomes that mean the work is successful.",
+    "",
+  ].join("\n");
+  await writeFile(projectPath, content, "utf8");
+}
+
+export async function setOmniMode(directory: string, mode: OmniMode): Promise<void> {
   const omniDir = await ensureOmniDir(directory);
   await writeFile(
     path.join(omniDir, "CONFIG.md"),
     `# Omni Configuration\n\nOmni Mode: ${mode}\n`,
     "utf8",
   );
+
+  if (mode === "on") {
+    await updateStateFile(directory, {
+      currentPhase: "discovery",
+      activeTask: "bootstrap",
+      statusSummary: "Omni mode enabled. Workspace ready for planning.",
+      blockers: [],
+      nextStep: "Clarify scope, write spec, define tests, and break work into tasks before implementation.",
+    });
+    return;
+  }
+
+  await updateStateFile(directory, {
+    currentPhase: "passive",
+    activeTask: "",
+    statusSummary: "Omni mode disabled. Durable .omni context remains available as passive guidance.",
+    blockers: [],
+    nextStep: "Re-enable Omni mode when you want the full planning and verification workflow.",
+  });
 }
 
 async function readStateSummary(directory: string): Promise<string> {
@@ -743,7 +810,15 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
         },
         async execute(args) {
           await ensureOmniDir(directory);
+          await initializeProjectFile(directory);
           await setOmniMode(directory, (args.mode as OmniMode | undefined) ?? "on");
+          await appendSessionSummary(directory, {
+            title: "Bootstrap",
+            bullets: [
+              "Initialized .omni durable memory for the project.",
+              `Set Omni mode to ${(args.mode as OmniMode | undefined) ?? "on"}.`,
+            ],
+          });
           return `Bootstrapped ${path.join(directory, ".omni")}`;
         },
       }),

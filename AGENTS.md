@@ -60,6 +60,8 @@ Current features:
   - `omnicode_bootstrap`
   - `omnicode_set_mode`
   - `omnicode_state`
+  - `omnicode_update_state`
+  - `omnicode_append_session_summary`
   - `omnicode_repo_map`
   - `omnicode_discover_standards`
   - `omnicode_import_standards`
@@ -75,6 +77,7 @@ Current features:
 Planning artifacts currently required before source editing:
 - `.omni/SPEC.md`
 - `.omni/TASKS.md`
+- `.omni/TESTS.md`
 
 ### Bundled resources
 
@@ -132,15 +135,16 @@ Verified in a real OpenCode runtime:
 - standards discovery/import works and writes `.omni/STANDARDS.md`
 - ranked repo map output works and writes `.omni/REPO-MAP.md` plus `.omni/REPO-MAP.json`
 - skill suggestion/sync works and writes `.omni/SKILLS.md`
-- the write/edit guard blocks early writes until real planning content exists
-- automated tests cover launcher config isolation, standards discovery/import, repo map generation, skill suggestion, and planning-artifact readiness
+- the write/edit guard blocks early writes until real planning content exists in `SPEC.md`, `TASKS.md`, and `TESTS.md`
+- state/session-summary lifecycle tools work in tests and runtime
+- automated tests cover launcher config isolation, standards discovery/import, repo map generation, skill suggestion, lifecycle updates, and planning-artifact readiness
 
 ## Known gaps / next work
 
 These are the next most valuable slices:
 
 1. **Workflow enforcement hardening**
-   - current enforcement blocks `write`/`edit` until `.omni/SPEC.md` and `.omni/TASKS.md` contain non-placeholder planning content
+   - current enforcement blocks `write`/`edit` until `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md` contain non-placeholder planning content
    - may need stronger or more precise guarding once more real OpenCode sessions are observed
 
 2. **Standards UX improvement**
