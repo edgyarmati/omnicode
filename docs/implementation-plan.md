@@ -44,7 +44,6 @@
 ## Next slices after native-launcher foundation
 
 1. Build and publish real OmniCode binary artifacts for all supported platforms
-2. Implement upstream OpenCode download/integrity verification against live release artifacts
-3. Replace the current best-effort PATH/npm fallback with true managed OpenCode acquisition and upgrade behavior
-4. Add end-to-end installer smoke tests across macOS/Linux/Windows runners
-5. Improve standards-import selection UX beyond import-all or explicit paths
+2. Implement upstream OpenCode download/integrity verification against live release artifacts (current runtime acquisition uses managed npm-prefix install)
+3. Add end-to-end installer smoke tests across macOS/Linux/Windows runners
+4. Improve standards-import selection UX beyond import-all or explicit paths

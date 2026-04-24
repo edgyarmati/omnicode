@@ -100,11 +100,8 @@ Implemented in `packages/launcher/bin/omnicode.js`.
 
 Current behavior:
 - resolves native-launcher release metadata for the desired OpenCode target version
-- prefers an OmniCode-managed OpenCode runtime path when present
-- currently falls back to PATH lookup / best-effort install using one of:
-  - `npm install -g opencode-ai`
-  - `bun install -g opencode-ai`
-  - `pnpm add -g opencode-ai`
+- installs/uses an OmniCode-managed per-user OpenCode runtime (`npm --prefix <managed-dir>`) when needed
+- tracks managed runtime metadata under OmniCode user data directories
 - writes config to:
   - `~/.config/omnicode/opencode/opencode.json`
   - `~/.config/omnicode/opencode/plugins/omnicode-plugin.js`

@@ -12,6 +12,7 @@ import {
   ensureOmniCodeConfig,
   getConfigRoot,
   getManagedOpenCodeBinaryPath,
+  getManagedOpenCodeInstallArgs,
   getManagedOpenCodeMetadataPath,
   getManagedOpenCodeRoot,
   getNativeLauncherReleaseMetadata,
@@ -96,7 +97,18 @@ test("managed OpenCode runtime helpers resolve user-scoped paths and version che
   const windowsHome = "C:\\Users\\me";
   const windowsEnv = { LOCALAPPDATA: "C:\\Users\\me\\AppData\\Local" };
   assert.match(getOmniCodeDataRoot(windowsHome, "win32", windowsEnv), /OmniCode$/);
-  assert.match(getManagedOpenCodeBinaryPath("1.2.3", windowsHome, "win32", windowsEnv), /opencode\.exe$/);
+  assert.match(getManagedOpenCodeBinaryPath("1.2.3", windowsHome, "win32", windowsEnv), /opencode\.cmd$/);
+
+  assert.deepEqual(
+    getManagedOpenCodeInstallArgs("1.2.3", linuxHome, "linux", linuxEnv),
+    [
+      "install",
+      "-g",
+      "opencode-ai@1.2.3",
+      "--prefix",
+      "/tmp/example-data/omnicode/runtimes/opencode/1.2.3",
+    ],
+  );
 
   assert.equal(compareSemver("1.2.3", "1.2.3"), 0);
   assert.equal(compareSemver("1.2.4", "1.2.3"), 1);
@@ -128,7 +140,7 @@ test("native installer assets and launcher package metadata are present", async 
   assert.deepEqual(launcherPackage.files, ["bin", "src"]);
   assert.match(posixInstaller, /releases\/download\/v%s/);
   assert.match(windowsInstaller, /releases\/download\/v\$Version/);
-  assert.match(launcherBin, /getManagedOpenCodeBinaryPath/);
+  assert.match(launcherBin, /getManagedOpenCodeBinaryCandidates/);
   assert.match(launcherBin, /getNativeLauncherReleaseMetadata/);
 
   await access(path.join(repoRoot, "scripts", "setup"));

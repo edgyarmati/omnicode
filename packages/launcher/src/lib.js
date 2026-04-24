@@ -73,18 +73,45 @@ export function getManagedOpenCodeVersionDir(
   return path.join(getManagedOpenCodeRoot(homeDir, platform, env), version);
 }
 
+export function getManagedOpenCodeBinaryCandidates(
+  version = OPENCODE_VERSION_TARGET,
+  homeDir = os.homedir(),
+  platform = process.platform,
+  env = process.env,
+) {
+  const prefix = getManagedOpenCodeVersionDir(version, homeDir, platform, env);
+  if (platform === "win32") {
+    return [
+      path.join(prefix, "opencode.cmd"),
+      path.join(prefix, "bin", "opencode.cmd"),
+      path.join(prefix, "bin", "opencode"),
+    ];
+  }
+
+  return [path.join(prefix, "bin", "opencode")];
+}
+
 export function getManagedOpenCodeBinaryPath(
   version = OPENCODE_VERSION_TARGET,
   homeDir = os.homedir(),
   platform = process.platform,
   env = process.env,
 ) {
-  const executable = platform === "win32" ? "opencode.exe" : "opencode";
-  return path.join(getManagedOpenCodeVersionDir(version, homeDir, platform, env), "bin", executable);
+  return getManagedOpenCodeBinaryCandidates(version, homeDir, platform, env)[0];
 }
 
 export function getManagedOpenCodeMetadataPath(homeDir = os.homedir(), platform = process.platform, env = process.env) {
   return path.join(getManagedOpenCodeRoot(homeDir, platform, env), "current.json");
+}
+
+export function getManagedOpenCodeInstallArgs(
+  version = OPENCODE_VERSION_TARGET,
+  homeDir = os.homedir(),
+  platform = process.platform,
+  env = process.env,
+) {
+  const prefix = getManagedOpenCodeVersionDir(version, homeDir, platform, env);
+  return ["install", "-g", `opencode-ai@${version}`, "--prefix", prefix];
 }
 
 export function needsManagedOpenCodeUpdate(currentVersion, requiredVersion = OPENCODE_VERSION_TARGET) {

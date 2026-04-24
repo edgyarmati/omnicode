@@ -81,7 +81,7 @@ omnicode
 
 ### Runtime direction
 
-OmniCode is moving toward a standalone launcher that manages its own per-user compatible OpenCode runtime. Until that runtime acquisition flow is fully wired up, the dev launcher still falls back to a best-effort system `opencode` install/path lookup.
+OmniCode now provisions and uses a per-user managed OpenCode runtime version by default (without mutating your normal global `opencode` setup). The native standalone OmniCode launcher binaries are still pending publication; current development usage remains via `./scripts/setup`.
 
 ## Quick usage
 
@@ -132,7 +132,7 @@ Runtime/generated `.omni` files stay out of git by default:
 ## Troubleshooting
 
 - If you're testing from a checkout, use `./scripts/setup` for now rather than the unpublished release installers.
-- If first-run OpenCode installation fails in the current dev launcher, install it manually with `npm install -g opencode-ai` and run `omnicode` again.
+- If managed OpenCode runtime installation fails, rerun `omnicode` and follow the printed fallback command using the same `--prefix` path.
 - When native binaries are published, the root `install.sh` and `install.ps1` scripts will become the primary install path.
 
 ## Development

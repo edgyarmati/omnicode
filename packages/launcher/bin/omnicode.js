@@ -2,14 +2,17 @@
 
 import os from "node:os";
 import process from "node:process";
-import { access } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 
 import {
   MINIMUM_NODE_MAJOR,
   buildLauncherEnv,
   ensureOmniCodeConfig,
-  getManagedOpenCodeBinaryPath,
+  getManagedOpenCodeBinaryCandidates,
+  getManagedOpenCodeInstallArgs,
+  getManagedOpenCodeMetadataPath,
+  getManagedOpenCodeVersionDir,
   getNativeLauncherReleaseMetadata,
   getOmniCodeSetupTarget,
   isSupportedNodeVersion,
@@ -18,10 +21,6 @@ import {
 
 function isWindows() {
   return process.platform === "win32";
-}
-
-function opencodeCommandName() {
-  return isWindows() ? "opencode.cmd" : "opencode";
 }
 
 async function existsOnPath(command) {
@@ -44,31 +43,6 @@ async function fileExists(filePath) {
   }
 }
 
-async function runInstallAttempt() {
-  const attempts = [
-    { cmd: "npm", args: ["install", "-g", "opencode-ai"] },
-    { cmd: "bun", args: ["install", "-g", "opencode-ai"] },
-    { cmd: "pnpm", args: ["add", "-g", "opencode-ai"] },
-  ];
-
-  for (const attempt of attempts) {
-    // eslint-disable-next-line no-await-in-loop
-    const available = await existsOnPath(isWindows() && attempt.cmd === "npm" ? "npm.cmd" : attempt.cmd);
-    if (!available) continue;
-
-    const command = isWindows() ? `${attempt.cmd}.cmd` : attempt.cmd;
-    const installed = await new Promise((resolve) => {
-      const child = spawn(command, attempt.args, { stdio: "inherit", shell: false });
-      child.on("exit", (code) => resolve(code === 0));
-      child.on("error", () => resolve(false));
-    });
-
-    if (installed) return true;
-  }
-
-  return false;
-}
-
 function runCommand(command, args) {
   return new Promise((resolve) => {
     const child = spawn(command, args, { stdio: "inherit", shell: false });
@@ -87,6 +61,102 @@ function captureCommand(command, args) {
     child.on("exit", (code) => resolve(code === 0 ? stdout.trim() : null));
     child.on("error", () => resolve(null));
   });
+}
+
+async function resolveManagedOpenCodeBinary(version, homeDir) {
+  const candidates = getManagedOpenCodeBinaryCandidates(version, homeDir);
+  for (const candidate of candidates) {
+    // eslint-disable-next-line no-await-in-loop
+    if (await fileExists(candidate)) return candidate;
+  }
+  return null;
+}
+
+async function readManagedOpenCodeVersion(homeDir) {
+  const metadataPath = getManagedOpenCodeMetadataPath(homeDir);
+  try {
+    const parsed = JSON.parse(await readFile(metadataPath, "utf8"));
+    if (typeof parsed.version === "string" && parsed.version.length > 0) {
+      return parsed.version;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function writeManagedOpenCodeMetadata(homeDir, data) {
+  const metadataPath = getManagedOpenCodeMetadataPath(homeDir);
+  await mkdir(getManagedOpenCodeVersionDir(data.version, homeDir), { recursive: true });
+  await writeFile(
+    metadataPath,
+    `${JSON.stringify({
+      version: data.version,
+      binaryPath: data.binaryPath,
+      installedAt: new Date().toISOString(),
+    }, null, 2)}\n`,
+    "utf8",
+  );
+}
+
+async function installManagedOpenCodeRuntime(version, homeDir) {
+  const npmCommand = isWindows() ? "npm.cmd" : "npm";
+  if (!(await existsOnPath(npmCommand))) {
+    process.stderr.write(
+      "npm is required to install the managed OpenCode runtime. Install npm and rerun OmniCode.\n",
+    );
+    process.exit(1);
+  }
+
+  const args = getManagedOpenCodeInstallArgs(version, homeDir);
+  process.stderr.write(`Installing managed OpenCode ${version}...\n`);
+  const installed = await runCommand(npmCommand, args);
+  if (!installed) {
+    process.stderr.write(
+      [
+        `Failed to install managed OpenCode ${version}.`,
+        `Manual fallback: npm ${args.join(" ")}`,
+      ].join("\n") + "\n",
+    );
+    process.exit(1);
+  }
+
+  const binary = await resolveManagedOpenCodeBinary(version, homeDir);
+  if (!binary) {
+    process.stderr.write(
+      `Managed OpenCode ${version} installed, but no executable was found under ${getManagedOpenCodeVersionDir(version, homeDir)}.\n`,
+    );
+    process.exit(1);
+  }
+
+  await writeManagedOpenCodeMetadata(homeDir, {
+    version,
+    binaryPath: binary,
+  });
+
+  return binary;
+}
+
+async function ensureManagedOpenCodeRuntime(version, homeDir) {
+  const installedVersion = await readManagedOpenCodeVersion(homeDir);
+  const installedBinary = installedVersion
+    ? await resolveManagedOpenCodeBinary(installedVersion, homeDir)
+    : null;
+
+  if (!needsManagedOpenCodeUpdate(installedVersion, version) && installedBinary) {
+    return installedBinary;
+  }
+
+  const targetBinary = await resolveManagedOpenCodeBinary(version, homeDir);
+  if (targetBinary) {
+    await writeManagedOpenCodeMetadata(homeDir, {
+      version,
+      binaryPath: targetBinary,
+    });
+    return targetBinary;
+  }
+
+  return installManagedOpenCodeRuntime(version, homeDir);
 }
 
 async function runSetup() {
@@ -129,7 +199,6 @@ async function runSetup() {
   }
 
   process.stderr.write("OmniCode setup complete. Next step: run `omnicode`.\n");
-  return;
 }
 
 async function main() {
@@ -138,43 +207,17 @@ async function main() {
     return;
   }
 
+  const homeDir = os.homedir();
   const explicitBin = process.env.OMNICODE_OPENCODE_BIN;
   const release = getNativeLauncherReleaseMetadata();
-  const managedBin = getManagedOpenCodeBinaryPath(release.opencodeVersion, os.homedir());
-  const managedPresent = await fileExists(managedBin);
-  const needsManagedRuntime = needsManagedOpenCodeUpdate(
-    managedPresent ? release.opencodeVersion : null,
-    release.opencodeVersion,
-  );
 
-  let opencodeBin = explicitBin || (managedPresent ? managedBin : opencodeCommandName());
-  const present = explicitBin ? true : managedPresent || (await existsOnPath(opencodeBin));
-
-  if (!present) {
-    process.stderr.write(
-      needsManagedRuntime
-        ? `Managed OpenCode ${release.opencodeVersion} is not installed yet. Falling back to best-effort system install until native runtime acquisition is wired up.\n`
-        : "OpenCode was not found on PATH. Trying a best-effort install...\n",
-    );
-    const installed = await runInstallAttempt();
-    if (!installed) {
-      process.stderr.write(
-        [
-          `Failed to prepare OpenCode ${release.opencodeVersion}.`,
-          "Install OpenCode manually for now, then run OmniCode again.",
-          "Suggested command: npm install -g opencode-ai",
-        ].join("\n") + "\n",
-      );
-      process.exit(1);
-    }
-    opencodeBin = opencodeCommandName();
-  }
+  const opencodeBin = explicitBin || (await ensureManagedOpenCodeRuntime(release.opencodeVersion, homeDir));
 
   const { configRoot, configPath } = await ensureOmniCodeConfig({
-    homeDir: os.homedir(),
+    homeDir,
     pluginEntry: import.meta.resolve("@omnicode/plugin"),
   });
-  const env = buildLauncherEnv(process.env, configPath, configRoot, os.homedir());
+  const env = buildLauncherEnv(process.env, configPath, configRoot, homeDir);
 
   const child = spawn(opencodeBin, process.argv.slice(2), {
     stdio: "inherit",
