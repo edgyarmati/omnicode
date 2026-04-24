@@ -9,3 +9,4 @@ Then:
 - confirm the new mode
 - if turning Omni mode on, ensure `.omni/` exists and summarize the next workflow step
 - if turning Omni mode off, explain that `.omni/` remains as passive project context
+- mention that `STATE.md` is updated automatically to reflect the current Omni mode
