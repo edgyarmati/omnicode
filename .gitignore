@@ -2,5 +2,6 @@ node_modules/
 dist/
 .tmp/
 .pi/
+.omni/
 .DS_Store
 coverage/

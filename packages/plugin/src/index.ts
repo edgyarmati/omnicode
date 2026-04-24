@@ -129,15 +129,15 @@ const SKILL_RULES: Array<{ name: string; patterns: RegExp[]; reason: string; sco
 ];
 
 export const OMNI_FILES: Record<string, string> = {
-  "PROJECT.md": "# Project\n\n## Goal\n\nDocument the project goal here.\n",
-  "SPEC.md": "# Spec\n\nDescribe the requested behavior precisely before implementation.\n",
-  "TASKS.md": "# Tasks\n\nBreak work into bounded, verifiable slices before editing source files.\n",
-  "TESTS.md": "# Tests\n\nList checks to run after each implementation slice.\n",
-  "STATE.md": "# State\n\nCurrent Phase: discovery\nActive Task: \nStatus Summary: OmniCode workspace bootstrapped.\nBlockers: None\nNext Step: Clarify scope, write spec, and break work into tasks before implementation.\n",
+  "PROJECT.md": "# Project\n\n## Goal\n\nDescribe what this project is trying to achieve.\n\n## Users\n\nDescribe the primary users or stakeholders.\n\n## Constraints\n\nList important product, technical, or workflow constraints.\n\n## Success Criteria\n\nList the observable outcomes that mean the work is successful.\n",
+  "SPEC.md": "# Spec\n\n## Problem\n\nDescribe the specific problem to solve.\n\n## Requested Behavior\n\nList the expected behavior clearly before implementation.\n\n## Constraints\n\nList any implementation constraints or non-goals.\n\n## Success Criteria\n\nList concrete checks that make this request complete.\n",
+  "TASKS.md": "# Tasks\n\n## Planned slices\n\n- [ ] Slice 1: define the first bounded implementation step\n\n## Notes\n\nBreak work into bounded, verifiable slices before editing source files.\n",
+  "TESTS.md": "# Tests\n\n## Checks\n\n- [ ] define the checks to run after each implementation slice\n\n## Expected outcomes\n\nDescribe what passing looks like.\n",
+  "STATE.md": "# State\n\nCurrent Phase: discovery\nActive Task: bootstrap\nStatus Summary: OmniCode workspace bootstrapped and ready for planning.\nBlockers: None\nNext Step: Clarify scope, write spec, define tests, and break work into tasks before implementation.\n",
   "DECISIONS.md": "# Decisions\n\nRecord important choices and why they were made.\n",
   "STANDARDS.md": "# Imported Standards\n\nRecord imported standards from AGENTS.md, CLAUDE.md, Cursor rules, and similar files.\n",
-  "SKILLS.md": "# Skills\n\n## Bundled\n\n- brainstorming\n- omni-planning\n- omni-execution\n- omni-verification\n\nRecord required and project-specific skills here.\n",
-  "SESSION-SUMMARY.md": "# Session Summary\n\nSummarize progress and remaining work across sessions.\n",
+  "SKILLS.md": "# Skills\n\n## Bundled\n\n- brainstorming\n- omni-planning\n- omni-execution\n- omni-verification\n\n## Suggested For Current Work\n\n- None inferred from the current task yet.\n\nRecord required and project-specific skills here.\n",
+  "SESSION-SUMMARY.md": "# Session Summary\n\n## Progress Made\n\n- Bootstrapped OmniCode durable memory for this project.\n\n## Remaining Work\n\n- Clarify the request and write the first real spec, tasks, and tests.\n\n## Notes\n\nUse this file for concise cross-session handoff notes.\n",
   "CONFIG.md": "# Omni Configuration\n\nOmni Mode: on\n",
   VERSION: `${OMNI_VERSION}\n`,
 };
@@ -244,6 +244,72 @@ async function readStateSummary(directory: string): Promise<string> {
   } catch {
     return "No .omni/STATE.md found.";
   }
+}
+
+function normalizeListItems(items: string[]): string {
+  const cleaned = items.map((item) => item.trim()).filter(Boolean);
+  return cleaned.length > 0 ? cleaned.join("; ") : "None";
+}
+
+export async function updateStateFile(
+  directory: string,
+  updates: {
+    currentPhase?: string;
+    activeTask?: string;
+    statusSummary?: string;
+    blockers?: string[];
+    nextStep?: string;
+  },
+): Promise<string> {
+  const omniDir = await ensureOmniDir(directory);
+  const nextState = {
+    currentPhase: updates.currentPhase?.trim() || "discovery",
+    activeTask: updates.activeTask?.trim() || "",
+    statusSummary:
+      updates.statusSummary?.trim() ||
+      "OmniCode workspace bootstrapped and ready for planning.",
+    blockers: normalizeListItems(updates.blockers ?? []),
+    nextStep:
+      updates.nextStep?.trim() ||
+      "Clarify scope, write spec, define tests, and break work into tasks before implementation.",
+  };
+
+  const content = [
+    "# State",
+    "",
+    `Current Phase: ${nextState.currentPhase}`,
+    `Active Task: ${nextState.activeTask}`,
+    `Status Summary: ${nextState.statusSummary}`,
+    `Blockers: ${nextState.blockers}`,
+    `Next Step: ${nextState.nextStep}`,
+    "",
+  ].join("\n");
+
+  const outputPath = path.join(omniDir, "STATE.md");
+  await writeFile(outputPath, content, "utf8");
+  return outputPath;
+}
+
+export async function appendSessionSummary(
+  directory: string,
+  entry: {
+    title: string;
+    bullets: string[];
+  },
+): Promise<string> {
+  const omniDir = await ensureOmniDir(directory);
+  const summaryPath = path.join(omniDir, "SESSION-SUMMARY.md");
+  const current = await readFile(summaryPath, "utf8").catch(() => OMNI_FILES["SESSION-SUMMARY.md"]);
+  const section = [
+    "",
+    `## ${entry.title.trim() || "Update"}`,
+    "",
+    ...entry.bullets.map((bullet) => `- ${bullet.trim()}`),
+    "",
+  ].join("\n");
+  const next = `${current.trimEnd()}${section}`;
+  await writeFile(summaryPath, `${next}\n`, "utf8");
+  return summaryPath;
 }
 
 async function listSkills(): Promise<SkillInfo[]> {
@@ -522,23 +588,29 @@ async function readInstructionPrompt(): Promise<string> {
 export async function planningArtifactsReady(directory: string): Promise<boolean> {
   const specPath = path.join(directory, ".omni", "SPEC.md");
   const tasksPath = path.join(directory, ".omni", "TASKS.md");
+  const testsPath = path.join(directory, ".omni", "TESTS.md");
 
   try {
-    const [specContent, tasksContent] = await Promise.all([
+    const [specContent, tasksContent, testsContent] = await Promise.all([
       readFile(specPath, "utf8"),
       readFile(tasksPath, "utf8"),
+      readFile(testsPath, "utf8"),
     ]);
 
     const normalizedSpec = specContent.trim();
     const normalizedTasks = tasksContent.trim();
+    const normalizedTests = testsContent.trim();
     const defaultSpec = OMNI_FILES["SPEC.md"].trim();
     const defaultTasks = OMNI_FILES["TASKS.md"].trim();
+    const defaultTests = OMNI_FILES["TESTS.md"].trim();
 
     return (
       normalizedSpec.length > defaultSpec.length &&
       normalizedTasks.length > defaultTasks.length &&
+      normalizedTests.length > defaultTests.length &&
       normalizedSpec !== defaultSpec &&
-      normalizedTasks !== defaultTasks
+      normalizedTasks !== defaultTasks &&
+      normalizedTests !== defaultTests
     );
   } catch {
     return false;
@@ -620,7 +692,7 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
       const hasPlanningArtifacts = await planningArtifactsReady(directory);
       if (!hasPlanningArtifacts) {
         throw new Error(
-          "OmniCode guard: before editing source files, write real planning content into .omni/SPEC.md and .omni/TASKS.md (placeholder bootstrap files are not enough).",
+          "OmniCode guard: before editing source files, write real planning content into .omni/SPEC.md, .omni/TASKS.md, and .omni/TESTS.md (placeholder bootstrap files are not enough).",
         );
       }
     },
@@ -656,6 +728,33 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
         async execute() {
           await ensureOmniDir(directory);
           return readStateSummary(directory);
+        },
+      }),
+
+      omnicode_update_state: tool({
+        description: "Update .omni/STATE.md with the current phase, active task, blockers, and next step.",
+        args: {
+          currentPhase: tool.schema.string().optional().describe("Current workflow phase."),
+          activeTask: tool.schema.string().optional().describe("Current active task."),
+          statusSummary: tool.schema.string().optional().describe("One-line status summary."),
+          blockers: tool.schema.array(tool.schema.string()).optional().describe("Current blockers, if any."),
+          nextStep: tool.schema.string().optional().describe("Most likely next step."),
+        },
+        async execute(args) {
+          const outputPath = await updateStateFile(directory, args);
+          return `Updated ${outputPath}`;
+        },
+      }),
+
+      omnicode_append_session_summary: tool({
+        description: "Append a concise titled update to .omni/SESSION-SUMMARY.md.",
+        args: {
+          title: tool.schema.string().describe("Short heading for the update."),
+          bullets: tool.schema.array(tool.schema.string()).describe("Concise bullet points to append."),
+        },
+        async execute(args) {
+          const outputPath = await appendSessionSummary(directory, args);
+          return `Updated ${outputPath}`;
         },
       }),
 

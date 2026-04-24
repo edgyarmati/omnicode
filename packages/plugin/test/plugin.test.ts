@@ -6,6 +6,7 @@ import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 
 import {
   OMNI_FILES,
+  appendSessionSummary,
   buildRepoMap,
   discoverStandards,
   ensureOmniDir,
@@ -13,6 +14,7 @@ import {
   planningArtifactsReady,
   suggestSkills,
   updateSkillsFile,
+  updateStateFile,
 } from "../src/index.ts";
 
 async function withTempDir(run: (dir: string) => Promise<void>) {
@@ -60,7 +62,7 @@ test("importStandards writes imported content into .omni/STANDARDS.md", async ()
   });
 });
 
-test("planningArtifactsReady rejects placeholders and accepts real planning content", async () => {
+test("planningArtifactsReady rejects placeholders and requires SPEC, TASKS, and TESTS content", async () => {
   await withTempDir(async (dir) => {
     await ensureOmniDir(dir);
 
@@ -74,6 +76,14 @@ test("planningArtifactsReady rejects placeholders and accepts real planning cont
     await writeFile(
       path.join(dir, ".omni", "TASKS.md"),
       `${OMNI_FILES["TASKS.md"]}\n## Slice 1\n- [ ] Do work\n`,
+      "utf8",
+    );
+
+    assert.equal(await planningArtifactsReady(dir), false);
+
+    await writeFile(
+      path.join(dir, ".omni", "TESTS.md"),
+      `${OMNI_FILES["TESTS.md"]}\n## Checks\n- [ ] Run the smoke test\n`,
       "utf8",
     );
 
@@ -118,5 +128,37 @@ test("suggestSkills and updateSkillsFile infer workflow skills from task text", 
     assert.match(skillsFile, /## Suggested For Current Work/);
     assert.match(skillsFile, /brainstorming/);
     assert.match(skillsFile, /omni-verification/);
+  });
+});
+
+test("updateStateFile writes structured current workflow state", async () => {
+  await withTempDir(async (dir) => {
+    const outputPath = await updateStateFile(dir, {
+      currentPhase: "execution",
+      activeTask: "Slice 2",
+      statusSummary: "Implemented the current slice.",
+      blockers: ["None"],
+      nextStep: "Run verification.",
+    });
+
+    const content = await readFile(outputPath, "utf8");
+    assert.match(content, /Current Phase: execution/);
+    assert.match(content, /Active Task: Slice 2/);
+    assert.match(content, /Status Summary: Implemented the current slice\./);
+    assert.match(content, /Next Step: Run verification\./);
+  });
+});
+
+test("appendSessionSummary appends a titled handoff section", async () => {
+  await withTempDir(async (dir) => {
+    const outputPath = await appendSessionSummary(dir, {
+      title: "Slice 2 Complete",
+      bullets: ["Implemented the change", "Verification still pending"],
+    });
+
+    const content = await readFile(outputPath, "utf8");
+    assert.match(content, /## Slice 2 Complete/);
+    assert.match(content, /- Implemented the change/);
+    assert.match(content, /- Verification still pending/);
   });
 });

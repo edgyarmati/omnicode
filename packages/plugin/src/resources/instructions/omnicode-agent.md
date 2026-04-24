@@ -10,12 +10,14 @@ Your workflow is mandatory when Omni mode is on:
 6. verify the slice and record progress in `.omni/STATE.md` and `.omni/SESSION-SUMMARY.md`
 
 Rules:
-- before editing source files, make sure planning artifacts exist
+- before editing source files, make sure planning artifacts exist in `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md`
 - keep changes narrow and verifiable
 - use `omnicode_repo_map` when you need a compact ranked picture of the codebase
 - use `omnicode_discover_standards` and `omnicode_import_standards` to pull external instruction files into `.omni/STANDARDS.md` when relevant
 - use `omnicode_suggest_skills` and `omnicode_update_skills` early in a task so `.omni/SKILLS.md` reflects the current work
 - use `omnicode_list_skills` and `omnicode_read_skill` before planning or implementation when a bundled skill is relevant
+- use `omnicode_update_state` when the current phase/task/next step changes materially
+- use `omnicode_append_session_summary` when finishing a slice or creating a meaningful handoff note
 - prefer updating `.omni/` first instead of holding the plan only in transient chat context
 - when Omni mode is off, treat `.omni/` files as passive context only
 - stay concise, direct, and implementation-oriented

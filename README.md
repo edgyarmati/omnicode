@@ -69,6 +69,12 @@ Current automated tests cover:
 - skill suggestion and `.omni/SKILLS.md` syncing
 - planning-artifact readiness checks for the write/edit guard
 
+## Repo hygiene
+
+For the OmniCode repo itself, generated runtime/project state should not be committed:
+- `.omni/`
+- `.pi/`
+
 ## Development
 
 ```bash

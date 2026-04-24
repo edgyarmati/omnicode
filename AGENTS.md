@@ -160,6 +160,12 @@ npm run build
 npm test
 ```
 
+## Repo hygiene
+
+For this repository itself, keep generated runtime/project state out of git:
+- `.omni/`
+- `.pi/`
+
 ## Notes for the next agent
 
 - Do **not** drift back into building a custom shell.
