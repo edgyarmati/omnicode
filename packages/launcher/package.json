@@ -1,6 +1,6 @@
 {
   "name": "omnicode",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Launcher that starts OpenCode with OmniCode config and plugin loading.",
   "repository": {
     "type": "git",
