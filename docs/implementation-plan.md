@@ -20,6 +20,16 @@
 - [x] add tests for setup/install support logic and package assumptions
 - [x] verify `./scripts/setup`, `npm run check`, `npm run build`, and `npm test`
 
+## Phase 3 — Native launcher foundation
+
+- [x] define release metadata for OmniCode binaries and compatible OpenCode runtime targets
+- [x] add per-user managed-runtime path resolution and OpenCode version metadata helpers
+- [x] add macOS/Linux `install.sh` and Windows `install.ps1` installer scaffolding around release artifacts
+- [x] refactor launcher runtime logic so it can target a managed OpenCode binary path instead of only PATH lookup
+- [x] add tests for platform detection, install-target resolution, and managed runtime reuse/upgrade checks
+- [x] document the native-launcher architecture and release flow in `README.md`
+- [x] verify `npm run check`, `npm run build`, and `npm test`
+
 ## Verified
 
 - launcher-generated config loads only the OmniCode plugin when started through `omnicode`
@@ -31,9 +41,10 @@
 - skill suggestion/sync works in a live run and writes `.omni/SKILLS.md`
 - automated tests cover launcher config isolation, release setup assets/package assumptions, Node-version prerequisite helpers, standards discovery/import, repo map generation, skill suggestion, lifecycle updates, and planning-artifact guard readiness
 
-## Next slices after release setup
+## Next slices after native-launcher foundation
 
-1. Improve standards-import selection UX beyond import-all or explicit paths
-2. Add more end-to-end runtime tests beyond the current unit-level coverage
-3. Improve repo-map incrementality/ranking further if needed
-4. Improve skill routing beyond the current heuristic suggestion model if needed
+1. Build and publish real OmniCode binary artifacts for all supported platforms
+2. Implement upstream OpenCode download/integrity verification against live release artifacts
+3. Replace the current best-effort PATH/npm fallback with true managed OpenCode acquisition and upgrade behavior
+4. Add end-to-end installer smoke tests across macOS/Linux/Windows runners
+5. Improve standards-import selection UX beyond import-all or explicit paths

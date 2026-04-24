@@ -99,8 +99,9 @@ Under `packages/plugin/src/resources/`:
 Implemented in `packages/launcher/bin/omnicode.js`.
 
 Current behavior:
-- checks for `opencode` on PATH
-- if missing, attempts best-effort install using one of:
+- resolves native-launcher release metadata for the desired OpenCode target version
+- prefers an OmniCode-managed OpenCode runtime path when present
+- currently falls back to PATH lookup / best-effort install using one of:
   - `npm install -g opencode-ai`
   - `bun install -g opencode-ai`
   - `pnpm add -g opencode-ai`
@@ -166,8 +167,9 @@ npm test
 ## Release setup assets
 
 - `scripts/setup` bootstraps a fresh checkout for contributors and pre-release testing.
-- `scripts/install.sh` is the public one-command installer for release onboarding and should delegate to the same `omnicode setup` flow used by direct `npx` installs.
-- the `omnicode` launcher package in `packages/launcher/` is the public installable package, must keep exposing the `omnicode` bin cleanly, and should support `npx omnicode@latest setup` as the one-time bootstrap path.
+- root `install.sh` and `install.ps1` are the target public installers for native launcher releases.
+- `scripts/install.sh` is now a compatibility wrapper to the root POSIX installer.
+- the `omnicode` launcher package in `packages/launcher/` is still the current dev/runtime entrypoint, but the release direction is toward standalone OmniCode binaries plus a managed per-user OpenCode runtime.
 
 ## Repo hygiene
 

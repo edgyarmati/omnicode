@@ -8,11 +8,18 @@ import {
   MINIMUM_NODE_MAJOR,
   OMNICODE_SETUP_TARGET,
   buildLauncherEnv,
+  compareSemver,
   ensureOmniCodeConfig,
   getConfigRoot,
+  getManagedOpenCodeBinaryPath,
+  getManagedOpenCodeMetadataPath,
+  getManagedOpenCodeRoot,
+  getNativeLauncherReleaseMetadata,
+  getOmniCodeDataRoot,
   getOmniCodeSetupTarget,
   getXdgConfigHome,
   isSupportedNodeVersion,
+  needsManagedOpenCodeUpdate,
   parseNodeMajorVersion,
 } from "../src/lib.js";
 
@@ -72,20 +79,60 @@ test("node version helpers enforce the minimum supported release", () => {
   assert.equal(getOmniCodeSetupTarget(), OMNICODE_SETUP_TARGET);
 });
 
-test("release setup assets and launcher package metadata are present", async () => {
+test("managed OpenCode runtime helpers resolve user-scoped paths and version checks", () => {
+  const linuxHome = "/tmp/example-home";
+  const linuxEnv = { XDG_DATA_HOME: "/tmp/example-data" };
+  assert.equal(getOmniCodeDataRoot(linuxHome, "linux", linuxEnv), "/tmp/example-data/omnicode");
+  assert.equal(getManagedOpenCodeRoot(linuxHome, "linux", linuxEnv), "/tmp/example-data/omnicode/runtimes/opencode");
+  assert.equal(
+    getManagedOpenCodeBinaryPath("1.2.3", linuxHome, "linux", linuxEnv),
+    "/tmp/example-data/omnicode/runtimes/opencode/1.2.3/bin/opencode",
+  );
+  assert.equal(
+    getManagedOpenCodeMetadataPath(linuxHome, "linux", linuxEnv),
+    "/tmp/example-data/omnicode/runtimes/opencode/current.json",
+  );
+
+  const windowsHome = "C:\\Users\\me";
+  const windowsEnv = { LOCALAPPDATA: "C:\\Users\\me\\AppData\\Local" };
+  assert.match(getOmniCodeDataRoot(windowsHome, "win32", windowsEnv), /OmniCode$/);
+  assert.match(getManagedOpenCodeBinaryPath("1.2.3", windowsHome, "win32", windowsEnv), /opencode\.exe$/);
+
+  assert.equal(compareSemver("1.2.3", "1.2.3"), 0);
+  assert.equal(compareSemver("1.2.4", "1.2.3"), 1);
+  assert.equal(compareSemver("1.2.3", "1.3.0"), -1);
+  assert.equal(needsManagedOpenCodeUpdate(null, "1.0.0"), true);
+  assert.equal(needsManagedOpenCodeUpdate("1.0.0", "1.0.1"), true);
+  assert.equal(needsManagedOpenCodeUpdate("1.0.1", "1.0.1"), false);
+});
+
+test("native launcher release metadata includes asset naming for current platform", () => {
+  const metadata = getNativeLauncherReleaseMetadata("darwin", "arm64");
+  assert.equal(metadata.launcherVersion, "0.1.0");
+  assert.match(metadata.opencodeVersion, /^\d+\.\d+\.\d+$/);
+  assert.match(metadata.assetName, /omnicode-0\.1\.0-darwin-arm64\.tar\.gz$/);
+  assert.match(metadata.assetUrl, /releases\/download\/v0\.1\.0\/omnicode-0\.1\.0-darwin-arm64\.tar\.gz$/);
+});
+
+test("native installer assets and launcher package metadata are present", async () => {
   const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..");
   const launcherPackage = JSON.parse(
     await readFile(path.join(repoRoot, "packages", "launcher", "package.json"), "utf8"),
   );
-  const installer = await readFile(path.join(repoRoot, "scripts", "install.sh"), "utf8");
+  const posixInstaller = await readFile(path.join(repoRoot, "install.sh"), "utf8");
+  const windowsInstaller = await readFile(path.join(repoRoot, "install.ps1"), "utf8");
   const launcherBin = await readFile(path.join(repoRoot, "packages", "launcher", "bin", "omnicode.js"), "utf8");
 
   assert.equal(launcherPackage.name, "omnicode");
   assert.equal(launcherPackage.bin.omnicode, "./bin/omnicode.js");
   assert.deepEqual(launcherPackage.files, ["bin", "src"]);
-  assert.match(installer, /npx .* setup/);
-  assert.match(launcherBin, /process\.argv\[2\] === "setup"/);
+  assert.match(posixInstaller, /releases\/download\/v%s/);
+  assert.match(windowsInstaller, /releases\/download\/v\$Version/);
+  assert.match(launcherBin, /getManagedOpenCodeBinaryPath/);
+  assert.match(launcherBin, /getNativeLauncherReleaseMetadata/);
 
   await access(path.join(repoRoot, "scripts", "setup"));
   await access(path.join(repoRoot, "scripts", "install.sh"));
+  await access(path.join(repoRoot, "install.sh"));
+  await access(path.join(repoRoot, "install.ps1"));
 });

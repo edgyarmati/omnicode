@@ -52,30 +52,25 @@ That keeps normal `opencode` usage separate while still using the same installed
 
 ## Install
 
-### Primary: one-command install
+### Planned release installers
 
+The target release model is:
+
+#### macOS / Linux
 ```bash
-curl -fsSL https://raw.githubusercontent.com/edgyarmati/omnicode/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/edgyarmati/omnicode/main/install.sh | bash
 omnicode
 ```
 
-This uses `npx omnicode@latest setup` under the hood.
-
-### Direct setup fallback
-
-```bash
-npx omnicode@latest setup
+#### Windows
+```powershell
+irm https://raw.githubusercontent.com/edgyarmati/omnicode/main/install.ps1 | iex
 omnicode
 ```
 
-### npm fallback
+Those native installers are now scaffolded in the repo, but the cross-platform binary release artifacts are not published yet.
 
-```bash
-npm install -g omnicode@latest
-omnicode
-```
-
-### Contributor setup
+### Current contributor setup
 
 ```bash
 git clone https://github.com/edgyarmati/omnicode
@@ -84,7 +79,9 @@ cd omnicode
 omnicode
 ```
 
-On first launch, OmniCode creates its isolated OpenCode config automatically and will attempt a best-effort OpenCode install if `opencode` is not already available.
+### Runtime direction
+
+OmniCode is moving toward a standalone launcher that manages its own per-user compatible OpenCode runtime. Until that runtime acquisition flow is fully wired up, the dev launcher still falls back to a best-effort system `opencode` install/path lookup.
 
 ## Quick usage
 
@@ -100,8 +97,8 @@ omnicode run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this 
 
 Current automated tests cover:
 - launcher config isolation and generated shim/config files
-- release setup assets and launcher package metadata assumptions
-- Node version prerequisite helpers for install/setup flows
+- native installer asset scaffolding and launcher package metadata assumptions
+- Node/version/runtime path helpers for the native-launcher foundation
 - standards discovery/import
 - ranked repo map generation
 - skill suggestion and `.omni/SKILLS.md` syncing
@@ -134,10 +131,9 @@ Runtime/generated `.omni` files stay out of git by default:
 
 ## Troubleshooting
 
-- If the installer says Node is missing or too old, install Node.js 22+ and rerun it.
-- If the one-command installer fails, run `npx omnicode@latest setup` directly.
-- If `omnicode` is not found after setup, restart your shell or add the npm global bin directory reported by setup to your `PATH`.
-- If first-run OpenCode installation fails, install it manually with `npm install -g opencode-ai` and run `omnicode` again.
+- If you're testing from a checkout, use `./scripts/setup` for now rather than the unpublished release installers.
+- If first-run OpenCode installation fails in the current dev launcher, install it manually with `npm install -g opencode-ai` and run `omnicode` again.
+- When native binaries are published, the root `install.sh` and `install.ps1` scripts will become the primary install path.
 
 ## Development
 

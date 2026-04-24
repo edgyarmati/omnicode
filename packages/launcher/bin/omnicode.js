@@ -2,14 +2,18 @@
 
 import os from "node:os";
 import process from "node:process";
+import { access } from "node:fs/promises";
 import { spawn } from "node:child_process";
 
 import {
   MINIMUM_NODE_MAJOR,
   buildLauncherEnv,
   ensureOmniCodeConfig,
+  getManagedOpenCodeBinaryPath,
+  getNativeLauncherReleaseMetadata,
   getOmniCodeSetupTarget,
   isSupportedNodeVersion,
+  needsManagedOpenCodeUpdate,
 } from "../src/lib.js";
 
 function isWindows() {
@@ -29,6 +33,15 @@ async function existsOnPath(command) {
     probe.on("exit", (code) => resolve(code === 0));
     probe.on("error", () => resolve(false));
   });
+}
+
+async function fileExists(filePath) {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function runInstallAttempt() {
@@ -126,22 +139,35 @@ async function main() {
   }
 
   const explicitBin = process.env.OMNICODE_OPENCODE_BIN;
-  const opencodeBin = explicitBin || opencodeCommandName();
+  const release = getNativeLauncherReleaseMetadata();
+  const managedBin = getManagedOpenCodeBinaryPath(release.opencodeVersion, os.homedir());
+  const managedPresent = await fileExists(managedBin);
+  const needsManagedRuntime = needsManagedOpenCodeUpdate(
+    managedPresent ? release.opencodeVersion : null,
+    release.opencodeVersion,
+  );
 
-  const present = explicitBin ? true : await existsOnPath(opencodeBin);
+  let opencodeBin = explicitBin || (managedPresent ? managedBin : opencodeCommandName());
+  const present = explicitBin ? true : managedPresent || (await existsOnPath(opencodeBin));
+
   if (!present) {
-    process.stderr.write("OpenCode was not found on PATH. Trying a best-effort install...\n");
+    process.stderr.write(
+      needsManagedRuntime
+        ? `Managed OpenCode ${release.opencodeVersion} is not installed yet. Falling back to best-effort system install until native runtime acquisition is wired up.\n`
+        : "OpenCode was not found on PATH. Trying a best-effort install...\n",
+    );
     const installed = await runInstallAttempt();
     if (!installed) {
       process.stderr.write(
         [
-          "Failed to install OpenCode automatically.",
-          "Install it manually, then run OmniCode again.",
+          `Failed to prepare OpenCode ${release.opencodeVersion}.`,
+          "Install OpenCode manually for now, then run OmniCode again.",
           "Suggested command: npm install -g opencode-ai",
         ].join("\n") + "\n",
       );
       process.exit(1);
     }
+    opencodeBin = opencodeCommandName();
   }
 
   const { configRoot, configPath } = await ensureOmniCodeConfig({

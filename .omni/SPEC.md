@@ -2,26 +2,26 @@
 
 ## Problem
 
-OmniCode needs a release-ready setup flow so a new user can install it with one command, then run `omnicode` and get a working session without manual config editing or repo-specific setup steps.
+OmniCode needs a release-ready installation story that works cleanly across macOS, Linux, and Windows without depending on npm/npx as the primary user bootstrap path.
 
 ## Requested Behavior
 
-- provide a headline one-command installer via `scripts/install.sh`
-- make `npx omnicode@latest setup` the real bootstrap path behind that installer
-- keep an npm-based global install as a fallback, not the primary story
-- provide a repo-local `scripts/setup` path for contributors and pre-release testing
-- keep runtime responsibility in the existing `omnicode` launcher so first run still creates isolated config and handles missing OpenCode
+- ship OmniCode as a standalone launcher binary per platform
+- provide platform-native installers (`install.sh` and `install.ps1`)
+- have `omnicode` manage one OmniCode-owned OpenCode runtime per user
+- have OmniCode acquire a pinned default compatible upstream OpenCode version and upgrade that managed runtime when required
+- keep the user's normal `opencode` installation untouched by default
 
 ## Constraints
 
-- OpenCode remains the host product
-- keep the launcher thin and the plugin thick
-- do not take over provider auth or global OpenCode config
-- do not attempt full machine bootstrap such as auto-installing Node in v1
+- OpenCode remains the upstream host product
+- OmniCode should orchestrate OpenCode, not fork or bundle-maintain it
+- use one per-user managed OpenCode runtime, not per-project overrides
+- keep provider/auth concerns out of the installer
 
 ## Success Criteria
 
-- a user can run the installer and then run `omnicode`
-- package/bin metadata support the public install path cleanly
-- contributor setup from a fresh checkout is documented and automated
-- docs explain install, fallback, and troubleshooting clearly
+- a user can install OmniCode on macOS, Linux, or Windows and run `omnicode`
+- OmniCode works without requiring Node/npm/npx as a prerequisite for end users
+- OmniCode acquires and reuses a compatible per-user OpenCode runtime automatically
+- the user's normal `opencode` setup remains separate and untouched
