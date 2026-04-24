@@ -57,6 +57,13 @@ node packages/launcher/bin/omnicode.js run --agent omnicode --model opencode/hy3
 node packages/launcher/bin/omnicode.js run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project, discover external standards, import them, and tell me what was imported."
 ```
 
+## Automated coverage
+
+Current automated tests cover:
+- launcher config isolation and generated shim/config files
+- standards discovery/import
+- planning-artifact readiness checks for the write/edit guard
+
 ## Development
 
 ```bash

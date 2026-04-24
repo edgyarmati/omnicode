@@ -25,7 +25,7 @@ type SkillInfo = {
   path: string;
 };
 
-type StandardCandidate = {
+export type StandardCandidate = {
   path: string;
   kind: string;
 };
@@ -74,7 +74,7 @@ const STANDARD_RULES: Array<{ kind: string; match(relativePath: string, basename
   },
 ];
 
-const OMNI_FILES: Record<string, string> = {
+export const OMNI_FILES: Record<string, string> = {
   "PROJECT.md": "# Project\n\n## Goal\n\nDocument the project goal here.\n",
   "SPEC.md": "# Spec\n\nDescribe the requested behavior precisely before implementation.\n",
   "TASKS.md": "# Tasks\n\nBreak work into bounded, verifiable slices before editing source files.\n",
@@ -148,7 +148,7 @@ async function loadCommands(): Promise<ParsedCommand[]> {
   return commands.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-async function ensureOmniDir(directory: string): Promise<string> {
+export async function ensureOmniDir(directory: string): Promise<string> {
   const omniDir = path.join(directory, ".omni");
   await mkdir(omniDir, { recursive: true });
   for (const [fileName, content] of Object.entries(OMNI_FILES)) {
@@ -269,7 +269,7 @@ async function buildRepoMap(directory: string): Promise<string> {
   return summary;
 }
 
-async function discoverStandards(directory: string): Promise<StandardCandidate[]> {
+export async function discoverStandards(directory: string): Promise<StandardCandidate[]> {
   const ignore = new Set([
     ".git",
     "node_modules",
@@ -312,7 +312,7 @@ async function discoverStandards(directory: string): Promise<StandardCandidate[]
   return [...found.values()].sort((a, b) => a.path.localeCompare(b.path));
 }
 
-async function importStandards(
+export async function importStandards(
   directory: string,
   selectedPaths?: string[],
 ): Promise<{ imported: StandardCandidate[]; outputPath: string }> {
@@ -360,7 +360,7 @@ async function readInstructionPrompt(): Promise<string> {
   return readFile(instructionFile, "utf8");
 }
 
-async function planningArtifactsReady(directory: string): Promise<boolean> {
+export async function planningArtifactsReady(directory: string): Promise<boolean> {
   const specPath = path.join(directory, ".omni", "SPEC.md");
   const tasksPath = path.join(directory, ".omni", "TASKS.md");
 

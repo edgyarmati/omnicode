@@ -15,7 +15,8 @@
     "omnicode": "./bin/omnicode.js"
   },
   "scripts": {
-    "check": "node --check ./bin/omnicode.js"
+    "check": "node --check ./bin/omnicode.js",
+    "test": "node --test test/**/*.test.js"
   },
   "dependencies": {
     "@omnicode/plugin": "0.1.0"

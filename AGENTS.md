@@ -128,6 +128,7 @@ Verified in a real OpenCode runtime:
 - `omnicode_bootstrap` works in a live run
 - standards discovery/import works and writes `.omni/STANDARDS.md`
 - the write/edit guard blocks early writes until real planning content exists
+- automated tests cover launcher config isolation, standards discovery/import, and planning-artifact readiness
 
 ## Known gaps / next work
 
@@ -156,6 +157,7 @@ From repo root:
 npm install
 npm run check
 npm run build
+npm test
 ```
 
 ## Notes for the next agent
