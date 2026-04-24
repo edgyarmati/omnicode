@@ -2,23 +2,25 @@
 
 ## Problem
 
-OmniCode needs a clear policy for which `.omni/` files are durable shared memory and which are session/runtime state. Ignoring the whole directory prevents useful durable context from living with the repo, but committing everything creates noisy churn and stale state.
+OmniCode needs a release-ready setup flow so a new user can install it with one command, then run `omnicode` and get a working session without manual config editing or repo-specific setup steps.
 
 ## Requested Behavior
 
-- keep durable `.omni` files committable by default
-- ignore runtime/generated `.omni` files by default
-- generate a selective `.omni/.gitignore` in bootstrapped projects
-- apply the same policy to the OmniCode repo itself
+- provide a headline one-command installer via `scripts/install.sh`
+- support an npm-based fallback install path
+- provide a repo-local `scripts/setup` path for contributors and pre-release testing
+- keep runtime responsibility in the existing `omnicode` launcher so first run still creates isolated config and handles missing OpenCode
 
 ## Constraints
 
-- policy must be simple and understandable
-- runtime state should remain local and regenerable
-- durable files should map to project intent, standards, planning, and configuration
+- OpenCode remains the host product
+- keep the launcher thin and the plugin thick
+- do not take over provider auth or global OpenCode config
+- do not attempt full machine bootstrap such as auto-installing Node in v1
 
 ## Success Criteria
 
-- `.omni/.gitignore` exists and ignores only runtime state files
-- `ensureOmniDir()` creates the selective ignore file automatically
-- this repo tracks durable `.omni` files and does not track runtime `.omni` files
+- a user can run the installer and then run `omnicode`
+- package/bin metadata support the public install path cleanly
+- contributor setup from a fresh checkout is documented and automated
+- docs explain install, fallback, and troubleshooting clearly

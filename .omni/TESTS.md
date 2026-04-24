@@ -5,10 +5,13 @@
 - [x] `npm run check`
 - [x] `npm run build`
 - [x] `npm test`
-- [ ] verify `.omni/.gitignore` ignores runtime state but allows durable files
+- [x] verify repo-local setup succeeds from a fresh checkout state
+- [x] verify install docs are runnable and consistent with package/bin metadata
+- [ ] smoke-test first-run `omnicode` behavior after setup
 
 ## Expected outcomes
 
 - build and tests stay green
-- `.omni/STATE.md`, `.omni/SESSION-SUMMARY.md`, and repo-map files are ignored
-- durable `.omni` files remain trackable
+- setup script installs/builds the project successfully and leaves `omnicode` available locally
+- install path leaves the user with a working `omnicode` command
+- first-run launcher behavior still creates isolated OpenCode config and handles missing OpenCode clearly

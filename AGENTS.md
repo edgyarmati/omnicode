@@ -158,11 +158,16 @@ These are the next most valuable slices:
 From repo root:
 
 ```bash
-npm install
+./scripts/setup
 npm run check
-npm run build
 npm test
 ```
+
+## Release setup assets
+
+- `scripts/setup` bootstraps a fresh checkout for contributors and pre-release testing.
+- `scripts/install.sh` is the public one-command installer for release onboarding.
+- the `omnicode` launcher package in `packages/launcher/` is the public installable package and must keep exposing the `omnicode` bin cleanly.
 
 ## Repo hygiene
 

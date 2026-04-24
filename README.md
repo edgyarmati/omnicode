@@ -50,21 +50,49 @@ Implemented and smoke-tested:
 
 That keeps normal `opencode` usage separate while still using the same installed OpenCode binary.
 
+## Install
+
+### One-command install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/edgyarmati/omnicode/main/scripts/install.sh | bash
+omnicode
+```
+
+### npm fallback
+
+```bash
+npm install -g omnicode
+omnicode
+```
+
+### Contributor setup
+
+```bash
+git clone https://github.com/edgyarmati/omnicode
+cd omnicode
+./scripts/setup
+omnicode
+```
+
+On first launch, OmniCode creates its isolated OpenCode config automatically and will attempt a best-effort OpenCode install if `opencode` is not already available.
+
 ## Quick usage
 
 ```bash
-npm install
-node packages/launcher/bin/omnicode.js --help
-node packages/launcher/bin/omnicode.js agent list
-node packages/launcher/bin/omnicode.js run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project for OmniCode and summarize the current state."
-node packages/launcher/bin/omnicode.js run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project, discover external standards, import them, and tell me what was imported."
-node packages/launcher/bin/omnicode.js run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project, generate the repo map, suggest skills for implementing and verifying a repo map improvement, and summarize the results."
+omnicode --help
+omnicode agent list
+omnicode run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project for OmniCode and summarize the current state."
+omnicode run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project, discover external standards, import them, and tell me what was imported."
+omnicode run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project, generate the repo map, suggest skills for implementing and verifying a repo map improvement, and summarize the results."
 ```
 
 ## Automated coverage
 
 Current automated tests cover:
 - launcher config isolation and generated shim/config files
+- release setup assets and launcher package metadata assumptions
+- Node version prerequisite helpers for install/setup flows
 - standards discovery/import
 - ranked repo map generation
 - skill suggestion and `.omni/SKILLS.md` syncing
@@ -95,11 +123,16 @@ Runtime/generated `.omni` files stay out of git by default:
 
 `.pi/` also stays out of git.
 
+## Troubleshooting
+
+- If the installer says Node is missing or too old, install Node.js 22+ and rerun it.
+- If `omnicode` is not found after `npm install -g omnicode`, restart your shell or add npm's global bin directory to your `PATH`.
+- If first-run OpenCode installation fails, install it manually with `npm install -g opencode-ai` and run `omnicode` again.
+
 ## Development
 
 ```bash
-npm install
-npm run build
+./scripts/setup
 npm run check
 npm test
 ```

@@ -11,12 +11,19 @@
     "url": "https://github.com/edgyarmati/omnicode/issues"
   },
   "type": "module",
+  "files": [
+    "bin",
+    "src"
+  ],
   "bin": {
     "omnicode": "./bin/omnicode.js"
   },
   "scripts": {
     "check": "node --check ./bin/omnicode.js",
     "test": "node --test test/**/*.test.js"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "dependencies": {
     "@omnicode/plugin": "0.1.0"

@@ -2,11 +2,13 @@
 
 ## Planned slices
 
-- [x] Define a durable-vs-runtime policy for `.omni/`
-- [x] Generate `.omni/.gitignore` from OmniCode bootstrap
-- [x] Update this repo's ignore rules to match the new policy
-- [x] Restore durable `.omni` baseline files for the OmniCode repo
+- [x] Define the release install contract for curl installer, npm fallback, and repo-local setup
+- [x] Add a public installer script under `scripts/install.sh`
+- [x] Add a repo-local contributor setup script under `scripts/setup`
+- [x] Adjust package/bin metadata for release installation if needed
+- [x] Update README with release install, fallback, and troubleshooting steps
+- [x] Add tests and smoke-checks for setup/install behavior
 
 ## Notes
 
-Runtime state such as `STATE.md`, `SESSION-SUMMARY.md`, and repo-map outputs should stay out of git by default.
+The installer handles distribution and prerequisite checks. The launcher still owns first-run OpenCode config/bootstrap behavior.
