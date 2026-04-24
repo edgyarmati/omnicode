@@ -52,11 +52,9 @@ That keeps normal `opencode` usage separate while still using the same installed
 
 ## Install
 
-### Planned release installers
-
 Release artifacts are produced by GitHub Actions (`.github/workflows/release.yml`) from tagged versions and documented in `docs/release-checklist.md`.
 
-The target release model is:
+### Installer
 
 #### macOS / Linux
 ```bash
@@ -70,7 +68,7 @@ irm https://raw.githubusercontent.com/edgyarmati/omnicode/main/install.ps1 | iex
 omnicode
 ```
 
-Those native installers are now scaffolded in the repo, but the cross-platform binary release artifacts are not published yet.
+The installer downloads the tagged OmniCode bundle, installs it under a user-scoped OmniCode directory, and creates an `omnicode` launcher on your PATH.
 
 ### Current contributor setup
 
@@ -83,7 +81,93 @@ omnicode
 
 ### Runtime direction
 
-OmniCode now provisions and uses a per-user managed OpenCode runtime version by default (without mutating your normal global `opencode` setup). The native standalone OmniCode launcher binaries are still pending publication; current development usage remains via `./scripts/setup`.
+OmniCode provisions and uses a per-user managed OpenCode runtime version by default without mutating your normal global `opencode` setup.
+
+## Use OmniCode as a permanent OpenCode plugin
+
+Yes — if you want OmniCode available in your normal `opencode` installation, you can load it as a regular OpenCode plugin instead of going through the isolated `omnicode` launcher.
+
+### Recommended vs permanent-plugin mode
+
+- **Recommended:** use `omnicode`
+  - isolated config
+  - isolated plugin loading
+  - does not affect normal `opencode`
+- **Permanent plugin:** add OmniCode to your normal OpenCode config
+  - OmniCode becomes part of your regular `opencode` setup
+  - no config isolation
+  - normal `opencode` sessions may pick up OmniCode defaults if you enable them
+
+### Permanent plugin from an OmniCode install
+
+After installing OmniCode, add the bundled plugin file to your normal OpenCode config.
+
+Typical plugin paths:
+
+- macOS / Linux: `~/.local/share/omnicode/lib/plugin/index.js`
+- Windows: `%LOCALAPPDATA%\\OmniCode\\lib\\plugin\\index.js`
+
+Then add it to your normal OpenCode config:
+
+`~/.config/opencode/opencode.json`
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "file:///ABSOLUTE/PATH/TO/omnicode/lib/plugin/index.js"
+  ]
+}
+```
+
+Example on macOS/Linux:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "file:///Users/you/.local/share/omnicode/lib/plugin/index.js"
+  ]
+}
+```
+
+If you want OmniCode to be the default agent in normal OpenCode too, add:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "omnicode",
+  "plugin": [
+    "file:///Users/you/.local/share/omnicode/lib/plugin/index.js"
+  ]
+}
+```
+
+### Permanent plugin from a source checkout
+
+If you are developing locally, build the plugin first:
+
+```bash
+git clone https://github.com/edgyarmati/omnicode
+cd omnicode
+npm install
+npm run build
+```
+
+Then point OpenCode at the built plugin:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "file:///ABSOLUTE/PATH/TO/omnicode/packages/plugin/dist/index.js"
+  ]
+}
+```
+
+### Caveat
+
+Permanent-plugin mode is supported, but it is **not** the main OmniCode path. The `omnicode` launcher remains the recommended setup because it keeps OmniCode isolated from your normal OpenCode config, plugins, and defaults.
 
 ## Quick usage
 
