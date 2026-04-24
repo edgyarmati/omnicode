@@ -146,7 +146,8 @@ test("native installer assets and launcher package metadata are present", async 
   assert.match(launcherBin, /getNativeLauncherReleaseMetadata/);
   assert.match(releaseWorkflow, /name: Release/);
   assert.match(releaseWorkflow, /softprops\/action-gh-release/);
-  assert.match(releaseBuildScript, /node22-macos-arm64/);
+  assert.match(releaseBuildScript, /PKG_NODE_TARGET/);
+  assert.match(releaseBuildScript, /\$\{PKG_NODE_TARGET\}-macos-arm64/);
 
   await access(path.join(repoRoot, "scripts", "setup"));
   await access(path.join(repoRoot, "scripts", "install.sh"));

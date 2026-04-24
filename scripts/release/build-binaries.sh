@@ -36,12 +36,14 @@ build_target() {
   fi
 }
 
-build_target "node22-linux-x64" "linux" "x64" ""
-build_target "node22-linux-arm64" "linux" "arm64" ""
-build_target "node22-macos-x64" "darwin" "x64" ""
-build_target "node22-macos-arm64" "darwin" "arm64" ""
-build_target "node22-win-x64" "windows" "x64" ".exe"
-build_target "node22-win-arm64" "windows" "arm64" ".exe"
+PKG_NODE_TARGET="${PKG_NODE_TARGET:-node20}"
+
+build_target "${PKG_NODE_TARGET}-linux-x64" "linux" "x64" ""
+build_target "${PKG_NODE_TARGET}-linux-arm64" "linux" "arm64" ""
+build_target "${PKG_NODE_TARGET}-macos-x64" "darwin" "x64" ""
+build_target "${PKG_NODE_TARGET}-macos-arm64" "darwin" "arm64" ""
+build_target "${PKG_NODE_TARGET}-win-x64" "windows" "x64" ".exe"
+build_target "${PKG_NODE_TARGET}-win-arm64" "windows" "arm64" ".exe"
 
 echo "==> Computing checksums"
 (
