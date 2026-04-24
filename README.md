@@ -2,6 +2,37 @@
 
 OmniCode is an **OpenCode plugin plus a thin launcher** that adds the Omni workflow to OpenCode without forking it or replacing its UI.
 
+## Install
+
+### macOS / Linux
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/edgyarmati/omnicode/main/install.sh | bash
+omnicode
+```
+
+### Windows
+
+```powershell
+irm https://raw.githubusercontent.com/edgyarmati/omnicode/main/install.ps1 | iex
+omnicode
+```
+
+The installer downloads the tagged OmniCode bundle, installs it under a user-scoped OmniCode directory, and puts an `omnicode` launcher on your `PATH`. On first launch OmniCode provisions a per-user managed OpenCode runtime without mutating your normal global `opencode` install.
+
+### Contributor / local checkout
+
+```bash
+git clone https://github.com/edgyarmati/omnicode
+cd omnicode
+./scripts/setup
+omnicode
+```
+
+Release artifacts are produced by `.github/workflows/release.yml` from tagged versions. See [`docs/release-checklist.md`](docs/release-checklist.md) for the release runbook.
+
+---
+
 - **OmniCode** owns the workflow layer.
 - **OpenCode** stays the host app and runtime.
 
@@ -9,7 +40,6 @@ OmniCode is an **OpenCode plugin plus a thin launcher** that adds the Omni workf
 
 - [What OmniCode adds](#what-omnicode-adds)
 - [The Omni workflow at a glance](#the-omni-workflow-at-a-glance)
-- [Install](#install)
 - [Quick usage](#quick-usage)
 - [Launcher behavior](#launcher-behavior)
 - [Use OmniCode as a permanent OpenCode plugin](#use-omnicode-as-a-permanent-opencode-plugin)
@@ -37,35 +67,6 @@ OmniCode keeps agent work disciplined by materializing context and gating danger
 4. **Verify** — state and session summaries are updated through OmniCode tools so the next run has continuity.
 
 `.omni/STATE.md` is also injected into OpenCode compaction context, so active state survives long sessions.
-
-## Install
-
-Release artifacts are produced by `.github/workflows/release.yml` from tagged versions. See [`docs/release-checklist.md`](docs/release-checklist.md) for the release runbook.
-
-### macOS / Linux
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/edgyarmati/omnicode/main/install.sh | bash
-omnicode
-```
-
-### Windows
-
-```powershell
-irm https://raw.githubusercontent.com/edgyarmati/omnicode/main/install.ps1 | iex
-omnicode
-```
-
-The installer downloads the tagged OmniCode bundle, installs it under a user-scoped OmniCode directory, and puts an `omnicode` launcher on your `PATH`. On first launch OmniCode provisions a per-user managed OpenCode runtime without mutating your normal global `opencode` install.
-
-### Contributor / local checkout
-
-```bash
-git clone https://github.com/edgyarmati/omnicode
-cd omnicode
-./scripts/setup
-omnicode
-```
 
 ## Quick usage
 
