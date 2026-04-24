@@ -1,0 +1,77 @@
+[
+  {
+    "path": "packages/launcher/package.json",
+    "score": 25,
+    "summary": "omnicode — Launcher that starts OpenCode with OmniCode config and plugin loading."
+  },
+  {
+    "path": "packages/plugin/package.json",
+    "score": 25,
+    "summary": "@omnicode/plugin — OpenCode plugin that brings the Omni workflow into OpenCode."
+  },
+  {
+    "path": "package.json",
+    "score": 20,
+    "summary": "omnicode — OmniCode monorepo: OpenCode plugin + launcher for the Omni workflow."
+  },
+  {
+    "path": "packages/plugin/tsconfig.json",
+    "score": 18,
+    "summary": "source/config file"
+  },
+  {
+    "path": "README.md",
+    "score": 17,
+    "summary": "markdown: OmniCode"
+  },
+  {
+    "path": "AGENTS.md",
+    "score": 16,
+    "summary": "markdown: AGENTS.md"
+  },
+  {
+    "path": "packages/plugin/src/index.ts",
+    "score": 13,
+    "summary": "exports REPO_MAP_IGNORE"
+  },
+  {
+    "path": "packages/launcher/test/launcher.test.js",
+    "score": 11,
+    "summary": "1 imports"
+  },
+  {
+    "path": "packages/plugin/test/plugin.test.ts",
+    "score": 11,
+    "summary": "exports main"
+  },
+  {
+    "path": "docs/2026-04-24-omnicode-design.md",
+    "score": 9,
+    "summary": "markdown: OmniCode Design"
+  },
+  {
+    "path": "docs/implementation-plan.md",
+    "score": 9,
+    "summary": "markdown: OmniCode Implementation Plan"
+  },
+  {
+    "path": "packages/launcher/bin/omnicode.js",
+    "score": 9,
+    "summary": "source/config file"
+  },
+  {
+    "path": "packages/launcher/src/lib.js",
+    "score": 9,
+    "summary": "exports getXdgConfigHome"
+  },
+  {
+    "path": "package-lock.json",
+    "score": 5,
+    "summary": "source/config file"
+  },
+  {
+    "path": "tsconfig.base.json",
+    "score": 5,
+    "summary": "source/config file"
+  }
+]
