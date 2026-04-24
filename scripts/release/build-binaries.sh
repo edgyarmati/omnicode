@@ -36,7 +36,7 @@ build_target() {
   fi
 }
 
-PKG_NODE_TARGET="${PKG_NODE_TARGET:-node20}"
+PKG_NODE_TARGET="${PKG_NODE_TARGET:-node18}"
 
 build_target "${PKG_NODE_TARGET}-linux-x64" "linux" "x64" ""
 build_target "${PKG_NODE_TARGET}-linux-arm64" "linux" "arm64" ""
