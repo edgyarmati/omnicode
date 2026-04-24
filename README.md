@@ -135,6 +135,7 @@ Runtime/generated `.omni` files stay out of git by default:
 
 - If you're testing from a checkout, use `./scripts/setup` for now rather than the unpublished release installers.
 - If managed OpenCode runtime installation fails, rerun `omnicode` and follow the printed fallback command using the same `--prefix` path.
+- If native launcher verification fails during install, the installer automatically falls back to `npx omnicode@latest setup` when available.
 - If installer downloads fail, confirm the tagged release contains the expected assets listed in `docs/release-checklist.md`.
 
 ## Development

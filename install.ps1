@@ -39,7 +39,18 @@ try {
   Expand-Archive -Path $ArchivePath -DestinationPath $ExtractDir -Force
   Copy-Item (Join-Path $ExtractDir 'omnicode.exe') (Join-Path $InstallDir 'omnicode.exe') -Force
 
-  & (Join-Path $InstallDir 'omnicode.exe') --help | Out-Null
+  try {
+    & (Join-Path $InstallDir 'omnicode.exe') --help | Out-Null
+  }
+  catch {
+    Write-Warning 'Native launcher verification failed. Falling back to npm/npx bootstrap path.'
+    if (Get-Command npx -ErrorAction SilentlyContinue) {
+      npx omnicode@latest setup
+      Write-Host '==> OmniCode installed through fallback bootstrap'
+      return
+    }
+    throw 'OmniCode native launcher failed and npx is not available for fallback bootstrap.'
+  }
 
   Write-Host '==> OmniCode installed successfully'
   Write-Host ''

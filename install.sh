@@ -67,7 +67,13 @@ tar -xzf "$ARCHIVE_PATH" -C "$TMP_DIR"
 install -m 0755 "$TMP_DIR/omnicode" "$INSTALL_DIR/omnicode"
 
 if ! "$INSTALL_DIR/omnicode" --help >/dev/null 2>&1; then
-  fail "OmniCode was installed, but the launcher failed to start."
+  printf 'Warning: native launcher verification failed. Falling back to npm/npx bootstrap path.\n' >&2
+  if command -v npx >/dev/null 2>&1; then
+    npx omnicode@latest setup
+    info "OmniCode installed through fallback bootstrap"
+    exit 0
+  fi
+  fail "OmniCode native launcher failed to start and npx is not available for fallback bootstrap."
 fi
 
 info "OmniCode installed successfully"

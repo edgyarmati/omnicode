@@ -6,6 +6,8 @@ if [[ -z "$VERSION" || "$VERSION" == "$GITHUB_REF_NAME" ]]; then
   VERSION="0.1.0"
 fi
 
+BUILD_SET="${BUILD_SET:-all}" # all | linux | darwin | windows
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
 BUILD_DIR="$DIST_DIR/build"
@@ -38,18 +40,20 @@ build_target() {
 
 PKG_NODE_TARGET="${PKG_NODE_TARGET:-node18}"
 
-build_target "${PKG_NODE_TARGET}-linux-x64" "linux" "x64" ""
-build_target "${PKG_NODE_TARGET}-linux-arm64" "linux" "arm64" ""
-build_target "${PKG_NODE_TARGET}-macos-x64" "darwin" "x64" ""
-build_target "${PKG_NODE_TARGET}-macos-arm64" "darwin" "arm64" ""
-build_target "${PKG_NODE_TARGET}-win-x64" "windows" "x64" ".exe"
-build_target "${PKG_NODE_TARGET}-win-arm64" "windows" "arm64" ".exe"
+if [[ "$BUILD_SET" == "all" || "$BUILD_SET" == "linux" ]]; then
+  build_target "${PKG_NODE_TARGET}-linux-x64" "linux" "x64" ""
+  build_target "${PKG_NODE_TARGET}-linux-arm64" "linux" "arm64" ""
+fi
 
-echo "==> Computing checksums"
-(
-  cd "$DIST_DIR"
-  shasum -a 256 omnicode-${VERSION}-* > SHA256SUMS
-)
+if [[ "$BUILD_SET" == "all" || "$BUILD_SET" == "darwin" ]]; then
+  build_target "${PKG_NODE_TARGET}-macos-x64" "darwin" "x64" ""
+  build_target "${PKG_NODE_TARGET}-macos-arm64" "darwin" "arm64" ""
+fi
+
+if [[ "$BUILD_SET" == "all" || "$BUILD_SET" == "windows" ]]; then
+  build_target "${PKG_NODE_TARGET}-win-x64" "windows" "x64" ".exe"
+  build_target "${PKG_NODE_TARGET}-win-arm64" "windows" "arm64" ".exe"
+fi
 
 echo "==> Built release archives in $DIST_DIR"
 ls -1 "$DIST_DIR" | sed 's/^/ - /'

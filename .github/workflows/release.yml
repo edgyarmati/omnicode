@@ -1,5 +1,8 @@
 name: Release
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 on:
   push:
     tags:
@@ -16,7 +19,21 @@ permissions:
 
 jobs:
   build-release-assets:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            build_set: linux
+            artifact_name: omnicode-release-linux
+          - runner: macos-14
+            build_set: darwin
+            artifact_name: omnicode-release-darwin
+          - runner: windows-latest
+            build_set: windows
+            artifact_name: omnicode-release-windows
+
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,6 +50,8 @@ jobs:
       - name: Build release archives
         env:
           OMNICODE_VERSION: ${{ github.event.inputs.version || github.ref_name }}
+          BUILD_SET: ${{ matrix.build_set }}
+        shell: bash
         run: |
           if [[ "$OMNICODE_VERSION" == v* ]]; then
             export OMNICODE_VERSION="${OMNICODE_VERSION#v}"
@@ -42,10 +61,8 @@ jobs:
       - name: Upload release assets artifact
         uses: actions/upload-artifact@v4
         with:
-          name: omnicode-release-assets
-          path: |
-            dist/omnicode-*
-            dist/SHA256SUMS
+          name: ${{ matrix.artifact_name }}
+          path: dist/omnicode-*
 
   publish-release:
     needs: build-release-assets
@@ -54,8 +71,15 @@ jobs:
       - name: Download release assets
         uses: actions/download-artifact@v4
         with:
-          name: omnicode-release-assets
+          pattern: omnicode-release-*
+          merge-multiple: true
           path: dist
+
+      - name: Generate SHA256SUMS
+        shell: bash
+        run: |
+          cd dist
+          shasum -a 256 omnicode-* > SHA256SUMS
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
