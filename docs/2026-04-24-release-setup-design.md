@@ -1,5 +1,7 @@
 # OmniCode Release Setup Design
 
+> Status: Historical design record (2026-04-24). This documents the original npx-bootstrap design; the release path has since moved to a single JS bundle + platform-agnostic installers (`install.sh` / `install.ps1` at the repo root). For the current install and release flow see [`README.md`](../README.md) and [`docs/release-checklist.md`](./release-checklist.md).
+
 ## Goal
 
 Ship a release-ready install path so a new user can run one setup command, then run `omnicode` and reach a working OmniCode/OpenCode session with minimal manual steps.

@@ -1,5 +1,7 @@
 # OmniCode Implementation Plan
 
+> Status: Phases 1–3 complete. This file is the historical phase log; active follow-up work lives in [AGENTS.md](../AGENTS.md#known-gaps--next-work) and the [release checklist](./release-checklist.md).
+
 ## Phase 1 — Core baseline
 
 - [x] create nested standalone repo

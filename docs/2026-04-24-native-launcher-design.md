@@ -1,5 +1,7 @@
 # OmniCode Native Launcher Design
 
+> Status: Historical design record (2026-04-24). Foundation implemented; native binary distribution is the active direction (see [`docs/release-checklist.md`](./release-checklist.md)). For current launcher behavior see [`README.md`](../README.md) and [`AGENTS.md`](../AGENTS.md).
+
 ## Goal
 
 Ship OmniCode as a standalone cross-platform launcher binary with polished installers, while keeping OpenCode as the upstream host runtime that OmniCode acquires and orchestrates rather than owns.

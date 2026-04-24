@@ -1,5 +1,7 @@
 # Release Checklist
 
+Runbook for cutting a tagged OmniCode release. Work top-to-bottom; each section is a gate for the next.
+
 ## Pre-release
 
 - [ ] all tests pass: `npm test`
@@ -29,7 +31,7 @@
 
 ## Post-release smoke test
 
-- [ ] macOS:
+- [ ] macOS / Linux:
   ```sh
   OMNICODE_VERSION=X.Y.Z bash install.sh
   omnicode
@@ -39,5 +41,6 @@
   $env:OMNICODE_VERSION = 'X.Y.Z'; irm https://github.com/edgyarmati/omnicode/releases/latest/download/install.ps1 | iex
   omnicode
   ```
-- [ ] verify managed OpenCode installs and launches
-- [ ] verify plugin loads (agent name is `omnicode`)
+- [ ] verify managed OpenCode runtime installs and launches on first run
+- [ ] verify plugin loads (agent name is `omnicode`, commands and tools register)
+- [ ] verify normal global `opencode` is unaffected

@@ -1,6 +1,6 @@
 # OmniCode Design
 
-Date: 2026-04-24
+> Status: Historical design record (2026-04-24). Implemented. For current behavior see [`README.md`](../README.md) and [`AGENTS.md`](../AGENTS.md).
 
 ## Goal
 

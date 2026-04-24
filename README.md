@@ -1,76 +1,64 @@
 # OmniCode
 
-OmniCode is an **OpenCode plugin + launcher** that brings the Omni workflow into OpenCode without forking OpenCode or replacing its UI.
+OmniCode is an **OpenCode plugin plus a thin launcher** that adds the Omni workflow to OpenCode without forking it or replacing its UI.
 
-## What OmniCode owns
+- **OmniCode** owns the workflow layer.
+- **OpenCode** stays the host app and runtime.
 
-- `.omni/` durable project memory
-- Omni workflow enforcement
-- repo map generation for codebase awareness
-- skill discovery and required-skill loading
-- an `omnicode` launcher that starts OpenCode with OmniCode-specific config
+## Contents
 
-## What OpenCode owns
+- [What OmniCode adds](#what-omnicode-adds)
+- [The Omni workflow at a glance](#the-omni-workflow-at-a-glance)
+- [Install](#install)
+- [Quick usage](#quick-usage)
+- [Launcher behavior](#launcher-behavior)
+- [Use OmniCode as a permanent OpenCode plugin](#use-omnicode-as-a-permanent-opencode-plugin)
+- [Repo hygiene](#repo-hygiene)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
 
-- terminal UI
-- model/provider/auth UX
-- sessions and core runtime
-- built-in tools and host application behavior
+## What OmniCode adds
 
-## Packages
+- `.omni/` — durable project memory (spec, tasks, tests, decisions, standards, skills).
+- Omni workflow enforcement — plan before editing, bounded slices, verify after.
+- Repo map generation so the agent stays codebase-aware.
+- Skill discovery and required-skill loading.
+- An `omnicode` launcher that starts OpenCode with an isolated OmniCode config so it does not touch your normal `opencode` setup.
 
-- `packages/plugin` — `@omnicode/plugin`
-- `packages/launcher` — `omnicode`
+What stays with OpenCode: terminal UI, model/provider/auth UX, sessions and core runtime, built-in tools, and host application behavior.
 
-## Current status
+## The Omni workflow at a glance
 
-Working first cut complete.
+OmniCode keeps agent work disciplined by materializing context and gating dangerous steps behind planning.
 
-Implemented and smoke-tested:
+1. **Bootstrap** — OmniCode seeds `.omni/` in the current project (`PROJECT.md`, `SPEC.md`, `TASKS.md`, `TESTS.md`, `STATE.md`, `DECISIONS.md`, `STANDARDS.md`, `SKILLS.md`, `SESSION-SUMMARY.md`, `CONFIG.md`, `VERSION`).
+2. **Plan** — `SPEC.md`, `TASKS.md`, and `TESTS.md` must contain real planning content before the agent may use `write` or `edit` tools when Omni mode is on.
+3. **Execute** — bounded task slices guided by the plan.
+4. **Verify** — state and session summaries are updated through OmniCode tools so the next run has continuity.
 
-1. isolated OpenCode launch path
-2. `.omni` bootstrap with better starter templates and selective `.omni/.gitignore`
-3. custom OmniCode tools
-4. default OmniCode agent instructions
-5. workflow guardrails for planning before editing
-6. real OpenCode plugin loading via the `omnicode` launcher
-7. standards discovery/import into `.omni/STANDARDS.md`
-8. ranked repo map output into `.omni/REPO-MAP.md` and `.omni/REPO-MAP.json`
-9. basic skill routing and `.omni/SKILLS.md` syncing for current work
-10. explicit lifecycle updates for `.omni/STATE.md` and `.omni/SESSION-SUMMARY.md`
-
-## Launcher behavior
-
-`omnicode` starts OpenCode with an OmniCode-specific config home so it does not inherit unrelated global OpenCode plugins/config:
-
-- `XDG_CONFIG_HOME=~/.config/omnicode`
-- `OPENCODE_CONFIG=~/.config/omnicode/opencode/opencode.json`
-- `OPENCODE_CONFIG_DIR=~/.config/omnicode/opencode`
-- `OPENCODE_CLIENT=omnicode`
-
-That keeps normal `opencode` usage separate while still using the same installed OpenCode binary.
+`.omni/STATE.md` is also injected into OpenCode compaction context, so active state survives long sessions.
 
 ## Install
 
-Release artifacts are produced by GitHub Actions (`.github/workflows/release.yml`) from tagged versions and documented in `docs/release-checklist.md`.
+Release artifacts are produced by `.github/workflows/release.yml` from tagged versions. See [`docs/release-checklist.md`](docs/release-checklist.md) for the release runbook.
 
-### Installer
+### macOS / Linux
 
-#### macOS / Linux
 ```bash
 curl -fsSL https://raw.githubusercontent.com/edgyarmati/omnicode/main/install.sh | bash
 omnicode
 ```
 
-#### Windows
+### Windows
+
 ```powershell
 irm https://raw.githubusercontent.com/edgyarmati/omnicode/main/install.ps1 | iex
 omnicode
 ```
 
-The installer downloads the tagged OmniCode bundle, installs it under a user-scoped OmniCode directory, and creates an `omnicode` launcher on your PATH.
+The installer downloads the tagged OmniCode bundle, installs it under a user-scoped OmniCode directory, and puts an `omnicode` launcher on your `PATH`. On first launch OmniCode provisions a per-user managed OpenCode runtime without mutating your normal global `opencode` install.
 
-### Current contributor setup
+### Contributor / local checkout
 
 ```bash
 git clone https://github.com/edgyarmati/omnicode
@@ -79,37 +67,50 @@ cd omnicode
 omnicode
 ```
 
-### Runtime direction
+## Quick usage
 
-OmniCode provisions and uses a per-user managed OpenCode runtime version by default without mutating your normal global `opencode` setup.
+```bash
+omnicode --help
+omnicode agent list
+omnicode run --agent omnicode --model <provider>/<model> "Bootstrap this project for OmniCode and summarize the current state."
+omnicode run --agent omnicode --model <provider>/<model> "Bootstrap this project, discover external standards, import them, and tell me what was imported."
+omnicode run --agent omnicode --model <provider>/<model> "Bootstrap this project, generate the repo map, suggest skills for implementing and verifying a repo map improvement, and summarize the results."
+```
+
+Replace `<provider>/<model>` with any model identifier OpenCode supports (e.g. `opencode/hy3-preview-free`).
+
+## Launcher behavior
+
+`omnicode` starts OpenCode with an OmniCode-specific config home so it does not inherit unrelated global OpenCode plugins or config:
+
+- `XDG_CONFIG_HOME=~/.config/omnicode`
+- `OPENCODE_CONFIG=~/.config/omnicode/opencode/opencode.json`
+- `OPENCODE_CONFIG_DIR=~/.config/omnicode/opencode`
+- `OPENCODE_CLIENT=omnicode`
+
+Normal `opencode` usage is unaffected; both use the same underlying OpenCode binary.
 
 ## Use OmniCode as a permanent OpenCode plugin
 
-Yes — if you want OmniCode available in your normal `opencode` installation, you can load it as a regular OpenCode plugin instead of going through the isolated `omnicode` launcher.
+If you want OmniCode available in your normal `opencode` installation you can load it as a regular OpenCode plugin instead of going through the `omnicode` launcher.
 
 ### Recommended vs permanent-plugin mode
 
-- **Recommended:** use `omnicode`
-  - isolated config
-  - isolated plugin loading
-  - does not affect normal `opencode`
-- **Permanent plugin:** add OmniCode to your normal OpenCode config
-  - OmniCode becomes part of your regular `opencode` setup
-  - no config isolation
-  - normal `opencode` sessions may pick up OmniCode defaults if you enable them
+| Mode | Isolation | When to use |
+| --- | --- | --- |
+| `omnicode` launcher (recommended) | Isolated config and plugin loading. Does not affect normal `opencode`. | Default for almost everyone. |
+| Permanent plugin | Loaded into your normal OpenCode config. No isolation. | You want Omni workflow available in every `opencode` session. |
 
 ### Permanent plugin from an OmniCode install
 
-After installing OmniCode, add the bundled plugin file to your normal OpenCode config.
+After installing OmniCode, point your normal OpenCode config at the bundled plugin file.
 
 Typical plugin paths:
 
 - macOS / Linux: `~/.local/share/omnicode/lib/plugin/index.js`
-- Windows: `%LOCALAPPDATA%\\OmniCode\\lib\\plugin\\index.js`
+- Windows: `%LOCALAPPDATA%\OmniCode\lib\plugin\index.js`
 
-Then add it to your normal OpenCode config:
-
-`~/.config/opencode/opencode.json`
+Edit `~/.config/opencode/opencode.json`:
 
 ```json
 {
@@ -131,7 +132,7 @@ Example on macOS/Linux:
 }
 ```
 
-If you want OmniCode to be the default agent in normal OpenCode too, add:
+To make OmniCode the default agent in normal OpenCode as well:
 
 ```json
 {
@@ -167,60 +168,28 @@ Then point OpenCode at the built plugin:
 
 ### Caveat
 
-Permanent-plugin mode is supported, but it is **not** the main OmniCode path. The `omnicode` launcher remains the recommended setup because it keeps OmniCode isolated from your normal OpenCode config, plugins, and defaults.
-
-## Quick usage
-
-```bash
-omnicode --help
-omnicode agent list
-omnicode run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project for OmniCode and summarize the current state."
-omnicode run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project, discover external standards, import them, and tell me what was imported."
-omnicode run --agent omnicode --model opencode/hy3-preview-free "Bootstrap this project, generate the repo map, suggest skills for implementing and verifying a repo map improvement, and summarize the results."
-```
-
-## Automated coverage
-
-Current automated tests cover:
-- launcher config isolation and generated shim/config files
-- native installer asset scaffolding and launcher package metadata assumptions
-- Node/version/runtime path helpers for the native-launcher foundation
-- standards discovery/import
-- ranked repo map generation
-- skill suggestion and `.omni/SKILLS.md` syncing
-- state/session-summary lifecycle updates
-- planning-artifact readiness checks for the write/edit guard (`SPEC.md`, `TASKS.md`, and `TESTS.md`)
+Permanent-plugin mode is supported but is not the main OmniCode path. The `omnicode` launcher remains the recommended setup because it keeps OmniCode isolated from your normal OpenCode config, plugins, and defaults.
 
 ## Repo hygiene
 
-For OmniCode, `.omni/` is split into **durable** vs **runtime** state.
+`.omni/` is intentionally split into **durable** and **runtime** state.
 
 Durable `.omni` files may be committed when they reflect real project intent:
-- `PROJECT.md`
-- `SPEC.md`
-- `TASKS.md`
-- `TESTS.md`
-- `DECISIONS.md`
-- `STANDARDS.md`
-- `SKILLS.md`
-- `CONFIG.md`
-- `VERSION`
-- `.gitignore`
+
+- `PROJECT.md`, `SPEC.md`, `TASKS.md`, `TESTS.md`, `DECISIONS.md`, `STANDARDS.md`, `SKILLS.md`, `CONFIG.md`, `VERSION`, `.gitignore`
 
 Runtime/generated `.omni` files stay out of git by default:
-- `STATE.md`
-- `SESSION-SUMMARY.md`
-- `REPO-MAP.md`
-- `REPO-MAP.json`
+
+- `STATE.md`, `SESSION-SUMMARY.md`, `REPO-MAP.md`, `REPO-MAP.json`
 
 `.pi/` also stays out of git.
 
 ## Troubleshooting
 
-- If you're testing from a checkout, use `./scripts/setup` for now rather than the unpublished release installers.
-- If managed OpenCode runtime installation fails, rerun `omnicode` and follow the printed fallback command using the same `--prefix` path.
-- If native launcher verification fails during install, the installer automatically falls back to `npx omnicode@latest setup` when available.
-- If installer downloads fail, confirm the tagged release contains the expected assets listed in `docs/release-checklist.md`.
+- Testing from a checkout — use `./scripts/setup` rather than the release installer.
+- Managed OpenCode runtime install fails — rerun `omnicode` and follow the printed fallback command using the same `--prefix` path.
+- Native launcher verification fails during install — the installer automatically falls back to `npx omnicode@latest setup` when available.
+- Installer download fails — confirm the tagged release contains the expected assets listed in [`docs/release-checklist.md`](docs/release-checklist.md).
 
 ## Development
 
@@ -229,3 +198,33 @@ Runtime/generated `.omni` files stay out of git by default:
 npm run check
 npm test
 ```
+
+## Packages
+
+- [`packages/plugin`](packages/plugin) — `@omnicode/plugin`, the OpenCode plugin.
+- [`packages/launcher`](packages/launcher) — `omnicode`, the launcher CLI.
+
+## Repository layout
+
+```
+.
+├── packages/
+│   ├── plugin/       # @omnicode/plugin (OpenCode plugin)
+│   └── launcher/     # omnicode launcher CLI
+├── scripts/
+│   ├── setup         # contributor bootstrap
+│   └── release/      # release bundle helpers
+├── install.sh        # public macOS/Linux installer
+├── install.ps1       # public Windows installer
+├── docs/             # design docs and release runbook
+└── AGENTS.md         # guidance for agents working in this repo
+```
+
+## See also
+
+- [`AGENTS.md`](AGENTS.md) — architecture, implemented behavior, and guidance for agents working on this repo.
+- [`docs/2026-04-24-omnicode-design.md`](docs/2026-04-24-omnicode-design.md) — original OmniCode design record.
+- [`docs/2026-04-24-native-launcher-design.md`](docs/2026-04-24-native-launcher-design.md) — native launcher design record.
+- [`docs/2026-04-24-release-setup-design.md`](docs/2026-04-24-release-setup-design.md) — release setup design record.
+- [`docs/implementation-plan.md`](docs/implementation-plan.md) — phased implementation plan.
+- [`docs/release-checklist.md`](docs/release-checklist.md) — release runbook.
