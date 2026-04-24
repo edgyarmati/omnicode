@@ -71,9 +71,27 @@ Current automated tests cover:
 
 ## Repo hygiene
 
-For the OmniCode repo itself, generated runtime/project state should not be committed:
-- `.omni/`
-- `.pi/`
+For OmniCode, `.omni/` is split into **durable** vs **runtime** state.
+
+Durable `.omni` files may be committed when they reflect real project intent:
+- `PROJECT.md`
+- `SPEC.md`
+- `TASKS.md`
+- `TESTS.md`
+- `DECISIONS.md`
+- `STANDARDS.md`
+- `SKILLS.md`
+- `CONFIG.md`
+- `VERSION`
+- `.gitignore`
+
+Runtime/generated `.omni` files stay out of git by default:
+- `STATE.md`
+- `SESSION-SUMMARY.md`
+- `REPO-MAP.md`
+- `REPO-MAP.json`
+
+`.pi/` also stays out of git.
 
 ## Development
 

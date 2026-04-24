@@ -2,6 +2,9 @@ node_modules/
 dist/
 .tmp/
 .pi/
-.omni/
+.omni/STATE.md
+.omni/SESSION-SUMMARY.md
+.omni/REPO-MAP.md
+.omni/REPO-MAP.json
 .DS_Store
 coverage/

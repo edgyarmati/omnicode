@@ -162,9 +162,27 @@ npm test
 
 ## Repo hygiene
 
-For this repository itself, keep generated runtime/project state out of git:
-- `.omni/`
-- `.pi/`
+For OmniCode, `.omni/` is intentionally split.
+
+Durable `.omni` files may be committed when they reflect real project intent:
+- `PROJECT.md`
+- `SPEC.md`
+- `TASKS.md`
+- `TESTS.md`
+- `DECISIONS.md`
+- `STANDARDS.md`
+- `SKILLS.md`
+- `CONFIG.md`
+- `VERSION`
+- `.gitignore`
+
+Runtime/generated `.omni` files stay out of git by default:
+- `STATE.md`
+- `SESSION-SUMMARY.md`
+- `REPO-MAP.md`
+- `REPO-MAP.json`
+
+`.pi/` stays out of git as runtime state too.
 
 ## Notes for the next agent
 

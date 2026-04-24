@@ -6,6 +6,7 @@ import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 
 import {
   OMNI_FILES,
+  OMNI_GITIGNORE,
   appendSessionSummary,
   buildRepoMap,
   discoverStandards,
@@ -47,6 +48,17 @@ test("discoverStandards finds supported standards files and ignores .omni", asyn
         "AGENTS.md",
       ],
     );
+  });
+});
+
+test("ensureOmniDir writes a selective .omni/.gitignore for runtime state", async () => {
+  await withTempDir(async (dir) => {
+    await ensureOmniDir(dir);
+    const gitignore = await readFile(path.join(dir, ".omni", ".gitignore"), "utf8");
+
+    assert.equal(gitignore, `${OMNI_GITIGNORE}\n`);
+    assert.match(gitignore, /STATE\.md/);
+    assert.doesNotMatch(gitignore, /PROJECT\.md/);
   });
 });
 

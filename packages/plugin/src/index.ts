@@ -128,6 +128,35 @@ const SKILL_RULES: Array<{ name: string; patterns: RegExp[]; reason: string; sco
   },
 ];
 
+export const OMNI_RUNTIME_FILES = [
+  "STATE.md",
+  "SESSION-SUMMARY.md",
+  "REPO-MAP.md",
+  "REPO-MAP.json",
+] as const;
+
+export const OMNI_DURABLE_FILES = [
+  "PROJECT.md",
+  "SPEC.md",
+  "TASKS.md",
+  "TESTS.md",
+  "DECISIONS.md",
+  "STANDARDS.md",
+  "SKILLS.md",
+  "CONFIG.md",
+  "VERSION",
+] as const;
+
+export const OMNI_GITIGNORE = [
+  "# Runtime OmniCode state: keep out of git by default.",
+  "STATE.md",
+  "SESSION-SUMMARY.md",
+  "REPO-MAP.md",
+  "REPO-MAP.json",
+  "",
+  "# Durable OmniCode memory may be committed when it reflects real project intent.",
+].join("\n");
+
 export const OMNI_FILES: Record<string, string> = {
   "PROJECT.md": "# Project\n\n## Goal\n\nDescribe what this project is trying to achieve.\n\n## Users\n\nDescribe the primary users or stakeholders.\n\n## Constraints\n\nList important product, technical, or workflow constraints.\n\n## Success Criteria\n\nList the observable outcomes that mean the work is successful.\n",
   "SPEC.md": "# Spec\n\n## Problem\n\nDescribe the specific problem to solve.\n\n## Requested Behavior\n\nList the expected behavior clearly before implementation.\n\n## Constraints\n\nList any implementation constraints or non-goals.\n\n## Success Criteria\n\nList concrete checks that make this request complete.\n",
@@ -213,6 +242,14 @@ export async function ensureOmniDir(directory: string): Promise<string> {
       await writeFile(filePath, content, "utf8");
     }
   }
+
+  const gitignorePath = path.join(omniDir, ".gitignore");
+  try {
+    await stat(gitignorePath);
+  } catch {
+    await writeFile(gitignorePath, `${OMNI_GITIGNORE}\n`, "utf8");
+  }
+
   return omniDir;
 }
 
