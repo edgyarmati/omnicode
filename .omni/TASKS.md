@@ -2,7 +2,7 @@
 
 ## Planned slices
 
-- [ ] Design and implement a standalone OmniCode launcher binary build pipeline
+- [x] Design and implement a standalone OmniCode launcher binary build/publish pipeline scaffold (GitHub release workflow + build script + checklist)
 - [x] Add platform-native installer scaffolding: `install.sh` for macOS/Linux and `install.ps1` for Windows
 - [x] Add a per-user managed OpenCode runtime location and version metadata helpers
 - [x] Implement managed OpenCode acquisition and version checks in the launcher (current mechanism: npm prefix install into managed runtime paths)
@@ -11,4 +11,4 @@
 
 ## Notes
 
-The foundation is now in place: release metadata exists, installers are scaffolded, and the launcher installs/reuses a managed OpenCode runtime per user. The remaining work is real binary publishing plus release-artifact-based runtime download/integrity verification.
+The native release operations scaffold is now in place: workflow, build script, installer naming alignment, and release checklist. Remaining work is validating the first real tagged release artifacts and adding release-artifact-based managed OpenCode download/integrity checks.

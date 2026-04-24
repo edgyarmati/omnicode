@@ -166,7 +166,10 @@ npm test
 - `scripts/setup` bootstraps a fresh checkout for contributors and pre-release testing.
 - root `install.sh` and `install.ps1` are the target public installers for native launcher releases.
 - `scripts/install.sh` is now a compatibility wrapper to the root POSIX installer.
-- the `omnicode` launcher package in `packages/launcher/` is still the current dev/runtime entrypoint, but the release direction is toward standalone OmniCode binaries plus a managed per-user OpenCode runtime.
+- `.github/workflows/release.yml` builds and publishes tagged native launcher artifacts.
+- `scripts/release/build-binaries.sh` defines artifact targets/naming.
+- `docs/release-checklist.md` is the required release runbook.
+- the `omnicode` launcher package in `packages/launcher/` is still the current dev/runtime entrypoint, with release direction toward standalone OmniCode binaries plus a managed per-user OpenCode runtime.
 
 ## Repo hygiene
 

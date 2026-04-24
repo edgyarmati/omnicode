@@ -54,6 +54,8 @@ That keeps normal `opencode` usage separate while still using the same installed
 
 ### Planned release installers
 
+Release artifacts are produced by GitHub Actions (`.github/workflows/release.yml`) from tagged versions and documented in `docs/release-checklist.md`.
+
 The target release model is:
 
 #### macOS / Linux
@@ -133,7 +135,7 @@ Runtime/generated `.omni` files stay out of git by default:
 
 - If you're testing from a checkout, use `./scripts/setup` for now rather than the unpublished release installers.
 - If managed OpenCode runtime installation fails, rerun `omnicode` and follow the printed fallback command using the same `--prefix` path.
-- When native binaries are published, the root `install.sh` and `install.ps1` scripts will become the primary install path.
+- If installer downloads fail, confirm the tagged release contains the expected assets listed in `docs/release-checklist.md`.
 
 ## Development
 

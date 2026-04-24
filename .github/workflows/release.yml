@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version without v prefix (e.g. 0.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-release-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build release archives
+        env:
+          OMNICODE_VERSION: ${{ github.event.inputs.version || github.ref_name }}
+        run: |
+          if [[ "$OMNICODE_VERSION" == v* ]]; then
+            export OMNICODE_VERSION="${OMNICODE_VERSION#v}"
+          fi
+          bash ./scripts/release/build-binaries.sh
+
+      - name: Upload release assets artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: omnicode-release-assets
+          path: |
+            dist/omnicode-*
+            dist/SHA256SUMS
+
+  publish-release:
+    needs: build-release-assets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: omnicode-release-assets
+          path: dist
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref_name, 'v') && github.ref_name || format('v{0}', github.event.inputs.version) }}
+          files: |
+            dist/omnicode-*
+            dist/SHA256SUMS
+          generate_release_notes: true
+          draft: false
+          prerelease: false

@@ -133,6 +133,8 @@ test("native installer assets and launcher package metadata are present", async 
   );
   const posixInstaller = await readFile(path.join(repoRoot, "install.sh"), "utf8");
   const windowsInstaller = await readFile(path.join(repoRoot, "install.ps1"), "utf8");
+  const releaseWorkflow = await readFile(path.join(repoRoot, ".github", "workflows", "release.yml"), "utf8");
+  const releaseBuildScript = await readFile(path.join(repoRoot, "scripts", "release", "build-binaries.sh"), "utf8");
   const launcherBin = await readFile(path.join(repoRoot, "packages", "launcher", "bin", "omnicode.js"), "utf8");
 
   assert.equal(launcherPackage.name, "omnicode");
@@ -142,9 +144,14 @@ test("native installer assets and launcher package metadata are present", async 
   assert.match(windowsInstaller, /releases\/download\/v\$Version/);
   assert.match(launcherBin, /getManagedOpenCodeBinaryCandidates/);
   assert.match(launcherBin, /getNativeLauncherReleaseMetadata/);
+  assert.match(releaseWorkflow, /name: Release/);
+  assert.match(releaseWorkflow, /softprops\/action-gh-release/);
+  assert.match(releaseBuildScript, /node22-macos-arm64/);
 
   await access(path.join(repoRoot, "scripts", "setup"));
   await access(path.join(repoRoot, "scripts", "install.sh"));
+  await access(path.join(repoRoot, "scripts", "release", "build-binaries.sh"));
   await access(path.join(repoRoot, "install.sh"));
   await access(path.join(repoRoot, "install.ps1"));
+  await access(path.join(repoRoot, "docs", "release-checklist.md"));
 });
