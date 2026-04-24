@@ -35,9 +35,16 @@ build_target() {
     if command -v zip >/dev/null 2>&1; then
       (cd "$stage_dir" && zip -q "$DIST_DIR/omnicode-${VERSION}-${os}-${arch}.zip" "$bin_name")
     else
+      local dest_path="$DIST_DIR/omnicode-${VERSION}-${os}-${arch}.zip"
+      local dest_win
+      if command -v cygpath >/dev/null 2>&1; then
+        dest_win="$(cygpath -w "$dest_path")"
+      else
+        dest_win="$dest_path"
+      fi
       (
         cd "$stage_dir"
-        powershell -NoProfile -Command "Compress-Archive -Path '$bin_name' -DestinationPath '$DIST_DIR/omnicode-${VERSION}-${os}-${arch}.zip' -Force"
+        powershell -NoProfile -Command "Compress-Archive -Path '$bin_name' -DestinationPath '$dest_win' -Force"
       )
     fi
   else
