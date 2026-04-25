@@ -5,11 +5,11 @@
 # Usage:
 #   curl -fsSL https://github.com/edgyarmati/omnicode/releases/latest/download/install.sh | bash
 #   # or pin a version:
-#   OMNICODE_VERSION=0.2.0 curl -fsSL ... | bash
+#   OMNICODE_VERSION=1.14.25 curl -fsSL ... | bash
 set -euo pipefail
 
 REPO_SLUG="edgyarmati/omnicode"
-VERSION="${OMNICODE_VERSION:-0.2.0}"
+VERSION="${OMNICODE_VERSION:-1.14.25}"
 DATA_DIR="${OMNICODE_DATA_DIR:-$HOME/.local/share/omnicode}"
 BIN_DIR="${OMNICODE_BIN_DIR:-$HOME/.local/bin}"
 MINIMUM_NODE_MAJOR=22
