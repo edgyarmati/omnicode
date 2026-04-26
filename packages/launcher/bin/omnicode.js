@@ -74,11 +74,17 @@ async function resolveManagedOpenCodeBinary(version, homeDir) {
   return null;
 }
 
+// Strict semver. We use this version as a path segment when locating the
+// managed OpenCode binary, so anything with a slash, "..", or other shell
+// metacharacters must be rejected — a tampered current.json must not be
+// able to redirect us outside the managed runtime root.
+const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u;
+
 async function readManagedOpenCodeVersion(homeDir) {
   const metadataPath = getManagedOpenCodeMetadataPath(homeDir);
   try {
     const parsed = JSON.parse(await readFile(metadataPath, "utf8"));
-    if (typeof parsed.version === "string" && parsed.version.length > 0) {
+    if (typeof parsed.version === "string" && SEMVER_PATTERN.test(parsed.version)) {
       return parsed.version;
     }
     return null;
