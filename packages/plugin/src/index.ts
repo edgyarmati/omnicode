@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
@@ -439,7 +439,15 @@ async function listSkills(): Promise<SkillInfo[]> {
   return skills.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+// Skill names are user-controllable through the omnicode_read_skill tool, and
+// the resolved path is read from disk. Restrict to a safe character set so
+// `..` / slashes / null bytes can't escape the bundled skills directory.
+const SAFE_SKILL_NAME = /^[A-Za-z0-9_][A-Za-z0-9_-]{0,63}$/u;
+
 async function readSkill(name: string): Promise<string> {
+  if (!SAFE_SKILL_NAME.test(name)) {
+    throw new Error(`OmniCode: refusing to read skill with unsafe name: ${name}`);
+  }
   const filePath = await resolveResourcePath("skills", `${name}.md`);
   return readFile(filePath, "utf8");
 }
@@ -654,6 +662,12 @@ export async function importStandards(
       ? candidates.filter((candidate) => normalizedSelected.has(candidate.path))
       : candidates;
 
+  // Resolve the project root once so we can verify each imported file lives
+  // under it. discoverStandards uses path.relative on entries it walked, but
+  // the walker doesn't refuse symlinks — without this check, a symlinked
+  // standards file pointing outside the repo would still be read.
+  const resolvedRoot = await realpath(directory);
+
   const sections: string[] = ["# Imported Standards", ""];
 
   if (imported.length === 0) {
@@ -665,7 +679,14 @@ export async function importStandards(
     );
 
     for (const candidate of imported) {
-      const content = await readFile(path.join(directory, candidate.path), "utf8");
+      const fullPath = path.resolve(directory, candidate.path);
+      const realFullPath = await realpath(fullPath);
+      if (realFullPath !== resolvedRoot && !realFullPath.startsWith(resolvedRoot + path.sep)) {
+        throw new Error(
+          `OmniCode: refusing to import standards file outside project root: ${candidate.path}`,
+        );
+      }
+      const content = await readFile(realFullPath, "utf8");
       sections.push(
         `## ${candidate.kind}: ${candidate.path}`,
         "",
