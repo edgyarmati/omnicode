@@ -1,6 +1,7 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { chmod, mkdir, rename, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import crypto from "node:crypto";
 
 import {
   OMNICODE_BINARY_VERSION,
@@ -142,6 +143,41 @@ export function getNativeLauncherReleaseMetadata(platform = process.platform, ar
   };
 }
 
+// Write `content` to `targetPath` atomically and refuse to follow symlinks.
+// Both files we write under ~/.config/omnicode/opencode/ are in a
+// user-controlled directory; we don't want a pre-planted symlink there to
+// redirect the write, and we don't want a half-written file if the process
+// dies mid-write. The flag "wx" creates a fresh temp file (failing if a
+// stale temp lingers, which we then clean up). chmod 0o600 keeps the file
+// from being world- or group-readable.
+async function writeFileSecure(targetPath, content) {
+  const dir = path.dirname(targetPath);
+  const tmpPath = path.join(dir, `.${path.basename(targetPath)}.${crypto.randomBytes(6).toString("hex")}.tmp`);
+  try {
+    await writeFile(tmpPath, content, { encoding: "utf8", flag: "wx", mode: 0o600 });
+  } catch (err) {
+    // If a stale tmp file with our exact name already exists (extremely
+    // unlikely with 12 hex chars), clean up and surface the error.
+    try {
+      await unlink(tmpPath);
+    } catch {
+      // ignore
+    }
+    throw err;
+  }
+  try {
+    await chmod(tmpPath, 0o600);
+    await rename(tmpPath, targetPath);
+  } catch (err) {
+    try {
+      await unlink(tmpPath);
+    } catch {
+      // ignore
+    }
+    throw err;
+  }
+}
+
 export async function ensureOmniCodeConfig({
   homeDir = os.homedir(),
   pluginEntry,
@@ -165,14 +201,14 @@ export async function ensureOmniCodeConfig({
   }
 
   const shimSource = `export { OmniCodePlugin, default } from ${JSON.stringify(resolvedEntry)};\n`;
-  await writeFile(pluginShimPath, shimSource, "utf8");
+  await writeFileSecure(pluginShimPath, shimSource);
 
   const config = {
     $schema: "https://opencode.ai/config.json",
     default_agent: "omnicode",
     share: "manual",
   };
-  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+  await writeFileSecure(configPath, `${JSON.stringify(config, null, 2)}\n`);
 
   return { configRoot, configPath, pluginShimPath };
 }
