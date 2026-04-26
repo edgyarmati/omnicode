@@ -14,6 +14,16 @@ export const MINIMUM_NODE_MAJOR = 22;
 export const OMNICODE_PACKAGE_NAME = "omnicode";
 export const OMNICODE_SETUP_TARGET = `${OMNICODE_PACKAGE_NAME}@latest`;
 
+// Restrict OMNICODE_SETUP_TARGET to the omnicode package (with optional
+// version specifier). Anything else — paths, tarball URLs, git URLs,
+// arbitrary package names — is rejected so a tampered or accidentally
+// inherited env var can't redirect `npm install -g` to a different target.
+const SAFE_SETUP_TARGET = /^omnicode(?:@[A-Za-z0-9._\-+]{1,128})?$/u;
+
+export function isSafeSetupTarget(value) {
+  return typeof value === "string" && SAFE_SETUP_TARGET.test(value);
+}
+
 export function parseNodeMajorVersion(version) {
   const match = /^v?(\d+)/u.exec(String(version).trim());
   if (!match) return null;
@@ -44,7 +54,16 @@ export function isSupportedNodeVersion(version, minimumMajor = MINIMUM_NODE_MAJO
 }
 
 export function getOmniCodeSetupTarget() {
-  return process.env.OMNICODE_SETUP_TARGET || OMNICODE_SETUP_TARGET;
+  const fromEnv = process.env.OMNICODE_SETUP_TARGET;
+  if (fromEnv && fromEnv.length > 0) {
+    if (!isSafeSetupTarget(fromEnv)) {
+      throw new Error(
+        `OMNICODE_SETUP_TARGET must be of the form "omnicode" or "omnicode@<version>"; refusing to use ${JSON.stringify(fromEnv)}.`,
+      );
+    }
+    return fromEnv;
+  }
+  return OMNICODE_SETUP_TARGET;
 }
 
 export function getXdgConfigHome(homeDir = os.homedir()) {
