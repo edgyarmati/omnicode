@@ -17,8 +17,9 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
-    "check": "npm run check --workspaces --if-present",
+    "check": "node scripts/sync-version.mjs --check && npm run check --workspaces --if-present",
     "setup": "./scripts/setup",
+    "sync-version": "node scripts/sync-version.mjs",
     "test": "npm run test --workspaces --if-present"
   },
   "engines": {
