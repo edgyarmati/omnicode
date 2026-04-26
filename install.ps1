@@ -62,8 +62,11 @@ $TempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("omnicode-install-" + [S
 New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
 
 try {
-  $AssetUrl = "https://github.com/$RepoSlug/releases/download/v$Version/omnicode-$Version.tar.gz"
-  $ArchivePath = Join-Path $TempDir 'omnicode.tar.gz'
+  $AssetName = "omnicode-$Version.tar.gz"
+  $AssetUrl = "https://github.com/$RepoSlug/releases/download/v$Version/$AssetName"
+  $SumsUrl = "https://github.com/$RepoSlug/releases/download/v$Version/SHA256SUMS"
+  $ArchivePath = Join-Path $TempDir $AssetName
+  $SumsPath = Join-Path $TempDir 'SHA256SUMS'
 
   Write-Host "==> Downloading OmniCode v$Version"
   try {
@@ -73,6 +76,37 @@ try {
     Write-Error "Download failed. Check that v$Version exists at $AssetUrl"
     exit 1
   }
+
+  Write-Host '==> Verifying SHA256 checksum'
+  try {
+    Invoke-WebRequest -Uri $SumsUrl -OutFile $SumsPath
+  }
+  catch {
+    Write-Error "Could not fetch SHA256SUMS for v$Version. Refusing to install an unverified archive."
+    exit 1
+  }
+
+  $expectedHash = $null
+  foreach ($line in Get-Content -Path $SumsPath) {
+    $parts = ($line -replace '\s+', ' ').Trim().Split(' ', 2)
+    if ($parts.Length -ne 2) { continue }
+    $name = $parts[1].TrimStart('*')
+    if ($name -eq $AssetName) {
+      $expectedHash = $parts[0].ToLowerInvariant()
+      break
+    }
+  }
+  if (-not $expectedHash) {
+    Write-Error "SHA256SUMS does not contain an entry for $AssetName."
+    exit 1
+  }
+
+  $actualHash = (Get-FileHash -Path $ArchivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($expectedHash -ne $actualHash) {
+    Write-Error "Checksum mismatch for $AssetName. Expected $expectedHash, got $actualHash."
+    exit 1
+  }
+  Write-Host '    Checksum OK'
 
   Write-Host "==> Extracting to $DataDir"
   tar -xzf $ArchivePath -C $TempDir

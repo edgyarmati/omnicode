@@ -64,11 +64,38 @@ mkdir -p "$DATA_DIR" "$BIN_DIR"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-ASSET_URL="https://github.com/${REPO_SLUG}/releases/download/v${VERSION}/omnicode-${VERSION}.tar.gz"
-ARCHIVE="$TMP_DIR/omnicode.tar.gz"
+ASSET_NAME="omnicode-${VERSION}.tar.gz"
+ASSET_URL="https://github.com/${REPO_SLUG}/releases/download/v${VERSION}/${ASSET_NAME}"
+SUMS_URL="https://github.com/${REPO_SLUG}/releases/download/v${VERSION}/SHA256SUMS"
+ARCHIVE="$TMP_DIR/${ASSET_NAME}"
+SUMS_FILE="$TMP_DIR/SHA256SUMS"
 
 info "Downloading OmniCode v${VERSION}"
 curl -fsSL "$ASSET_URL" -o "$ARCHIVE" || fail "Download failed. Check that v${VERSION} exists at ${ASSET_URL}"
+
+info "Verifying SHA256 checksum"
+curl -fsSL "$SUMS_URL" -o "$SUMS_FILE" \
+  || fail "Could not fetch SHA256SUMS for v${VERSION}. Refusing to install an unverified archive."
+
+# Locate a sha256 verifier
+if command -v sha256sum >/dev/null 2>&1; then
+  SHA_CMD="sha256sum"
+elif command -v shasum >/dev/null 2>&1; then
+  SHA_CMD="shasum -a 256"
+else
+  fail "Need sha256sum or shasum to verify the download. Install one and rerun."
+fi
+
+EXPECTED_HASH="$(awk -v name="${ASSET_NAME}" '$2 == name || $2 == "*"name {print $1; exit}' "$SUMS_FILE")"
+if [ -z "$EXPECTED_HASH" ]; then
+  fail "SHA256SUMS does not contain an entry for ${ASSET_NAME}."
+fi
+
+ACTUAL_HASH="$(${SHA_CMD} "$ARCHIVE" | awk '{print $1}')"
+if [ "$EXPECTED_HASH" != "$ACTUAL_HASH" ]; then
+  fail "Checksum mismatch for ${ASSET_NAME}. Expected ${EXPECTED_HASH}, got ${ACTUAL_HASH}."
+fi
+info "Checksum OK"
 
 info "Extracting to ${DATA_DIR}"
 tar -xzf "$ARCHIVE" -C "$TMP_DIR"
