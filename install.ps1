@@ -4,12 +4,12 @@
 # Usage:
 #   irm https://github.com/edgyarmati/omnicode/releases/latest/download/install.ps1 | iex
 #   # or pin a version:
-#   $env:OMNICODE_VERSION = '1.14.25'; irm ... | iex
+#   $env:OMNICODE_VERSION = '0.2.1'; irm ... | iex
 
 $ErrorActionPreference = 'Stop'
 
 $RepoSlug = 'edgyarmati/omnicode'
-$Version = if ($env:OMNICODE_VERSION) { $env:OMNICODE_VERSION } else { '1.14.25' }
+$Version = if ($env:OMNICODE_VERSION) { $env:OMNICODE_VERSION } else { '0.2.1' }
 $DataDir = if ($env:OMNICODE_DATA_DIR) {
   $env:OMNICODE_DATA_DIR
 } elseif ($env:LOCALAPPDATA) {
