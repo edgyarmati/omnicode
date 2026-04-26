@@ -23,6 +23,7 @@ import {
   needsManagedOpenCodeUpdate,
   parseNodeMajorVersion,
 } from "../src/lib.js";
+import { OMNICODE_BINARY_VERSION } from "../src/release.js";
 
 async function withTempHome(run) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "omnicode-launcher-test-"));
@@ -120,10 +121,12 @@ test("managed OpenCode runtime helpers resolve user-scoped paths and version che
 
 test("native launcher release metadata includes asset naming for current platform", () => {
   const metadata = getNativeLauncherReleaseMetadata("darwin", "arm64");
-  assert.equal(metadata.launcherVersion, "0.1.0");
+  const v = OMNICODE_BINARY_VERSION;
+  const escaped = v.replace(/\./g, "\\.");
+  assert.equal(metadata.launcherVersion, v);
   assert.match(metadata.opencodeVersion, /^\d+\.\d+\.\d+$/);
-  assert.match(metadata.assetName, /omnicode-0\.1\.0-darwin-arm64\.tar\.gz$/);
-  assert.match(metadata.assetUrl, /releases\/download\/v0\.1\.0\/omnicode-0\.1\.0-darwin-arm64\.tar\.gz$/);
+  assert.match(metadata.assetName, new RegExp(`omnicode-${escaped}-darwin-arm64\\.tar\\.gz$`));
+  assert.match(metadata.assetUrl, new RegExp(`releases/download/v${escaped}/omnicode-${escaped}-darwin-arm64\\.tar\\.gz$`));
 });
 
 test("native installer assets and launcher package metadata are present", async () => {
