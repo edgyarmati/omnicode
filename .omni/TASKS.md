@@ -30,3 +30,13 @@
 - [x] Slice 1: harden plugin guard/path containment, preserve skills notes, and cap repo-map reads.
 - [x] Slice 2: add safe launcher check/version behavior and Windows-safe plugin shim imports.
 - [x] Slice 3: align release artifact model, docs, workflow assets, and tests.
+
+---
+
+## Automatic Grill-Me Clarification
+
+- [x] Add bundled `grill-me` skill resource and default skills listing.
+- [x] Update agent instructions so change requests automatically run grill-me clarification before planning/implementation.
+- [x] Update skill suggestion heuristics and tests so `grill-me` triggers on feature/change/fix/refactor wording.
+- [x] Update README/AGENTS docs for the new clarification checkpoint.
+- [x] Verify with `npm run check` and `npm test`, then commit.

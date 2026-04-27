@@ -75,3 +75,30 @@ Implement the fixes in bounded, verified slices:
 - Tests cover bash/path guard hardening, SKILLS preservation, large repo-map file handling, Windows-safe plugin shim imports, and installer `--check` behavior.
 - `npm run check` and `npm test` pass after each slice.
 - Release metadata, workflow, installers, README/AGENTS/checklist describe the same current artifact model.
+
+---
+
+## Current Implementation Task — Automatic Grill-Me Clarification
+
+### Problem
+
+OmniCode currently suggests brainstorming for creative work or behavior changes, but it does not explicitly force a rigorous shared-understanding checkpoint before planning and implementation. The maintainer wants the agent to automatically "grill" the user for requested changes, new features, fixes, refactors, or similar product/code modifications until the agent and user are fully aligned.
+
+### Requested Behavior
+
+Add a bundled `grill-me` workflow skill and route relevant change requests to it automatically through instructions and skill suggestion heuristics. The skill should interview the user one question at a time, provide a recommended answer for each question, use codebase exploration instead of asking when the answer is discoverable, and stop only when scope, constraints, behavior, edge cases, and success criteria are concrete enough to write/update `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md`.
+
+### Constraints
+
+- Do not remove `brainstorming`; keep it for open-ended option generation.
+- Preserve existing bundled skill names and public tool names.
+- Keep the automatic trigger instruction practical: apply to change/feature/fix/refactor requests, not simple informational questions or explicit emergency one-liners.
+- Commit after verification with a conventional commit.
+
+### Success Criteria
+
+- `grill-me` appears in bundled skills and default `.omni/SKILLS.md` content.
+- `omnicode_suggest_skills` suggests `grill-me` for change/feature/fix/refactor requests.
+- Agent instructions require a grill-me clarification checkpoint before planning/implementation for change requests.
+- Tests cover skill listing/suggestion behavior.
+- `npm run check` and `npm test` pass.

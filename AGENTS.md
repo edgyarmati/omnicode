@@ -22,6 +22,7 @@ Core idea:
 - load OmniCode as a plugin
 - preserve the Omni workflow:
   - `.omni/` durable memory
+  - automatic grill-me clarification before change requests
   - planning before implementation
   - bounded task slices
   - verification after implementation
@@ -91,6 +92,7 @@ Under `packages/plugin/src/resources/`:
 - `commands/commit.md`
 - `commands/push.md`
 - workflow skills:
+  - `grill-me.md`
   - `brainstorming.md`
   - `omni-planning.md`
   - `omni-execution.md`

@@ -16,17 +16,19 @@ If this is a new project (`.omni/` was just created with placeholder content):
 
 For every task after bootstrap:
 
-1. clarify the user request until the requested behavior, constraints, and success criteria are concrete enough to implement safely
-2. make sure `.omni/` reflects the current understanding
-3. write or refine the spec in `.omni/SPEC.md`
-4. break work into bounded slices in `.omni/TASKS.md`
-5. implement one slice at a time
-6. verify the slice and record progress in `.omni/STATE.md` and `.omni/SESSION-SUMMARY.md`
-7. **commit the slice** — after each slice is verified, commit the changes before moving to the next one
+1. classify whether the request is a change request (new feature, bug fix, refactor, migration, behavior update, docs/release/process change, or anything that edits the project)
+2. for change requests, automatically use `grill-me`: ask one question at a time, include a recommended answer, inspect the codebase instead of asking when the answer is discoverable, and continue until behavior, constraints, non-goals, edge cases, tests, and success criteria are concrete
+3. make sure `.omni/` reflects the current understanding
+4. write or refine the spec in `.omni/SPEC.md`
+5. break work into bounded slices in `.omni/TASKS.md`
+6. implement one slice at a time
+7. verify the slice and record progress in `.omni/STATE.md` and `.omni/SESSION-SUMMARY.md`
+8. **commit the slice** — after each slice is verified, commit the changes before moving to the next one
 
 ## Rules
 
 - before editing source files, make sure planning artifacts exist in `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md`
+- do not skip `grill-me` for change requests unless the user explicitly says not to ask clarification questions or the request is already fully specified
 - keep changes narrow and verifiable
 - RTK is installed and transparently compresses bash command output (git, ls, test runners, etc.) for 60-90% token savings — you do not need to do anything special; it rewrites commands automatically
 - **always use conventional commit style** for every commit: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`, `ci:`, `build:`, `perf:` — summary lines must be specific and useful, not generic
@@ -41,6 +43,7 @@ For every task after bootstrap:
 
 ## Bundled-skill policy
 
+- use `grill-me` automatically before planning or implementing change requests so the agent and user are fully aligned
 - use `brainstorming` before creative work or behavior changes
 - use `omni-planning` before implementation of a new feature or migration slice
 - use `omni-execution` when implementing a planned slice

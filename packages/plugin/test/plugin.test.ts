@@ -211,17 +211,25 @@ test("suggestSkills and updateSkillsFile infer workflow skills from task text", 
 
     assert.deepEqual(
       [...suggestions.map((item) => item.name)].sort(),
-      ["brainstorming", "omni-execution", "omni-planning", "omni-verification"],
+      ["brainstorming", "grill-me", "omni-execution", "omni-planning", "omni-verification"],
     );
 
     const result = await updateSkillsFile(dir, task);
     const skillsFile = await readFile(path.join(dir, ".omni", "SKILLS.md"), "utf8");
 
-    assert.equal(result.suggested.length, 4);
+    assert.equal(result.suggested.length, 5);
     assert.match(skillsFile, /## Suggested For Current Work/);
+    assert.match(skillsFile, /grill-me/);
     assert.match(skillsFile, /brainstorming/);
     assert.match(skillsFile, /omni-verification/);
   });
+});
+
+test("suggestSkills prioritizes grill-me for change requests", async () => {
+  const suggestions = await suggestSkills("Add a new onboarding feature and refactor the setup flow");
+
+  assert.equal(suggestions[0]?.name, "grill-me");
+  assert.ok(suggestions.some((item) => item.name === "brainstorming"));
 });
 
 test("updateSkillsFile preserves user-managed project notes", async () => {

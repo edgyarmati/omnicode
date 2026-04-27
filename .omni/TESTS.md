@@ -34,3 +34,13 @@
 - [x] Slice 2: launcher tests cover `--check`/`--version` non-launching behavior and Windows-safe shim imports.
 - [x] Slice 3: launcher/docs tests cover generic release artifact naming and installer publication/documentation consistency.
 - [x] Run `npm run check` and `npm test` after each slice before committing.
+
+---
+
+## Automatic Grill-Me Clarification Verification
+
+- [x] `omnicode_list_skills`/skill listing includes `grill-me`.
+- [x] `suggestSkills` returns `grill-me` for a representative feature/change/fix request.
+- [x] Agent instruction resource documents the automatic grill-me checkpoint and one-question-at-a-time behavior.
+- [x] `npm run check` passes.
+- [x] `npm test` passes.

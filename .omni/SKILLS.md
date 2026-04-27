@@ -9,7 +9,6 @@
 
 ## Suggested For Current Work
 
-- omni-execution: use when implementing a planned slice
-- omni-verification: use after implementation to verify and summarize pass/fail
+- brainstorming: use before creative work, migrations, or behavior changes
 
 Record required and project-specific skills here.
