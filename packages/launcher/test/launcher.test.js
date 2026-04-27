@@ -160,14 +160,14 @@ test("managed OpenCode runtime helpers resolve user-scoped paths and version che
   assert.equal(needsManagedOpenCodeUpdate("1.0.1", "1.0.1"), false);
 });
 
-test("native launcher release metadata includes asset naming for current platform", () => {
+test("release metadata matches the generic JS bundle artifact", () => {
   const metadata = getNativeLauncherReleaseMetadata("darwin", "arm64");
   const v = OMNICODE_BINARY_VERSION;
   const escaped = v.replace(/\./g, "\\.");
   assert.equal(metadata.launcherVersion, v);
   assert.match(metadata.opencodeVersion, /^\d+\.\d+\.\d+$/);
-  assert.match(metadata.assetName, new RegExp(`omnicode-${escaped}-darwin-arm64\\.tar\\.gz$`));
-  assert.match(metadata.assetUrl, new RegExp(`releases/download/v${escaped}/omnicode-${escaped}-darwin-arm64\\.tar\\.gz$`));
+  assert.equal(metadata.assetName, `omnicode-${v}.tar.gz`);
+  assert.match(metadata.assetUrl, new RegExp(`releases/download/v${escaped}/omnicode-${escaped}\\.tar\\.gz$`));
 });
 
 test("native installer assets and launcher package metadata are present", async () => {
@@ -190,6 +190,8 @@ test("native installer assets and launcher package metadata are present", async 
   assert.match(launcherBin, /getNativeLauncherReleaseMetadata/);
   assert.match(releaseWorkflow, /name: Release/);
   assert.match(releaseWorkflow, /softprops\/action-gh-release/);
+  assert.match(releaseWorkflow, /dist\/install\.sh/);
+  assert.match(releaseWorkflow, /dist\/install\.ps1/);
   assert.match(bundleScript, /omnicode-.*\.tar\.gz/);
   assert.match(bundleScript, /plugin/);
 

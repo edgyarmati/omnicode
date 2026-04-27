@@ -28,6 +28,8 @@ Runbook for cutting a tagged OmniCode release. Work top-to-bottom; each section 
 - [ ] release assets exist:
   - `omnicode-X.Y.Z.tar.gz`
   - `SHA256SUMS`
+  - `install.sh`
+  - `install.ps1`
 
 ## Post-release smoke test
 

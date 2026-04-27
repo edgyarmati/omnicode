@@ -4,6 +4,8 @@ Give your coding agent a memory and a process. OmniCode layers a plan-before-you
 
 ## Install
 
+OmniCode currently ships as a JavaScript bundle and requires Node.js 22 or newer.
+
 ### macOS / Linux
 
 ```bash
@@ -173,7 +175,7 @@ These stay out of git — they're regenerated each run:
 
 - **Testing from a checkout** — use `./scripts/setup` rather than the release installer.
 - **Managed OpenCode install fails** — rerun `omnicode` and follow the printed fallback command using the same `--prefix` path.
-- **Native launcher verification fails during install** — the installer falls back to `npx omnicode@latest setup` when available.
+- **Launcher verification fails during install** — rerun the installer with the same `OMNICODE_VERSION`; it verifies the extracted launcher with `omnicode --check` before creating the final wrapper.
 - **Installer download fails** — confirm the tagged release contains the expected assets listed in [`docs/release-checklist.md`](docs/release-checklist.md).
 
 ## Development

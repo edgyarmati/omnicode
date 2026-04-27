@@ -7,4 +7,4 @@
 - OmniCode will manage one per-user upstream OpenCode runtime by default, using a pinned tested default version with optional future upgrades.
 - OmniCode should keep the user's normal global `opencode` installation untouched rather than automatically reusing or mutating it.
 - Until release-artifact runtime downloads are wired, the managed runtime acquisition mechanism is `npm install -g opencode-ai@<target> --prefix <omnicode-managed-runtime-dir>`.
-- Release operations are standardized via `.github/workflows/release.yml`, `scripts/release/build-binaries.sh`, and `docs/release-checklist.md` with artifact naming aligned to the installer conventions.
+- Release operations are standardized via `.github/workflows/release.yml`, `scripts/release/bundle.sh`, and `docs/release-checklist.md`; the current release artifact is the generic JS bundle `omnicode-X.Y.Z.tar.gz` plus installer scripts.

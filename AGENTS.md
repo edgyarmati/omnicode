@@ -88,6 +88,8 @@ Under `packages/plugin/src/resources/`:
 - `commands/omni-status.md`
 - `commands/omni-import-standards.md`
 - `commands/omni-skills.md`
+- `commands/commit.md`
+- `commands/push.md`
 - workflow skills:
   - `brainstorming.md`
   - `omni-planning.md`
@@ -166,8 +168,8 @@ npm test
 - `scripts/setup` bootstraps a fresh checkout for contributors and pre-release testing.
 - root `install.sh` and `install.ps1` are the target public installers for native launcher releases.
 - `scripts/install.sh` is now a compatibility wrapper to the root POSIX installer.
-- `.github/workflows/release.yml` builds and publishes tagged native launcher artifacts.
-- `scripts/release/build-binaries.sh` defines artifact targets/naming.
+- `.github/workflows/release.yml` builds and publishes the tagged generic JS bundle plus installer scripts.
+- `scripts/release/bundle.sh` defines the current release artifact layout/naming.
 - `docs/release-checklist.md` is the required release runbook.
 - the `omnicode` launcher package in `packages/launcher/` is still the current dev/runtime entrypoint, with release direction toward standalone OmniCode binaries plus a managed per-user OpenCode runtime.
 

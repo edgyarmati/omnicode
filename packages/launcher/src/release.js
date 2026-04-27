@@ -3,34 +3,20 @@ export const OMNICODE_RELEASE_CHANNEL = "latest";
 export const OMNICODE_BINARY_VERSION = "0.2.1";
 export const OPENCODE_VERSION_TARGET = "1.14.25";
 
-const PLATFORM_LABELS = {
-  darwin: "darwin",
-  linux: "linux",
-  win32: "windows",
-};
-
-const ARCH_LABELS = {
-  arm64: "arm64",
-  x64: "x64",
-};
-
 export function normalizePlatform(platform) {
-  return PLATFORM_LABELS[platform] ?? platform;
+  return platform;
 }
 
 export function normalizeArch(arch) {
-  return ARCH_LABELS[arch] ?? arch;
+  return arch;
 }
 
 export function getLauncherAssetExtension(platform) {
-  return platform === "win32" ? "zip" : "tar.gz";
+  return "tar.gz";
 }
 
 export function getLauncherAssetName(platform, arch, version = OMNICODE_BINARY_VERSION) {
-  const normalizedPlatform = normalizePlatform(platform);
-  const normalizedArch = normalizeArch(arch);
-  const ext = getLauncherAssetExtension(platform);
-  return `omnicode-${version}-${normalizedPlatform}-${normalizedArch}.${ext}`;
+  return `omnicode-${version}.${getLauncherAssetExtension(platform)}`;
 }
 
 export function getLatestReleaseAssetUrl(platform, arch) {
