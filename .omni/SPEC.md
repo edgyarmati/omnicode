@@ -27,3 +27,51 @@ Backport the relevant Omni-Pi hardening ideas into OmniCode in bounded slices:
 - State/session-summary/skills/standards/repo-map generated content cannot inject new top-level markdown structure through tool inputs or imported file contents.
 - Launcher semver comparison passes prerelease precedence tests.
 - Existing `npm run check` and `npm test` pass after each committed slice.
+
+---
+
+## Current Review Task — General Codebase Review
+
+### Problem
+
+The maintainer requested a broad repository review rather than a diff-only review: code quality, functionality, architecture, release readiness, tests, gaps, and actionable next work.
+
+### Requested Behavior
+
+Perform a review-only pass over the OmniCode repository using project docs, standards, repo map, source files, tests, scripts, and release workflow assets. Do not implement source changes unless explicitly requested afterward.
+
+### Success Criteria
+
+- Identify concrete correctness, reliability, maintainability, security, release, and test-coverage concerns with file references where possible.
+- Distinguish confirmed issues from speculative risks.
+- Prioritize findings by severity and propose bounded follow-up slices.
+- Record review progress in Omni state/session notes without committing unless explicitly requested.
+
+---
+
+## Current Implementation Task — Review Finding Fixes
+
+### Problem
+
+The general codebase review identified concrete reliability/release-readiness gaps: the planning guard can be bypassed through bash and weak `.omni` path checks, repo-map/skills helpers can damage performance or durable notes, installer verification can launch runtime setup, Windows plugin shims may emit invalid ESM imports, and release/docs/tests disagree about the artifact model.
+
+### Requested Behavior
+
+Implement the fixes in bounded, verified slices:
+
+1. Harden plugin workflow behavior: detect common mutating bash commands before planning, resolve `.omni` containment instead of string-matching paths, cap repo-map file reads, and preserve user-managed `SKILLS.md` notes.
+2. Harden launcher/install behavior: generate ESM-safe plugin shim imports on Windows/POSIX and add a non-launching `--check`/`--version` path for installers.
+3. Align release/docs/tests: choose the current generic JS bundle model, remove misleading platform-specific artifact expectations, publish or document installers consistently, and clean stale docs.
+
+### Constraints
+
+- Keep OmniCode as OpenCode plugin + launcher; do not add a custom shell.
+- Preserve public tool/command names.
+- Keep each slice independently verified and committed with a conventional commit.
+- Do not weaken launcher isolation or planning-before-edit semantics.
+
+### Success Criteria
+
+- Tests cover bash/path guard hardening, SKILLS preservation, large repo-map file handling, Windows-safe plugin shim imports, and installer `--check` behavior.
+- `npm run check` and `npm test` pass after each slice.
+- Release metadata, workflow, installers, README/AGENTS/checklist describe the same current artifact model.

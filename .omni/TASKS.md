@@ -11,3 +11,22 @@
 
 - Commit each verified slice before starting the next one.
 - Prefer narrow backports that match OmniCode's simpler architecture rather than copying Omni-Pi internals wholesale.
+
+---
+
+## Current Review Task
+
+- [x] Define review scope and success criteria.
+- [x] Inspect repository structure, standards, and project docs.
+- [x] Review plugin workflow implementation and tests.
+- [x] Review launcher/runtime/install/release implementation and tests.
+- [x] Assess cross-cutting quality, functionality gaps, risks, and missing tests.
+- [x] Summarize prioritized findings and recommended next slices.
+
+---
+
+## Review Finding Fixes
+
+- [x] Slice 1: harden plugin guard/path containment, preserve skills notes, and cap repo-map reads.
+- [ ] Slice 2: add safe launcher check/version behavior and Windows-safe plugin shim imports.
+- [ ] Slice 3: align release artifact model, docs, workflow assets, and tests.

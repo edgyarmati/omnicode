@@ -130,6 +130,9 @@ const SKILL_RULES: Array<{ name: string; patterns: RegExp[]; reason: string; sco
   },
 ];
 
+const REPO_MAP_MAX_SUMMARY_BYTES = 128 * 1024;
+const SKILLS_PROJECT_NOTES_HEADING = "## Project Notes";
+
 function tempPathFor(filePath: string): string {
   return `${filePath}.${randomBytes(6).toString("hex")}.tmp`;
 }
@@ -533,6 +536,10 @@ function scoreRepoMapPath(relativePath: string): number {
 
 async function summarizeRepoMapFile(directory: string, relativePath: string): Promise<string> {
   const fullPath = path.join(directory, relativePath);
+  const fileStat = await stat(fullPath);
+  if (fileStat.size > REPO_MAP_MAX_SUMMARY_BYTES) {
+    return `large file skipped (${fileStat.size} bytes)`;
+  }
   const content = await readFile(fullPath, "utf8");
   const basename = path.posix.basename(relativePath);
 
@@ -661,6 +668,11 @@ export async function updateSkillsFile(
   task: string,
 ): Promise<{ suggested: SuggestedSkill[]; outputPath: string }> {
   const omniDir = await ensureOmniDir(directory);
+  const outputPath = path.join(omniDir, "SKILLS.md");
+  const existing = await readFile(outputPath, "utf8").catch(() => "");
+  const existingProjectNotes = existing.includes(SKILLS_PROJECT_NOTES_HEADING)
+    ? existing.slice(existing.indexOf(SKILLS_PROJECT_NOTES_HEADING) + SKILLS_PROJECT_NOTES_HEADING.length).trim()
+    : "Record required and project-specific skills here.";
   const suggested = await suggestSkills(task);
   const sections = [
     "# Skills",
@@ -682,8 +694,7 @@ export async function updateSkillsFile(
     sections.push(...suggested.map((skill) => `- ${skill.name}: ${skill.reason}`));
   }
 
-  sections.push("", "Record required and project-specific skills here.");
-  const outputPath = path.join(omniDir, "SKILLS.md");
+  sections.push("", SKILLS_PROJECT_NOTES_HEADING, "", existingProjectNotes);
   await writeFileAtomic(outputPath, `${sections.join("\n")}\n`);
   return { suggested, outputPath };
 }
@@ -843,6 +854,23 @@ function extractFilePath(args: Record<string, unknown>): string | null {
   return null;
 }
 
+async function isInsideProjectOmniDir(directory: string, targetPath: string): Promise<boolean> {
+  const absoluteTarget = path.resolve(directory, targetPath);
+  const omniDir = path.resolve(directory, ".omni");
+  const relative = path.relative(omniDir, absoluteTarget);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function isPotentiallyMutatingBashCommand(command: string): boolean {
+  const normalized = command.replace(/\\\n/gu, " ");
+  return (
+    /(^|[;&|()]\s*)(?:sudo\s+)?(?:rm|mv|cp|touch|mkdir|rmdir|ln|chmod|chown|install|tee|truncate|python(?:3)?|node|perl|ruby|sh|bash|zsh)\b/u.test(normalized) ||
+    /(^|[^<>])>\s*[^&\s]/u.test(normalized) ||
+    />>\s*\S/u.test(normalized) ||
+    /\b(?:sed|perl)\b[^\n;|&]*\s-i(?:\s|$)/u.test(normalized)
+  );
+}
+
 export const OmniCodePlugin: Plugin = async ({ directory }) => {
   const commands = await loadCommands();
   const instructionPrompt = await readInstructionPrompt();
@@ -899,12 +927,27 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
       // RTK integration: rewrite bash commands through RTK for token savings.
       // RTK handles passthrough for commands it doesn't recognize, so we
       // prefix all bash commands and let RTK decide what to compress.
-      if (rtkAvailable && input.tool === "bash") {
-        const args = (output.args ?? {}) as Record<string, unknown>;
-        const commandKey = Object.keys(args).find(
-          (k) => typeof args[k] === "string" && (k === "command" || k === "cmd"),
-        );
-        if (commandKey && typeof args[commandKey] === "string") {
+      const args = (output.args ?? {}) as Record<string, unknown>;
+      const commandKey = Object.keys(args).find(
+        (k) => typeof args[k] === "string" && (k === "command" || k === "cmd"),
+      );
+      const originalBashCommand = input.tool === "bash" && commandKey ? String(args[commandKey]) : null;
+
+      const activeMode = await readOmniMode(directory);
+      if (activeMode === "off") return;
+
+      const fileMutatingTool = input.tool === "write" || input.tool === "edit";
+      const potentiallyMutatingBash = originalBashCommand ? isPotentiallyMutatingBashCommand(originalBashCommand) : false;
+      if (fileMutatingTool) {
+        const targetPath = extractFilePath(args);
+        if (!targetPath) return;
+        if (await isInsideProjectOmniDir(directory, targetPath)) {
+          return;
+        }
+      }
+
+      if (!fileMutatingTool && !potentiallyMutatingBash) {
+        if (rtkAvailable && input.tool === "bash" && commandKey && typeof args[commandKey] === "string") {
           const originalCommand = args[commandKey] as string;
           if (!originalCommand.trimStart().startsWith("rtk ")) {
             args[commandKey] = `rtk ${originalCommand}`;
@@ -913,24 +956,18 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
         return;
       }
 
-      const activeMode = await readOmniMode(directory);
-      if (activeMode === "off") return;
-
-      const fileMutatingTool = input.tool === "write" || input.tool === "edit";
-      if (!fileMutatingTool) return;
-
-      const args = (output.args ?? {}) as Record<string, unknown>;
-      const targetPath = extractFilePath(args);
-      if (!targetPath) return;
-      if (targetPath.includes(`${path.sep}.omni${path.sep}`) || targetPath.startsWith(".omni/")) {
-        return;
-      }
-
       const hasPlanningArtifacts = await planningArtifactsReady(directory);
       if (!hasPlanningArtifacts) {
         throw new Error(
-          "OmniCode guard: before editing source files, write real planning content into .omni/SPEC.md, .omni/TASKS.md, and .omni/TESTS.md (placeholder bootstrap files are not enough).",
+          "OmniCode guard: before editing source files or running mutating shell commands, write real planning content into .omni/SPEC.md, .omni/TASKS.md, and .omni/TESTS.md (placeholder bootstrap files are not enough).",
         );
+      }
+
+      if (rtkAvailable && input.tool === "bash" && commandKey && typeof args[commandKey] === "string") {
+        const originalCommand = args[commandKey] as string;
+        if (!originalCommand.trimStart().startsWith("rtk ")) {
+          args[commandKey] = `rtk ${originalCommand}`;
+        }
       }
     },
 

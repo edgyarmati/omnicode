@@ -135,6 +135,42 @@ test("tool.execute.before rejects write/edit when planning artifacts are placeho
   });
 });
 
+test("tool.execute.before rejects mutating bash commands when planning artifacts are placeholders", async () => {
+  await withTempDir(async (dir) => {
+    await ensureOmniDir(dir);
+    await setOmniMode(dir, "on");
+    const hook = await buildHook(dir);
+
+    await assert.rejects(
+      () => hook(
+        { tool: "bash" },
+        { args: { command: "printf 'changed' > src/example.ts" } },
+      ),
+      /OmniCode guard: before editing source files or running mutating shell commands/,
+    );
+    await assert.rejects(
+      () => hook(
+        { tool: "bash" },
+        { args: { command: "rm src/example.ts" } },
+      ),
+      /OmniCode guard: before editing source files or running mutating shell commands/,
+    );
+  });
+});
+
+test("tool.execute.before allows non-mutating bash commands before planning", async () => {
+  await withTempDir(async (dir) => {
+    await ensureOmniDir(dir);
+    await setOmniMode(dir, "on");
+    const hook = await buildHook(dir);
+
+    await hook(
+      { tool: "bash" },
+      { args: { command: "git status --short" } },
+    );
+  });
+});
+
 test("tool.execute.before allows write/edit once SPEC, TASKS, and TESTS hold real content", async () => {
   await withTempDir(async (dir) => {
     await ensureOmniDir(dir);
@@ -166,6 +202,22 @@ test("tool.execute.before always allows writes inside .omni/ even with placehold
     await hook(
       { tool: "edit" },
       { args: { filePath: ".omni/TASKS.md" } },
+    );
+  });
+});
+
+test("tool.execute.before rejects paths that escape the project .omni directory", async () => {
+  await withTempDir(async (dir) => {
+    await ensureOmniDir(dir);
+    await setOmniMode(dir, "on");
+    const hook = await buildHook(dir);
+
+    await assert.rejects(
+      () => hook(
+        { tool: "write" },
+        { args: { filePath: path.join(dir, ".omni", "..", "src", "example.ts") } },
+      ),
+      /OmniCode guard: before editing source files/,
     );
   });
 });

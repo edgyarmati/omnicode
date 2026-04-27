@@ -190,6 +190,20 @@ test("buildRepoMap sanitizes package metadata in markdown summaries", async () =
   });
 });
 
+test("buildRepoMap skips large files instead of reading full contents", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, "src"), { recursive: true });
+    await writeFile(path.join(dir, "src", "large.json"), `${"x".repeat(140 * 1024)}\n`, "utf8");
+
+    const markdown = await buildRepoMap(dir);
+    const json = JSON.parse(await readFile(path.join(dir, ".omni", "REPO-MAP.json"), "utf8"));
+    const largeEntry = json.find((entry: { path: string }) => entry.path === "src/large.json");
+
+    assert.match(markdown, /src\/large\.json/);
+    assert.match(largeEntry.summary, /large file skipped/);
+  });
+});
+
 test("suggestSkills and updateSkillsFile infer workflow skills from task text", async () => {
   await withTempDir(async (dir) => {
     const task = "Design a feature, plan the slices, implement it, and verify the result";
@@ -207,6 +221,35 @@ test("suggestSkills and updateSkillsFile infer workflow skills from task text", 
     assert.match(skillsFile, /## Suggested For Current Work/);
     assert.match(skillsFile, /brainstorming/);
     assert.match(skillsFile, /omni-verification/);
+  });
+});
+
+test("updateSkillsFile preserves user-managed project notes", async () => {
+  await withTempDir(async (dir) => {
+    await ensureOmniDir(dir);
+    await writeFile(
+      path.join(dir, ".omni", "SKILLS.md"),
+      [
+        "# Skills",
+        "",
+        "## Suggested For Current Work",
+        "",
+        "- stale generated item",
+        "",
+        "## Project Notes",
+        "",
+        "- Always load the repo-specific release skill before publishing.",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    await updateSkillsFile(dir, "verify the implementation");
+
+    const skillsFile = await readFile(path.join(dir, ".omni", "SKILLS.md"), "utf8");
+    assert.match(skillsFile, /omni-verification/);
+    assert.match(skillsFile, /Always load the repo-specific release skill/);
+    assert.doesNotMatch(skillsFile, /stale generated item/);
   });
 });
 
