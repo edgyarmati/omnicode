@@ -565,8 +565,29 @@ async function summarizeRepoMapFile(directory: string, relativePath: string): Pr
   return "source/config file";
 }
 
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  mapper: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = [];
+  let cursor = 0;
+
+  async function worker(): Promise<void> {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await mapper(items[index]);
+    }
+  }
+
+  const workerCount = Math.min(concurrency, items.length);
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
+}
+
 async function collectRepoMapEntries(directory: string): Promise<RepoMapEntry[]> {
-  const entries: RepoMapEntry[] = [];
+  const filePaths: string[] = [];
 
   async function walk(currentDir: string, depth: number): Promise<void> {
     if (depth > 4) return;
@@ -582,16 +603,16 @@ async function collectRepoMapEntries(directory: string): Promise<RepoMapEntry[]>
       }
 
       if (!isRepoMapFile(entry.name)) continue;
-      const summary = await summarizeRepoMapFile(directory, relativePath);
-      entries.push({
-        path: relativePath,
-        score: scoreRepoMapPath(relativePath),
-        summary,
-      });
+      filePaths.push(relativePath);
     }
   }
 
   await walk(directory, 0);
+  const entries = await mapWithConcurrency(filePaths, 16, async (relativePath) => ({
+    path: relativePath,
+    score: scoreRepoMapPath(relativePath),
+    summary: await summarizeRepoMapFile(directory, relativePath),
+  }));
   return entries.sort((a, b) => b.score - a.score || a.path.localeCompare(b.path));
 }
 
