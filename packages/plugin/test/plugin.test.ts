@@ -109,6 +109,23 @@ test("importStandards writes imported content into .omni/STANDARDS.md", async ()
   });
 });
 
+test("importStandards preserves embedded fences without closing the wrapper fence", async () => {
+  await withTempDir(async (dir) => {
+    await writeFile(
+      path.join(dir, "AGENTS.md"),
+      "# Project Agent\n\n```ts\nconst value = true;\n```\n\n## Keep as imported content\n",
+      "utf8",
+    );
+
+    await importStandards(dir);
+
+    const standards = await readFile(path.join(dir, ".omni", "STANDARDS.md"), "utf8");
+    assert.match(standards, /````md\n# Project Agent/);
+    assert.match(standards, /```ts\nconst value = true;\n```/);
+    assert.match(standards, /\n````\n$/);
+  });
+});
+
 test("planningArtifactsReady rejects placeholders and requires SPEC, TASKS, and TESTS content", async () => {
   await withTempDir(async (dir) => {
     await ensureOmniDir(dir);
@@ -158,6 +175,21 @@ test("buildRepoMap ranks important files and writes both markdown and json outpu
   });
 });
 
+test("buildRepoMap sanitizes package metadata in markdown summaries", async () => {
+  await withTempDir(async (dir) => {
+    await writeFile(
+      path.join(dir, "package.json"),
+      JSON.stringify({ name: "repo", description: "safe\n## injected heading" }, null, 2),
+      "utf8",
+    );
+
+    const markdown = await buildRepoMap(dir);
+
+    assert.doesNotMatch(markdown, /^## injected heading$/m);
+    assert.match(markdown, /safe injected heading/);
+  });
+});
+
 test("suggestSkills and updateSkillsFile infer workflow skills from task text", async () => {
   await withTempDir(async (dir) => {
     const task = "Design a feature, plan the slices, implement it, and verify the result";
@@ -193,6 +225,25 @@ test("updateStateFile writes structured current workflow state", async () => {
     assert.match(content, /Active Task: Slice 2/);
     assert.match(content, /Status Summary: Implemented the current slice\./);
     assert.match(content, /Next Step: Run verification\./);
+  });
+});
+
+test("updateStateFile sanitizes markdown structure from tool-provided fields", async () => {
+  await withTempDir(async (dir) => {
+    const outputPath = await updateStateFile(dir, {
+      currentPhase: "execution\n## injected",
+      activeTask: "- fake list item",
+      statusSummary: "Implemented\n# forged heading",
+      blockers: ["---", "## blocker heading"],
+      nextStep: "Verify\n- forged bullet",
+    });
+
+    const content = await readFile(outputPath, "utf8");
+    assert.doesNotMatch(content, /^## injected$/m);
+    assert.doesNotMatch(content, /^# forged heading$/m);
+    assert.doesNotMatch(content, /^- forged bullet$/m);
+    assert.match(content, /Current Phase: execution injected/);
+    assert.match(content, /Active Task: fake list item/);
   });
 });
 
@@ -234,6 +285,22 @@ test("appendSessionSummary appends a titled handoff section", async () => {
     assert.match(content, /## Slice 2 Complete/);
     assert.match(content, /- Implemented the change/);
     assert.match(content, /- Verification still pending/);
+  });
+});
+
+test("appendSessionSummary sanitizes headings and bullets", async () => {
+  await withTempDir(async (dir) => {
+    const outputPath = await appendSessionSummary(dir, {
+      title: "Safe title\n## forged title",
+      bullets: ["- completed\n## forged heading", "``` fenced marker"],
+    });
+
+    const content = await readFile(outputPath, "utf8");
+    assert.doesNotMatch(content, /^## forged title$/m);
+    assert.doesNotMatch(content, /^## forged heading$/m);
+    assert.doesNotMatch(content, /^```/m);
+    assert.match(content, /## Safe title forged title/);
+    assert.match(content, /- completed forged heading/);
   });
 });
 

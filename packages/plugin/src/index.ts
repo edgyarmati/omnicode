@@ -163,6 +163,26 @@ export async function writeFileAtomic(filePath: string, content: string | Uint8A
   }
 }
 
+function sanitizeMarkdownInline(value: string, maxLen = 240): string {
+  const cleaned = value
+    .replace(/[\u0000-\u001f\u007f]/gu, " ")
+    .replace(/`/gu, "'")
+    .replace(/(^|\s)#{1,6}\s+/gu, "$1")
+    .replace(/(^|\s)[-+*]\s+/gu, "$1")
+    .replace(/(^|\s)---(?:\s|$)/gu, "$1")
+    .replace(/\s+/gu, " ")
+    .trim()
+    .slice(0, maxLen)
+    .trim();
+  return cleaned.length > 0 ? cleaned : "None";
+}
+
+function markdownFenceFor(content: string): string {
+  const runs = content.match(/`{3,}/gu) ?? [];
+  const longest = runs.reduce((max, run) => Math.max(max, run.length), 3);
+  return "`".repeat(longest + 1);
+}
+
 export const OMNI_RUNTIME_FILES = [
   "STATE.md",
   "SESSION-SUMMARY.md",
@@ -385,7 +405,7 @@ async function readStateSummary(directory: string): Promise<string> {
 }
 
 function normalizeListItems(items: string[]): string {
-  const cleaned = items.map((item) => item.trim()).filter(Boolean);
+  const cleaned = items.map((item) => sanitizeMarkdownInline(item)).filter(Boolean);
   return cleaned.length > 0 ? cleaned.join("; ") : "None";
 }
 
@@ -401,15 +421,15 @@ export async function updateStateFile(
 ): Promise<string> {
   const omniDir = await ensureOmniDir(directory);
   const nextState = {
-    currentPhase: updates.currentPhase?.trim() || "discovery",
-    activeTask: updates.activeTask?.trim() || "",
-    statusSummary:
-      updates.statusSummary?.trim() ||
-      "OmniCode workspace bootstrapped and ready for planning.",
+    currentPhase: sanitizeMarkdownInline(updates.currentPhase ?? "discovery", 80),
+    activeTask: updates.activeTask ? sanitizeMarkdownInline(updates.activeTask, 160) : "",
+    statusSummary: updates.statusSummary
+      ? sanitizeMarkdownInline(updates.statusSummary, 300)
+      : "OmniCode workspace bootstrapped and ready for planning.",
     blockers: normalizeListItems(updates.blockers ?? []),
-    nextStep:
-      updates.nextStep?.trim() ||
-      "Clarify scope, write spec, define tests, and break work into tasks before implementation.",
+    nextStep: updates.nextStep
+      ? sanitizeMarkdownInline(updates.nextStep, 300)
+      : "Clarify scope, write spec, define tests, and break work into tasks before implementation.",
   };
 
   const content = [
@@ -438,11 +458,13 @@ export async function appendSessionSummary(
   const omniDir = await ensureOmniDir(directory);
   const summaryPath = path.join(omniDir, "SESSION-SUMMARY.md");
   const current = await readFile(summaryPath, "utf8").catch(() => OMNI_FILES["SESSION-SUMMARY.md"]);
+  const title = sanitizeMarkdownInline(entry.title || "Update", 120);
+  const bullets = entry.bullets.map((bullet) => sanitizeMarkdownInline(bullet, 240));
   const section = [
     "",
-    `## ${entry.title.trim() || "Update"}`,
+    `## ${title}`,
     "",
-    ...entry.bullets.map((bullet) => `- ${bullet.trim()}`),
+    ...bullets.map((bullet) => `- ${bullet}`),
     "",
   ].join("\n");
   const next = `${current.trimEnd()}${section}`;
@@ -517,7 +539,9 @@ async function summarizeRepoMapFile(directory: string, relativePath: string): Pr
   if (basename === "package.json") {
     try {
       const parsed = JSON.parse(content) as { name?: string; description?: string };
-      return [parsed.name, parsed.description].filter(Boolean).join(" — ") || "package manifest";
+      return sanitizeMarkdownInline(
+        [parsed.name, parsed.description].filter(Boolean).join(" — ") || "package manifest",
+      );
     } catch {
       return "package manifest";
     }
@@ -525,12 +549,12 @@ async function summarizeRepoMapFile(directory: string, relativePath: string): Pr
 
   if (basename.endsWith(".md")) {
     const heading = content.match(/^#\s+(.+)$/mu)?.[1]?.trim();
-    return heading ? `markdown: ${heading}` : "markdown document";
+    return heading ? `markdown: ${sanitizeMarkdownInline(heading)}` : "markdown document";
   }
 
   const exportMatch = content.match(/export\s+(?:default\s+)?(?:async\s+)?(?:function|const|class)\s+([A-Za-z0-9_]+)/u);
   if (exportMatch) {
-    return `exports ${exportMatch[1]}`;
+    return `exports ${sanitizeMarkdownInline(exportMatch[1], 80)}`;
   }
 
   const importCount = (content.match(/^import\s/gu) ?? []).length;
@@ -583,7 +607,10 @@ export async function buildRepoMap(directory: string): Promise<string> {
     "",
     "## Ranked files",
     "",
-    ...topEntries.map((entry) => `- [${entry.score}] ${entry.path} — ${entry.summary}`),
+    ...topEntries.map(
+      (entry) =>
+        `- [${entry.score}] ${sanitizeMarkdownInline(entry.path, 180)} — ${sanitizeMarkdownInline(entry.summary)}`,
+    ),
   ].join("\n");
 
   await writeFileAtomic(path.join(omniDir, "REPO-MAP.md"), `${summary}\n`);
@@ -720,12 +747,13 @@ export async function importStandards(
         );
       }
       const content = await readFile(realFullPath, "utf8");
+      const fence = markdownFenceFor(content);
       sections.push(
-        `## ${candidate.kind}: ${candidate.path}`,
+        `## ${sanitizeMarkdownInline(candidate.kind, 80)}: ${sanitizeMarkdownInline(candidate.path, 180)}`,
         "",
-        "```md",
-        content.replace(/```/gu, "\\`\\`\\`"),
-        "```",
+        `${fence}md`,
+        content.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/gu, ""),
+        fence,
         "",
       );
     }

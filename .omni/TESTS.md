@@ -6,8 +6,8 @@
 - [x] `npm test` after each implementation slice
 - [x] Atomic helper preserves permissions on replacement
 - [x] Representative plugin `.omni` write uses atomic helper successfully
-- [ ] Sanitizers collapse unsafe multi-line markdown/tool text into safe generated output
-- [ ] Standards import handles embedded code fences/headings without breaking output structure
+- [x] Sanitizers collapse unsafe multi-line markdown/tool text into safe generated output
+- [x] Standards import handles embedded code fences/headings without breaking output structure
 - [ ] Launcher semver comparison handles stable vs prerelease and prerelease identifier ordering
 
 ## Expected outcomes
