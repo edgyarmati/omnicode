@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
-import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 
 import {
   OMNI_FILES,
@@ -17,6 +17,7 @@ import {
   suggestSkills,
   updateSkillsFile,
   updateStateFile,
+  writeFileAtomic,
 } from "../src/index.ts";
 
 async function withTempDir(run: (dir: string) => Promise<void>) {
@@ -26,6 +27,10 @@ async function withTempDir(run: (dir: string) => Promise<void>) {
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+}
+
+function modeBits(mode: number): number {
+  return mode & 0o777;
 }
 
 test("discoverStandards finds supported standards files and ignores .omni", async () => {
@@ -60,6 +65,35 @@ test("ensureOmniDir writes a selective .omni/.gitignore for runtime state", asyn
     assert.equal(gitignore, `${OMNI_GITIGNORE}\n`);
     assert.match(gitignore, /STATE\.md/);
     assert.doesNotMatch(gitignore, /PROJECT\.md/);
+  });
+});
+
+test("writeFileAtomic preserves existing file permissions", async () => {
+  await withTempDir(async (dir) => {
+    const filePath = path.join(dir, ".omni", "STATE.md");
+    await mkdir(path.dirname(filePath), { recursive: true });
+    await writeFile(filePath, "old\n", "utf8");
+    await chmod(filePath, 0o600);
+
+    await writeFileAtomic(filePath, "new\n");
+
+    assert.equal(await readFile(filePath, "utf8"), "new\n");
+    assert.equal(modeBits((await stat(filePath)).mode), 0o600);
+  });
+});
+
+test("updateStateFile preserves permissions through atomic replacement", async () => {
+  await withTempDir(async (dir) => {
+    await ensureOmniDir(dir);
+    const statePath = path.join(dir, ".omni", "STATE.md");
+    await chmod(statePath, 0o600);
+
+    await updateStateFile(dir, {
+      currentPhase: "execution",
+      activeTask: "Atomic write slice",
+    });
+
+    assert.equal(modeBits((await stat(statePath)).mode), 0o600);
   });
 });
 

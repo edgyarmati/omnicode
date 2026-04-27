@@ -9,7 +9,6 @@
 
 ## Suggested For Current Work
 
-- omni-execution: use when implementing the next planned slice
-- omni-verification: use after implementation to confirm the policy works as intended
+- omni-execution: use when implementing a planned slice
 
 Record required and project-specific skills here.

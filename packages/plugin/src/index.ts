@@ -1,4 +1,5 @@
-import { mkdir, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
+import { chmod, mkdir, readFile, readdir, realpath, rename, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
@@ -129,6 +130,39 @@ const SKILL_RULES: Array<{ name: string; patterns: RegExp[]; reason: string; sco
   },
 ];
 
+function tempPathFor(filePath: string): string {
+  return `${filePath}.${randomBytes(6).toString("hex")}.tmp`;
+}
+
+async function existingMode(filePath: string): Promise<number | undefined> {
+  try {
+    return (await stat(filePath)).mode & 0o777;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function writeFileAtomic(filePath: string, content: string | Uint8Array): Promise<void> {
+  await mkdir(path.dirname(filePath), { recursive: true });
+  const tempPath = tempPathFor(filePath);
+  const mode = await existingMode(filePath);
+
+  try {
+    await writeFile(tempPath, content, { encoding: "utf8", flag: "wx" });
+    if (mode !== undefined) {
+      await chmod(tempPath, mode);
+    }
+    await rename(tempPath, filePath);
+  } catch (error) {
+    try {
+      await unlink(tempPath);
+    } catch {
+      // Best-effort cleanup only.
+    }
+    throw error;
+  }
+}
+
 export const OMNI_RUNTIME_FILES = [
   "STATE.md",
   "SESSION-SUMMARY.md",
@@ -240,7 +274,7 @@ export async function ensureOmniDir(directory: string): Promise<string> {
     try {
       await stat(filePath);
     } catch {
-      await writeFile(filePath, content, "utf8");
+      await writeFileAtomic(filePath, content);
     }
   }
 
@@ -248,7 +282,7 @@ export async function ensureOmniDir(directory: string): Promise<string> {
   try {
     await stat(gitignorePath);
   } catch {
-    await writeFile(gitignorePath, `${OMNI_GITIGNORE}\n`, "utf8");
+    await writeFileAtomic(gitignorePath, `${OMNI_GITIGNORE}\n`);
   }
 
   return omniDir;
@@ -312,15 +346,14 @@ async function initializeProjectFile(directory: string): Promise<void> {
     "List the observable outcomes that mean the work is successful.",
     "",
   ].join("\n");
-  await writeFile(projectPath, content, "utf8");
+  await writeFileAtomic(projectPath, content);
 }
 
 export async function setOmniMode(directory: string, mode: OmniMode): Promise<void> {
   const omniDir = await ensureOmniDir(directory);
-  await writeFile(
+  await writeFileAtomic(
     path.join(omniDir, "CONFIG.md"),
     `# Omni Configuration\n\nOmni Mode: ${mode}\n`,
-    "utf8",
   );
 
   if (mode === "on") {
@@ -391,7 +424,7 @@ export async function updateStateFile(
   ].join("\n");
 
   const outputPath = path.join(omniDir, "STATE.md");
-  await writeFile(outputPath, content, "utf8");
+  await writeFileAtomic(outputPath, content);
   return outputPath;
 }
 
@@ -413,7 +446,7 @@ export async function appendSessionSummary(
     "",
   ].join("\n");
   const next = `${current.trimEnd()}${section}`;
-  await writeFile(summaryPath, `${next}\n`, "utf8");
+  await writeFileAtomic(summaryPath, `${next}\n`);
   return summaryPath;
 }
 
@@ -553,8 +586,8 @@ export async function buildRepoMap(directory: string): Promise<string> {
     ...topEntries.map((entry) => `- [${entry.score}] ${entry.path} — ${entry.summary}`),
   ].join("\n");
 
-  await writeFile(path.join(omniDir, "REPO-MAP.md"), `${summary}\n`, "utf8");
-  await writeFile(path.join(omniDir, "REPO-MAP.json"), `${JSON.stringify(topEntries, null, 2)}\n`, "utf8");
+  await writeFileAtomic(path.join(omniDir, "REPO-MAP.md"), `${summary}\n`);
+  await writeFileAtomic(path.join(omniDir, "REPO-MAP.json"), `${JSON.stringify(topEntries, null, 2)}\n`);
   return summary;
 }
 
@@ -603,7 +636,7 @@ export async function updateSkillsFile(
 
   sections.push("", "Record required and project-specific skills here.");
   const outputPath = path.join(omniDir, "SKILLS.md");
-  await writeFile(outputPath, `${sections.join("\n")}\n`, "utf8");
+  await writeFileAtomic(outputPath, `${sections.join("\n")}\n`);
   return { suggested, outputPath };
 }
 
@@ -699,7 +732,7 @@ export async function importStandards(
   }
 
   const outputPath = path.join(omniDir, "STANDARDS.md");
-  await writeFile(outputPath, `${sections.join("\n").trimEnd()}\n`, "utf8");
+  await writeFileAtomic(outputPath, `${sections.join("\n").trimEnd()}\n`);
   return { imported, outputPath };
 }
 
