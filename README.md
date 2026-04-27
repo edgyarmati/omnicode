@@ -35,6 +35,7 @@ omnicode
 
 - **Durable project memory** in `.omni/` — spec, tasks, tests, decisions, standards, and session summaries stay on disk between runs.
 - **Automatic grilling before changes** — for new features, fixes, refactors, and behavior changes, OmniCode asks one focused question at a time until the request is unambiguous.
+- **Skill-fit checkpoint** — after clarification, OmniCode checks whether available skills cover the task and uses `find-skills` when relevant skills are missing.
 - **Plan before edit** — when Omni mode is on, the agent can't touch your files until `SPEC.md`, `TASKS.md`, and `TESTS.md` have real content.
 - **Repo awareness** — a ranked repo map keeps the agent oriented in large codebases.
 - **Skill discovery** — relevant skills are surfaced and loaded automatically for the task at hand.
@@ -47,9 +48,10 @@ OpenCode still owns the terminal UI, models, providers, auth, sessions, tools, a
 
 1. **Bootstrap** — `.omni/` is seeded in your project the first time you run OmniCode there.
 2. **Grill** — for change requests, clarify one question at a time until behavior, constraints, non-goals, tests, and success criteria are concrete.
-3. **Plan** — write real `SPEC.md`, `TASKS.md`, and `TESTS.md`. Until you do, the edit/write guard is active.
-4. **Execute** — work bounded task slices guided by the plan.
-5. **Verify** — state and session summaries are updated through OmniCode tools so the next run picks up where you left off.
+3. **Check skills** — judge whether bundled/project skills cover the clarified task; if not, use `find-skills` before planning.
+4. **Plan** — write real `SPEC.md`, `TASKS.md`, and `TESTS.md`. Until you do, the edit/write guard is active.
+5. **Execute** — work bounded task slices guided by the plan.
+6. **Verify** — state and session summaries are updated through OmniCode tools so the next run picks up where you left off.
 
 `.omni/STATE.md` is also injected into OpenCode's compaction context, so active state survives long sessions.
 

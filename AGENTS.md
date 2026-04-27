@@ -23,6 +23,7 @@ Core idea:
 - preserve the Omni workflow:
   - `.omni/` durable memory
   - automatic grill-me clarification before change requests
+  - explicit skill-fit checkpoint before planning
   - planning before implementation
   - bounded task slices
   - verification after implementation
@@ -93,6 +94,7 @@ Under `packages/plugin/src/resources/`:
 - `commands/push.md`
 - workflow skills:
   - `grill-me.md`
+  - `find-skills.md`
   - `brainstorming.md`
   - `omni-planning.md`
   - `omni-execution.md`

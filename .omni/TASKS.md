@@ -40,3 +40,14 @@
 - [x] Update skill suggestion heuristics and tests so `grill-me` triggers on feature/change/fix/refactor wording.
 - [x] Update README/AGENTS docs for the new clarification checkpoint.
 - [x] Verify with `npm run check` and `npm test`, then commit.
+
+---
+
+## Enforced Skill-Fit Checkpoint
+
+- [x] Add bundled `find-skills` skill resource and default skills listing.
+- [x] Update agent instructions so the post-grill step judges skill coverage before planning.
+- [x] Document that task/domain skills are only loaded during the checkpoint, not opportunistically earlier.
+- [x] Support remove/delete-skill instructions by documenting project memory cleanup in `.omni/SKILLS.md`.
+- [x] Update suggestion heuristics/tests/docs for `find-skills`.
+- [x] Verify with `npm run check` and `npm test`, then commit.

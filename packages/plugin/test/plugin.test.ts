@@ -220,6 +220,7 @@ test("suggestSkills and updateSkillsFile infer workflow skills from task text", 
     assert.equal(result.suggested.length, 5);
     assert.match(skillsFile, /## Suggested For Current Work/);
     assert.match(skillsFile, /grill-me/);
+    assert.match(skillsFile, /find-skills/);
     assert.match(skillsFile, /brainstorming/);
     assert.match(skillsFile, /omni-verification/);
   });
@@ -230,6 +231,14 @@ test("suggestSkills prioritizes grill-me for change requests", async () => {
 
   assert.equal(suggestions[0]?.name, "grill-me");
   assert.ok(suggestions.some((item) => item.name === "brainstorming"));
+});
+
+test("suggestSkills recommends find-skills for skill discovery and removal requests", async () => {
+  const discovery = await suggestSkills("Find relevant skills for React performance work");
+  const removal = await suggestSkills("Remove the old deployment skill from the project");
+
+  assert.equal(discovery[0]?.name, "find-skills");
+  assert.equal(removal[0]?.name, "find-skills");
 });
 
 test("updateSkillsFile preserves user-managed project notes", async () => {

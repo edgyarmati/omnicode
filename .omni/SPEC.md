@@ -102,3 +102,36 @@ Add a bundled `grill-me` workflow skill and route relevant change requests to it
 - Agent instructions require a grill-me clarification checkpoint before planning/implementation for change requests.
 - Tests cover skill listing/suggestion behavior.
 - `npm run check` and `npm test` pass.
+
+---
+
+## Current Implementation Task — Enforced Skill-Fit Checkpoint
+
+### Problem
+
+OmniCode can suggest and load skills, but the workflow does not yet enforce a deliberate skill-fit decision after clarification. The maintainer wants a dedicated checkpoint where the model judges whether available project/bundled skills cover the clarified task, uses `find-skills` when they do not, removes skills from project memory when instructed, and only loads task skills from that checkpoint onward.
+
+### Requested Behavior
+
+After `grill-me` and before writing final planning artifacts, OmniCode must perform a skill-fit checkpoint:
+
+1. Inventory currently available/bundled/project skills.
+2. Judge whether they cover the clarified task's required domains.
+3. If coverage is sufficient, load only the relevant skills and record them in `.omni/SKILLS.md`.
+4. If coverage is insufficient, use `find-skills` to search for relevant external skills before planning.
+5. If the user asks to delete/remove skills from the project, remove those skills from project memory instead of loading them.
+
+### Constraints
+
+- Keep `grill-me` as the clarification gate before this checkpoint.
+- Do not load implementation/domain skills opportunistically before the checkpoint, except workflow skills needed to run the Omni process itself.
+- Preserve public tool names.
+- Keep `find-skills` as a bundled workflow skill/resource available to the agent.
+
+### Success Criteria
+
+- Agent instructions include an explicit post-grill skill-fit checkpoint.
+- Bundled skills/default skill memory include `find-skills`.
+- `omnicode_suggest_skills` suggests `find-skills` for skill discovery and insufficient-domain-coverage wording.
+- Tests cover find-skills suggestion behavior and bundled skill updates.
+- `npm run check` and `npm test` pass.

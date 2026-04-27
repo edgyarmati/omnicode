@@ -44,3 +44,13 @@
 - [x] Agent instruction resource documents the automatic grill-me checkpoint and one-question-at-a-time behavior.
 - [x] `npm run check` passes.
 - [x] `npm test` passes.
+
+---
+
+## Enforced Skill-Fit Checkpoint Verification
+
+- [x] `find-skills` appears in bundled skill resources and generated SKILLS content.
+- [x] `suggestSkills` returns `find-skills` for skill discovery / missing-skill requests.
+- [x] Agent instructions document the post-grill coverage judgment and skill-loading boundary.
+- [x] `npm run check` passes.
+- [x] `npm test` passes.
