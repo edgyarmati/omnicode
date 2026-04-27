@@ -31,6 +31,6 @@
 
 - [x] Slice 1: plugin tests cover bash mutation rejection before planning and resolved `.omni` containment.
 - [x] Slice 1: plugin tests cover SKILLS user notes preservation and large repo-map file truncation/skipping.
-- [ ] Slice 2: launcher tests cover `--check`/`--version` non-launching behavior and Windows-safe shim imports.
+- [x] Slice 2: launcher tests cover `--check`/`--version` non-launching behavior and Windows-safe shim imports.
 - [ ] Slice 3: launcher/docs tests cover generic release artifact naming and installer publication/documentation consistency.
 - [ ] Run `npm run check` and `npm test` after each slice before committing.

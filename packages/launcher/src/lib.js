@@ -2,6 +2,7 @@ import { chmod, mkdir, rename, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
   OMNICODE_BINARY_VERSION,
@@ -203,6 +204,23 @@ export function getNativeLauncherReleaseMetadata(platform = process.platform, ar
   };
 }
 
+function windowsPathToFileUrl(value) {
+  const normalized = value.replaceAll("\\", "/");
+  return `file:///${encodeURI(normalized).replace(/#/g, "%23")}`;
+}
+
+export function getPluginImportSpecifier(pluginEntry, platform = process.platform) {
+  const value = String(pluginEntry);
+  if (value.startsWith("file://")) return value;
+  if (platform === "win32" && /^[A-Za-z]:[\\/]/u.test(value)) {
+    return windowsPathToFileUrl(value);
+  }
+  if (path.isAbsolute(value)) {
+    return pathToFileURL(value).href;
+  }
+  return value;
+}
+
 // Write `content` to `targetPath` atomically and refuse to follow symlinks.
 // Both files we write under ~/.config/omnicode/opencode/ are in a
 // user-controlled directory; we don't want a pre-planted symlink there to
@@ -249,16 +267,13 @@ export async function ensureOmniCodeConfig({
   const pluginShimPath = path.join(pluginDir, "omnicode-plugin.js");
   const configPath = path.join(configRoot, "opencode.json");
 
-  // Normalize file:// URLs to plain paths for the shim import
-  let resolvedEntry = String(pluginEntry);
-  if (resolvedEntry.startsWith("file://")) {
-    try {
-      const { fileURLToPath } = await import("node:url");
-      resolvedEntry = fileURLToPath(resolvedEntry);
-    } catch {
-      // keep as-is
-    }
+  // Validate file:// URLs but keep the generated import as a URL. Absolute
+  // filesystem paths, especially Windows drive paths, are not valid ESM module
+  // specifiers in generated source.
+  if (String(pluginEntry).startsWith("file://")) {
+    fileURLToPath(String(pluginEntry));
   }
+  const resolvedEntry = getPluginImportSpecifier(pluginEntry);
 
   const shimSource = `export { OmniCodePlugin, default } from ${JSON.stringify(resolvedEntry)};\n`;
   await writeFileSecure(pluginShimPath, shimSource);

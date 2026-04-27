@@ -28,5 +28,5 @@
 ## Review Finding Fixes
 
 - [x] Slice 1: harden plugin guard/path containment, preserve skills notes, and cap repo-map reads.
-- [ ] Slice 2: add safe launcher check/version behavior and Windows-safe plugin shim imports.
+- [x] Slice 2: add safe launcher check/version behavior and Windows-safe plugin shim imports.
 - [ ] Slice 3: align release artifact model, docs, workflow assets, and tests.

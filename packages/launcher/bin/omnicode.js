@@ -229,6 +229,18 @@ async function resolvePluginPath() {
 }
 
 async function main() {
+  if (process.argv[2] === "--version" || process.argv[2] === "version") {
+    const release = getNativeLauncherReleaseMetadata();
+    process.stdout.write(`${release.launcherVersion}\n`);
+    return;
+  }
+
+  if (process.argv[2] === "--check" || process.argv[2] === "check") {
+    const pluginPath = await resolvePluginPath();
+    process.stdout.write(`OmniCode launcher OK; plugin resolved at ${pluginPath}\n`);
+    return;
+  }
+
   if (process.argv[2] === "setup") {
     await runSetup();
     return;

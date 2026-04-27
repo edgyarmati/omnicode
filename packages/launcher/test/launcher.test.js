@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { access, mkdtemp, readFile, rm } from "node:fs/promises";
+import { spawn } from "node:child_process";
 
 import {
   MINIMUM_NODE_MAJOR,
@@ -18,6 +19,7 @@ import {
   getNativeLauncherReleaseMetadata,
   getOmniCodeDataRoot,
   getOmniCodeSetupTarget,
+  getPluginImportSpecifier,
   getXdgConfigHome,
   isSupportedNodeVersion,
   needsManagedOpenCodeUpdate,
@@ -32,6 +34,17 @@ async function withTempHome(run) {
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+}
+
+function runNode(args) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, args, { stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => { stdout += String(chunk); });
+    child.stderr.on("data", (chunk) => { stderr += String(chunk); });
+    child.on("exit", (code) => resolve({ code, stdout, stderr }));
+  });
 }
 
 test("config paths are scoped under ~/.config/omnicode", () => {
@@ -68,8 +81,30 @@ test("ensureOmniCodeConfig writes config and plugin shim", async () => {
     assert.equal(result.configRoot, path.join(home, ".config", "omnicode", "opencode"));
     assert.equal(config.default_agent, "omnicode");
     assert.equal(config.share, "manual");
-    assert.match(shim, /fake-plugin\.js/);
+    assert.match(shim, /file:\/\/\/tmp\/fake-plugin\.js/);
   });
+});
+
+test("plugin shim import specifiers are ESM-safe for absolute and Windows paths", () => {
+  assert.equal(getPluginImportSpecifier("file:///tmp/fake-plugin.js"), "file:///tmp/fake-plugin.js");
+  assert.match(getPluginImportSpecifier("/tmp/fake plugin.js", "linux"), /^file:\/\/\/tmp\/fake%20plugin\.js$/u);
+  assert.equal(
+    getPluginImportSpecifier("C:\\Users\\me\\OmniCode\\plugin\\index.js", "win32"),
+    "file:///C:/Users/me/OmniCode/plugin/index.js",
+  );
+});
+
+test("launcher --check and --version do not require managed OpenCode runtime", async () => {
+  const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..");
+  const launcherBin = path.join(repoRoot, "packages", "launcher", "bin", "omnicode.js");
+
+  const check = await runNode([launcherBin, "--check"]);
+  assert.equal(check.code, 0, `stderr:\n${check.stderr}\nstdout:\n${check.stdout}`);
+  assert.match(check.stdout, /OmniCode launcher OK; plugin resolved/);
+
+  const version = await runNode([launcherBin, "--version"]);
+  assert.equal(version.code, 0, `stderr:\n${version.stderr}\nstdout:\n${version.stdout}`);
+  assert.match(version.stdout.trim(), /^\d+\.\d+\.\d+$/u);
 });
 
 test("node version helpers enforce the minimum supported release", () => {

@@ -144,7 +144,8 @@ node "$EntryJs" @args
 
   # ── Verify ──────────────────────────────────────────────────────────────────
 
-  if (-not (node --check $EntryJs 2>`$null)) {
+  $checkOutput = & node $EntryJs --check 2>`$null
+  if ($LASTEXITCODE -ne 0) {
     Write-Error 'Launcher script has syntax errors. Something went wrong with the install.'
     exit 1
   }

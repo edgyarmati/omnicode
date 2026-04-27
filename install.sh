@@ -124,8 +124,8 @@ info "Created launcher at ${WRAPPER}"
 
 # ── Verify ───────────────────────────────────────────────────────────────────
 
-if ! node "${DATA_DIR}/lib/bin/omnicode.js" --help >/dev/null 2>&1; then
-  # --help may not exist yet; just check the file parses
+if ! node "${DATA_DIR}/lib/bin/omnicode.js" --check >/dev/null 2>&1; then
+  # Fall back to syntax-only validation if the launcher check path changes.
   if ! node --check "${DATA_DIR}/lib/bin/omnicode.js" 2>/dev/null; then
     fail "Launcher script has syntax errors. Something went wrong with the install."
   fi
