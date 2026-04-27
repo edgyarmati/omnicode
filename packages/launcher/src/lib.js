@@ -31,21 +31,62 @@ export function parseNodeMajorVersion(version) {
   return Number.isFinite(major) ? major : null;
 }
 
+const SEMVER_PATTERN = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/u;
+
 export function parseSemver(version) {
-  const match = /^(\d+)\.(\d+)\.(\d+)/u.exec(String(version).trim().replace(/^v/u, ""));
+  const match = SEMVER_PATTERN.exec(String(version).trim());
   if (!match) return null;
-  return match.slice(1).map((part) => Number.parseInt(part, 10));
+  const prerelease = match[4] ? match[4].split(".") : [];
+  if (prerelease.some((part) => part.length === 0)) return null;
+  return {
+    major: Number.parseInt(match[1], 10),
+    minor: Number.parseInt(match[2], 10),
+    patch: Number.parseInt(match[3], 10),
+    prerelease,
+  };
+}
+
+function comparePrereleaseIdentifier(left, right) {
+  const leftNumeric = /^\d+$/u.test(left);
+  const rightNumeric = /^\d+$/u.test(right);
+  if (leftNumeric && rightNumeric) {
+    const leftNumber = Number.parseInt(left, 10);
+    const rightNumber = Number.parseInt(right, 10);
+    if (leftNumber > rightNumber) return 1;
+    if (leftNumber < rightNumber) return -1;
+    return 0;
+  }
+  if (leftNumeric) return -1;
+  if (rightNumeric) return 1;
+  return left.localeCompare(right);
+}
+
+function comparePrerelease(left, right) {
+  if (left.length === 0 && right.length === 0) return 0;
+  if (left.length === 0) return 1;
+  if (right.length === 0) return -1;
+
+  const length = Math.max(left.length, right.length);
+  for (let index = 0; index < length; index += 1) {
+    const leftPart = left[index];
+    const rightPart = right[index];
+    if (leftPart === undefined) return -1;
+    if (rightPart === undefined) return 1;
+    const comparison = comparePrereleaseIdentifier(leftPart, rightPart);
+    if (comparison !== 0) return comparison;
+  }
+  return 0;
 }
 
 export function compareSemver(left, right) {
   const a = parseSemver(left);
   const b = parseSemver(right);
   if (!a || !b) return 0;
-  for (let i = 0; i < 3; i += 1) {
-    if (a[i] > b[i]) return 1;
-    if (a[i] < b[i]) return -1;
+  for (const key of ["major", "minor", "patch"]) {
+    if (a[key] > b[key]) return 1;
+    if (a[key] < b[key]) return -1;
   }
-  return 0;
+  return comparePrerelease(a.prerelease, b.prerelease);
 }
 
 export function isSupportedNodeVersion(version, minimumMajor = MINIMUM_NODE_MAJOR) {

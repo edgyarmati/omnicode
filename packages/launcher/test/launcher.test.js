@@ -114,6 +114,12 @@ test("managed OpenCode runtime helpers resolve user-scoped paths and version che
   assert.equal(compareSemver("1.2.3", "1.2.3"), 0);
   assert.equal(compareSemver("1.2.4", "1.2.3"), 1);
   assert.equal(compareSemver("1.2.3", "1.3.0"), -1);
+  assert.equal(compareSemver("1.2.3", "1.2.3-beta.1"), 1);
+  assert.equal(compareSemver("1.2.3-beta.1", "1.2.3"), -1);
+  assert.equal(compareSemver("1.2.3-beta.2", "1.2.3-beta.10"), -1);
+  assert.equal(compareSemver("1.2.3-beta.10", "1.2.3-beta.2"), 1);
+  assert.equal(compareSemver("1.2.3-alpha.1", "1.2.3-alpha.beta"), -1);
+  assert.equal(compareSemver("1.2.3+build.2", "1.2.3+build.1"), 0);
   assert.equal(needsManagedOpenCodeUpdate(null, "1.0.0"), true);
   assert.equal(needsManagedOpenCodeUpdate("1.0.0", "1.0.1"), true);
   assert.equal(needsManagedOpenCodeUpdate("1.0.1", "1.0.1"), false);

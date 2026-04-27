@@ -8,7 +8,7 @@
 - [x] Representative plugin `.omni` write uses atomic helper successfully
 - [x] Sanitizers collapse unsafe multi-line markdown/tool text into safe generated output
 - [x] Standards import handles embedded code fences/headings without breaking output structure
-- [ ] Launcher semver comparison handles stable vs prerelease and prerelease identifier ordering
+- [x] Launcher semver comparison handles stable vs prerelease and prerelease identifier ordering
 
 ## Expected outcomes
 
