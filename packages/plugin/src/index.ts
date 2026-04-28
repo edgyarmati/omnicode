@@ -130,6 +130,125 @@ const OMNI_SUBAGENT_NAMES: OmniSubagentName[] = [
   "omni-worker",
 ];
 
+type OmniAgentConfig = {
+  description: string;
+  mode: "primary" | "subagent";
+  prompt: string;
+  model?: string;
+  permission?: Record<string, unknown>;
+};
+
+const OMNI_SUBAGENT_DEFAULTS: Record<OmniSubagentName, OmniAgentConfig> = {
+  "omni-explorer": {
+    description: "Read-only codebase discovery agent that reports concise findings back to the OmniCode orchestrator.",
+    mode: "subagent",
+    prompt: [
+      "You are omni-explorer, a read-only discovery subagent for OmniCode.",
+      "Find files, inspect code, search for relevant patterns, and report concise findings back to the orchestrator.",
+      "Do not edit files, run mutating shell commands, or continue into implementation.",
+    ].join("\n\n"),
+    permission: {
+      read: "allow",
+      glob: "allow",
+      grep: "allow",
+      list: "allow",
+      edit: "deny",
+      bash: "deny",
+      task: "deny",
+      todowrite: "deny",
+    },
+  },
+  "omni-planner": {
+    description: "Read-only planning subagent that helps refine specs, task slices, tests, edge cases, and non-goals.",
+    mode: "subagent",
+    prompt: [
+      "You are omni-planner, a planning subagent for OmniCode.",
+      "Help the orchestrator turn clarified requirements into a concrete spec, bounded task slices, test strategy, edge cases, and success criteria.",
+      "Do not edit files or implement source changes; report recommended planning updates back to the orchestrator.",
+    ].join("\n\n"),
+    permission: {
+      read: "allow",
+      glob: "allow",
+      grep: "allow",
+      list: "allow",
+      edit: "deny",
+      bash: "deny",
+      task: "deny",
+      todowrite: "deny",
+    },
+  },
+  "omni-verifier": {
+    description: "Verification subagent that runs checks, reviews results, and reports pass/fail status without editing source.",
+    mode: "subagent",
+    prompt: [
+      "You are omni-verifier, a verification subagent for OmniCode.",
+      "Run the checks requested by the orchestrator, inspect failures, and report exact pass/fail status plus the first actionable failure.",
+      "Do not edit source files or relax tests; report findings back to the orchestrator.",
+    ].join("\n\n"),
+    permission: {
+      read: "allow",
+      glob: "allow",
+      grep: "allow",
+      list: "allow",
+      bash: "allow",
+      edit: "deny",
+      task: "deny",
+      todowrite: "deny",
+    },
+  },
+  "omni-worker": {
+    description: "Implementation worker for one bounded OmniCode task slice; reports completion, changed files, and verification notes.",
+    mode: "subagent",
+    prompt: [
+      "You are omni-worker, an implementation subagent for OmniCode.",
+      "Execute exactly the bounded slice assigned by the orchestrator, keep changes narrow, and report changed files, verification performed, and remaining risks.",
+      "Do not broaden scope or continue to the next slice unless the orchestrator explicitly asks. OmniCode planning guards still apply before source edits.",
+    ].join("\n\n"),
+    permission: {
+      read: "allow",
+      glob: "allow",
+      grep: "allow",
+      list: "allow",
+      bash: "allow",
+      edit: "allow",
+      task: "deny",
+      todowrite: "deny",
+    },
+  },
+};
+
+function taskPermissionForOmniSubagents(): Record<string, "allow" | "deny"> {
+  return {
+    "*": "deny",
+    "omni-explorer": "allow",
+    "omni-planner": "allow",
+    "omni-verifier": "allow",
+    "omni-worker": "allow",
+  };
+}
+
+function modelForSubagent(settings: OmniCodeSettings, agentName: OmniSubagentName): string | undefined {
+  return settings.agents.models[agentName] ?? settings.agents.defaultModel;
+}
+
+function buildSubagentConfig(settings: OmniCodeSettings, agentName: OmniSubagentName): OmniAgentConfig {
+  const model = modelForSubagent(settings, agentName);
+  return {
+    ...OMNI_SUBAGENT_DEFAULTS[agentName],
+    ...(model ? { model } : {}),
+  };
+}
+
+function orchestrationPrompt(basePrompt: string): string {
+  return [
+    basePrompt,
+    "## Optional native sub-agent orchestration",
+    "When OmniCode subagents are enabled, you are the primary orchestrator. Delegate bounded discovery, planning, verification, or implementation assignments to the Omni subagents via the Task tool when useful.",
+    "Subagents report back to you; you remain responsible for clarification, planning artifacts, slice boundaries, verification decisions, state updates, and commits.",
+    "Use omni-worker only for one planned implementation slice at a time and require a concise report of changed files, checks run, and remaining risks.",
+  ].join("\n\n");
+}
+
 function emptyOmniCodeSettings(): OmniCodeSettings {
   return {
     agents: {
@@ -1033,17 +1152,36 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
 
   return {
     async config(config) {
+      const settings = await readOmniCodeSettings(directory);
       config.agent = config.agent ?? {};
       config.command = config.command ?? {};
       config.instructions = Array.isArray(config.instructions)
         ? config.instructions
         : [];
 
-      config.agent.omnicode = {
+      const omnicodeAgentConfig: OmniAgentConfig = {
         description:
           "OmniCode workflow agent: clarify, spec, task, implement in bounded slices, then verify.",
-        prompt: instructionPrompt,
+        mode: "primary",
+        prompt: settings.agents.enabled ? orchestrationPrompt(instructionPrompt) : instructionPrompt,
+        ...(settings.agents.enabled
+          ? {
+              permission: {
+                task: taskPermissionForOmniSubagents(),
+              },
+            }
+          : {}),
       };
+      // OpenCode docs expose permission.task for subagent routing; the plugin
+      // package type may lag the runtime schema, so keep the runtime config and
+      // bridge the typing gap locally.
+      config.agent.omnicode = omnicodeAgentConfig as unknown as typeof config.agent.omnicode;
+
+      if (settings.agents.enabled) {
+        for (const agentName of OMNI_SUBAGENT_NAMES) {
+          config.agent[agentName] = buildSubagentConfig(settings, agentName);
+        }
+      }
 
       const mutableConfig = config as Record<string, unknown>;
       if (typeof mutableConfig.default_agent !== "string") {

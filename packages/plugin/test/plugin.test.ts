@@ -5,6 +5,7 @@ import path from "node:path";
 import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 
 import {
+  OmniCodePlugin,
   OMNI_FILES,
   OMNI_GITIGNORE,
   ensureOmniCodeProjectGitignore,
@@ -22,6 +23,13 @@ import {
   writeFileAtomic,
 } from "../src/index.ts";
 
+type MutableOpenCodeConfig = {
+  agent?: Record<string, Record<string, unknown>>;
+  command?: Record<string, Record<string, unknown>>;
+  instructions?: string[];
+  default_agent?: string;
+};
+
 async function withTempDir(run: (dir: string) => Promise<void>) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "omnicode-plugin-test-"));
   try {
@@ -33,6 +41,14 @@ async function withTempDir(run: (dir: string) => Promise<void>) {
 
 function modeBits(mode: number): number {
   return mode & 0o777;
+}
+
+async function buildPluginConfig(directory: string): Promise<MutableOpenCodeConfig> {
+  const hooks = await OmniCodePlugin({ directory } as never);
+  const config: MutableOpenCodeConfig = {};
+  if (!hooks.config) throw new Error("OmniCodePlugin did not register config hook");
+  await hooks.config(config as never);
+  return config;
 }
 
 test("discoverStandards finds supported standards files and ignores .omni", async () => {
@@ -161,6 +177,63 @@ test("ensureOmniCodeProjectGitignore adds project .omnicode settings directory",
     const gitignore = await readFile(path.join(dir, ".gitignore"), "utf8");
     assert.equal(gitignore.match(/^\.omnicode\/$/gmu)?.length, 1);
     assert.match(gitignore, /^node_modules\/$/m);
+  });
+});
+
+test("plugin config does not register Omni subagents when agents are disabled", async () => {
+  await withTempDir(async (dir) => {
+    const config = await buildPluginConfig(dir);
+
+    assert.equal(config.default_agent, "omnicode");
+    assert.ok(config.agent?.omnicode);
+    assert.equal(config.agent?.["omni-explorer"], undefined);
+    assert.equal(config.agent?.["omni-planner"], undefined);
+    assert.equal(config.agent?.["omni-verifier"], undefined);
+    assert.equal(config.agent?.["omni-worker"], undefined);
+  });
+});
+
+test("plugin config registers enabled Omni subagents with permissions and model overrides", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".omnicode"), { recursive: true });
+    await writeFile(
+      path.join(dir, ".omnicode", "settings.json"),
+      JSON.stringify(
+        {
+          agents: {
+            enabled: true,
+            defaultModel: "anthropic/shared-subagent",
+            models: {
+              "omni-worker": "openai/worker-model",
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const config = await buildPluginConfig(dir);
+    const agents = config.agent ?? {};
+
+    for (const agentName of ["omni-explorer", "omni-planner", "omni-verifier", "omni-worker"]) {
+      assert.equal(agents[agentName]?.mode, "subagent");
+      assert.equal(typeof agents[agentName]?.description, "string");
+      assert.equal(typeof agents[agentName]?.prompt, "string");
+    }
+
+    assert.equal(agents["omni-explorer"]?.model, "anthropic/shared-subagent");
+    assert.equal(agents["omni-worker"]?.model, "openai/worker-model");
+    assert.deepEqual(agents.omnicode?.permission, {
+      task: {
+        "*": "deny",
+        "omni-explorer": "allow",
+        "omni-planner": "allow",
+        "omni-verifier": "allow",
+        "omni-worker": "allow",
+      },
+    });
   });
 });
 
