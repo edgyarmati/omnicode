@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { chmod, mkdir, readFile, readdir, realpath, rename, stat, unlink, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
@@ -42,6 +43,24 @@ export type RepoMapEntry = {
 export type StandardCandidate = {
   path: string;
   kind: string;
+};
+
+export type OmniSubagentName = "omni-explorer" | "omni-planner" | "omni-verifier" | "omni-worker";
+
+export type OmniCodeSettings = {
+  agents: {
+    enabled: boolean;
+    defaultModel?: string;
+    models: Partial<Record<OmniSubagentName, string>>;
+  };
+};
+
+type RawOmniCodeSettings = {
+  agents?: {
+    enabled?: unknown;
+    defaultModel?: unknown;
+    models?: unknown;
+  };
 };
 
 const OMNI_VERSION = "1";
@@ -96,9 +115,124 @@ export const REPO_MAP_IGNORE = new Set([
   "build",
   ".pi",
   ".omni",
+  ".omnicode",
   ".turbo",
   "coverage",
 ]);
+
+const OMNICODE_SETTINGS_DIR = ".omnicode";
+const OMNICODE_SETTINGS_FILE = "settings.json";
+const OMNICODE_PROJECT_GITIGNORE_ENTRY = `${OMNICODE_SETTINGS_DIR}/`;
+const OMNI_SUBAGENT_NAMES: OmniSubagentName[] = [
+  "omni-explorer",
+  "omni-planner",
+  "omni-verifier",
+  "omni-worker",
+];
+
+function emptyOmniCodeSettings(): OmniCodeSettings {
+  return {
+    agents: {
+      enabled: false,
+      models: {},
+    },
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeAgentModels(value: unknown): Partial<Record<OmniSubagentName, string>> {
+  if (!isRecord(value)) return {};
+
+  const models: Partial<Record<OmniSubagentName, string>> = {};
+  for (const agentName of OMNI_SUBAGENT_NAMES) {
+    const model = value[agentName];
+    if (typeof model === "string" && model.trim().length > 0) {
+      models[agentName] = model.trim();
+    }
+  }
+  return models;
+}
+
+function normalizeOmniCodeSettings(raw: unknown): Partial<OmniCodeSettings> {
+  if (!isRecord(raw)) return {};
+  const settings = raw as RawOmniCodeSettings;
+  if (!isRecord(settings.agents)) return {};
+
+  const agents: Partial<OmniCodeSettings["agents"]> = {};
+  if (typeof settings.agents.enabled === "boolean") {
+    agents.enabled = settings.agents.enabled;
+  }
+  if (typeof settings.agents.defaultModel === "string" && settings.agents.defaultModel.trim().length > 0) {
+    agents.defaultModel = settings.agents.defaultModel.trim();
+  }
+
+  agents.models = normalizeAgentModels(settings.agents.models);
+  return { agents: agents as OmniCodeSettings["agents"] };
+}
+
+function mergeOmniCodeSettings(base: OmniCodeSettings, override: Partial<OmniCodeSettings>): OmniCodeSettings {
+  return {
+    agents: {
+      enabled: override.agents?.enabled ?? base.agents.enabled,
+      defaultModel: override.agents?.defaultModel ?? base.agents.defaultModel,
+      models: {
+        ...base.agents.models,
+        ...(override.agents?.models ?? {}),
+      },
+    },
+  };
+}
+
+async function readSettingsFile(filePath: string): Promise<Partial<OmniCodeSettings>> {
+  try {
+    return normalizeOmniCodeSettings(JSON.parse(await readFile(filePath, "utf8")));
+  } catch {
+    return {};
+  }
+}
+
+export function globalOmniCodeSettingsPath(homeDir = os.homedir()): string {
+  return path.join(homeDir, OMNICODE_SETTINGS_DIR, OMNICODE_SETTINGS_FILE);
+}
+
+export function projectOmniCodeSettingsPath(directory: string): string {
+  return path.join(directory, OMNICODE_SETTINGS_DIR, OMNICODE_SETTINGS_FILE);
+}
+
+export async function readOmniCodeSettings(
+  directory: string,
+  options: { homeDir?: string } = {},
+): Promise<OmniCodeSettings> {
+  const globalSettings = await readSettingsFile(globalOmniCodeSettingsPath(options.homeDir));
+  const projectSettings = await readSettingsFile(projectOmniCodeSettingsPath(directory));
+
+  return mergeOmniCodeSettings(
+    mergeOmniCodeSettings(emptyOmniCodeSettings(), globalSettings),
+    projectSettings,
+  );
+}
+
+export async function ensureOmniCodeProjectGitignore(directory: string): Promise<string> {
+  const gitignorePath = path.join(directory, ".gitignore");
+  let existing = "";
+  try {
+    existing = await readFile(gitignorePath, "utf8");
+  } catch {
+    existing = "";
+  }
+
+  const lines = existing.split(/\r?\n/u).map((line) => line.trim());
+  if (lines.includes(OMNICODE_PROJECT_GITIGNORE_ENTRY)) {
+    return gitignorePath;
+  }
+
+  const prefix = existing.length === 0 || existing.endsWith("\n") ? existing : `${existing}\n`;
+  await writeFileAtomic(gitignorePath, `${prefix}${OMNICODE_PROJECT_GITIGNORE_ENTRY}\n`);
+  return gitignorePath;
+}
 
 const SKILL_RULES: Array<{ name: string; patterns: RegExp[]; reason: string; score: number }> = [
   {

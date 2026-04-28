@@ -7,6 +7,7 @@ import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/pr
 import {
   OMNI_FILES,
   OMNI_GITIGNORE,
+  ensureOmniCodeProjectGitignore,
   appendSessionSummary,
   buildRepoMap,
   discoverStandards,
@@ -14,6 +15,7 @@ import {
   importStandards,
   planningArtifactsReady,
   setOmniMode,
+  readOmniCodeSettings,
   suggestSkills,
   updateSkillsFile,
   updateStateFile,
@@ -79,6 +81,86 @@ test("writeFileAtomic preserves existing file permissions", async () => {
 
     assert.equal(await readFile(filePath, "utf8"), "new\n");
     assert.equal(modeBits((await stat(filePath)).mode), 0o600);
+  });
+});
+
+test("readOmniCodeSettings merges global settings with project override precedence", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    const projectDir = path.join(dir, "project");
+    await mkdir(path.join(homeDir, ".omnicode"), { recursive: true });
+    await mkdir(path.join(projectDir, ".omnicode"), { recursive: true });
+    await writeFile(
+      path.join(homeDir, ".omnicode", "settings.json"),
+      JSON.stringify(
+        {
+          agents: {
+            enabled: true,
+            defaultModel: "anthropic/global-default",
+            models: {
+              "omni-explorer": "anthropic/global-explorer",
+              "omni-worker": "anthropic/global-worker",
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    await writeFile(
+      path.join(projectDir, ".omnicode", "settings.json"),
+      JSON.stringify(
+        {
+          agents: {
+            enabled: false,
+            models: {
+              "omni-worker": "openai/project-worker",
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const settings = await readOmniCodeSettings(projectDir, { homeDir });
+
+    assert.equal(settings.agents.enabled, false);
+    assert.equal(settings.agents.defaultModel, "anthropic/global-default");
+    assert.deepEqual(settings.agents.models, {
+      "omni-explorer": "anthropic/global-explorer",
+      "omni-worker": "openai/project-worker",
+    });
+  });
+});
+
+test("readOmniCodeSettings safely defaults when settings are missing or invalid", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    const projectDir = path.join(dir, "project");
+    await mkdir(path.join(homeDir, ".omnicode"), { recursive: true });
+    await writeFile(path.join(homeDir, ".omnicode", "settings.json"), "{ nope", "utf8");
+
+    const settings = await readOmniCodeSettings(projectDir, { homeDir });
+
+    assert.equal(settings.agents.enabled, false);
+    assert.equal(settings.agents.defaultModel, undefined);
+    assert.deepEqual(settings.agents.models, {});
+  });
+});
+
+test("ensureOmniCodeProjectGitignore adds project .omnicode settings directory", async () => {
+  await withTempDir(async (dir) => {
+    await writeFile(path.join(dir, ".gitignore"), "node_modules/\n", "utf8");
+
+    await ensureOmniCodeProjectGitignore(dir);
+    await ensureOmniCodeProjectGitignore(dir);
+
+    const gitignore = await readFile(path.join(dir, ".gitignore"), "utf8");
+    assert.equal(gitignore.match(/^\.omnicode\/$/gmu)?.length, 1);
+    assert.match(gitignore, /^node_modules\/$/m);
   });
 });
 
