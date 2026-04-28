@@ -66,8 +66,10 @@
 - [x] Plugin config registers `omni-explorer`, `omni-planner`, `omni-verifier`, and `omni-worker` as native subagents when enabled.
 - [x] Orchestrator task permissions allow the bundled Omni subagents without exposing arbitrary subagents by default.
 - [x] Model overrides from settings are applied without copying bundled prompts into settings.
-- [ ] `/omni-agents` command resource exists and guides on/off/status/setup, including model inventory and recommendation markdown behavior.
+- [x] `/omni-agents` command resource exists and guides on/off/status/setup, including model inventory and recommendation markdown behavior.
 - [x] Slice 1: `npm run check` passes.
 - [x] Slice 1: `npm test` passes.
 - [x] Slice 2: `npm run check` passes.
 - [x] Slice 2: `npm test` passes.
+- [x] Slice 3: `npm run check` passes.
+- [x] Slice 3: `npm test` passes.

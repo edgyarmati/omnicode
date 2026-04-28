@@ -55,6 +55,20 @@ export type OmniCodeSettings = {
   };
 };
 
+export type OmniCodeSettingsScope = "global" | "project";
+
+export type OmniCodeAgentsSettingsPatch = {
+  scope?: OmniCodeSettingsScope;
+  enabled?: boolean;
+  defaultModel?: string;
+  models?: Partial<Record<OmniSubagentName, string>>;
+};
+
+export type OmniCodeModelRecommendations = {
+  sourcePath?: string;
+  content: string;
+};
+
 type RawOmniCodeSettings = {
   agents?: {
     enabled?: unknown;
@@ -122,6 +136,7 @@ export const REPO_MAP_IGNORE = new Set([
 
 const OMNICODE_SETTINGS_DIR = ".omnicode";
 const OMNICODE_SETTINGS_FILE = "settings.json";
+const OMNICODE_MODEL_RECOMMENDATIONS_FILE = "model-recommendations.md";
 const OMNICODE_PROJECT_GITIGNORE_ENTRY = `${OMNICODE_SETTINGS_DIR}/`;
 const OMNI_SUBAGENT_NAMES: OmniSubagentName[] = [
   "omni-explorer",
@@ -313,12 +328,29 @@ async function readSettingsFile(filePath: string): Promise<Partial<OmniCodeSetti
   }
 }
 
+async function readJsonObjectFile(filePath: string): Promise<Record<string, unknown>> {
+  try {
+    const parsed = JSON.parse(await readFile(filePath, "utf8"));
+    return isRecord(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 export function globalOmniCodeSettingsPath(homeDir = os.homedir()): string {
   return path.join(homeDir, OMNICODE_SETTINGS_DIR, OMNICODE_SETTINGS_FILE);
 }
 
 export function projectOmniCodeSettingsPath(directory: string): string {
   return path.join(directory, OMNICODE_SETTINGS_DIR, OMNICODE_SETTINGS_FILE);
+}
+
+export function globalOmniCodeModelRecommendationsPath(homeDir = os.homedir()): string {
+  return path.join(homeDir, OMNICODE_SETTINGS_DIR, OMNICODE_MODEL_RECOMMENDATIONS_FILE);
+}
+
+export function projectOmniCodeModelRecommendationsPath(directory: string): string {
+  return path.join(directory, OMNICODE_SETTINGS_DIR, OMNICODE_MODEL_RECOMMENDATIONS_FILE);
 }
 
 export async function readOmniCodeSettings(
@@ -332,6 +364,94 @@ export async function readOmniCodeSettings(
     mergeOmniCodeSettings(emptyOmniCodeSettings(), globalSettings),
     projectSettings,
   );
+}
+
+function settingsPathForScope(
+  directory: string,
+  scope: OmniCodeSettingsScope,
+  homeDir = os.homedir(),
+): string {
+  return scope === "project"
+    ? projectOmniCodeSettingsPath(directory)
+    : globalOmniCodeSettingsPath(homeDir);
+}
+
+function cleanModelPatch(
+  models: Partial<Record<OmniSubagentName, string>> | undefined,
+): Partial<Record<OmniSubagentName, string>> {
+  const cleaned: Partial<Record<OmniSubagentName, string>> = {};
+  for (const agentName of OMNI_SUBAGENT_NAMES) {
+    const model = models?.[agentName];
+    if (typeof model === "string" && model.trim().length > 0) {
+      cleaned[agentName] = model.trim();
+    }
+  }
+  return cleaned;
+}
+
+export async function updateOmniCodeAgentsSettings(
+  directory: string,
+  patch: OmniCodeAgentsSettingsPatch,
+  options: { homeDir?: string } = {},
+): Promise<{ scope: OmniCodeSettingsScope; outputPath: string; settings: OmniCodeSettings }> {
+  const scope = patch.scope ?? "global";
+  const outputPath = settingsPathForScope(directory, scope, options.homeDir);
+  const rawSettings = await readJsonObjectFile(outputPath);
+  const rawAgents = isRecord(rawSettings.agents) ? rawSettings.agents : {};
+  const nextAgents: Record<string, unknown> = { ...rawAgents };
+
+  if (typeof patch.enabled === "boolean") {
+    nextAgents.enabled = patch.enabled;
+  }
+  if (typeof patch.defaultModel === "string" && patch.defaultModel.trim().length > 0) {
+    nextAgents.defaultModel = patch.defaultModel.trim();
+  }
+
+  const modelPatch = cleanModelPatch(patch.models);
+  if (Object.keys(modelPatch).length > 0) {
+    nextAgents.models = {
+      ...(isRecord(rawAgents.models) ? rawAgents.models : {}),
+      ...modelPatch,
+    };
+  }
+
+  const nextSettings = {
+    ...rawSettings,
+    agents: nextAgents,
+  };
+  await writeFileAtomic(outputPath, `${JSON.stringify(nextSettings, null, 2)}\n`);
+  if (scope === "project") {
+    await ensureOmniCodeProjectGitignore(directory);
+  }
+
+  return {
+    scope,
+    outputPath,
+    settings: await readOmniCodeSettings(directory, options),
+  };
+}
+
+export async function readOmniCodeModelRecommendations(
+  directory: string,
+  options: { homeDir?: string } = {},
+): Promise<OmniCodeModelRecommendations> {
+  const candidates = [
+    projectOmniCodeModelRecommendationsPath(directory),
+    globalOmniCodeModelRecommendationsPath(options.homeDir),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      return {
+        sourcePath: candidate,
+        content: await readFile(candidate, "utf8"),
+      };
+    } catch {
+      // try next candidate
+    }
+  }
+
+  return { content: "" };
 }
 
 export async function ensureOmniCodeProjectGitignore(directory: string): Promise<string> {
@@ -1294,6 +1414,70 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
         async execute(args) {
           await setOmniMode(directory, args.mode as OmniMode);
           return `Omni mode set to ${args.mode}.`;
+        },
+      }),
+
+      omnicode_agents_status: tool({
+        description: "Read effective OmniCode sub-agent settings from global and project settings files.",
+        args: {},
+        async execute() {
+          const settings = await readOmniCodeSettings(directory);
+          const recommendations = await readOmniCodeModelRecommendations(directory);
+          return [
+            `Effective agents.enabled: ${settings.agents.enabled}`,
+            `Global settings: ${globalOmniCodeSettingsPath()}`,
+            `Project override: ${projectOmniCodeSettingsPath(directory)}`,
+            `Default model: ${settings.agents.defaultModel ?? "inherit invoking model"}`,
+            `Per-agent models: ${Object.keys(settings.agents.models).length > 0 ? JSON.stringify(settings.agents.models) : "none"}`,
+            `Model recommendations: ${recommendations.sourcePath ?? "none found"}`,
+          ].join("\n");
+        },
+      }),
+
+      omnicode_update_agents_settings: tool({
+        description: "Update OmniCode sub-agent settings globally or for the current project override.",
+        args: {
+          scope: tool.schema.enum(["global", "project"]).optional().describe("Where to write settings; defaults to global."),
+          enabled: tool.schema.boolean().optional().describe("Enable or disable OmniCode native subagents."),
+          defaultModel: tool.schema.string().optional().describe("Optional shared model for OmniCode subagents."),
+          models: tool.schema
+            .object({
+              "omni-explorer": tool.schema.string().optional(),
+              "omni-planner": tool.schema.string().optional(),
+              "omni-verifier": tool.schema.string().optional(),
+              "omni-worker": tool.schema.string().optional(),
+            })
+            .optional()
+            .describe("Optional per-subagent model overrides."),
+        },
+        async execute(args) {
+          const result = await updateOmniCodeAgentsSettings(directory, {
+            scope: args.scope as OmniCodeSettingsScope | undefined,
+            enabled: args.enabled,
+            defaultModel: args.defaultModel,
+            models: args.models as Partial<Record<OmniSubagentName, string>> | undefined,
+          });
+          return [
+            `Updated ${result.scope} OmniCode agent settings: ${result.outputPath}`,
+            `Effective agents.enabled: ${result.settings.agents.enabled}`,
+            `Default model: ${result.settings.agents.defaultModel ?? "inherit invoking model"}`,
+            `Per-agent models: ${Object.keys(result.settings.agents.models).length > 0 ? JSON.stringify(result.settings.agents.models) : "none"}`,
+          ].join("\n");
+        },
+      }),
+
+      omnicode_read_model_recommendations: tool({
+        description: "Read optional OmniCode model recommendation markdown for guided sub-agent setup.",
+        args: {},
+        async execute() {
+          const recommendations = await readOmniCodeModelRecommendations(directory);
+          if (!recommendations.sourcePath) {
+            return [
+              "No OmniCode model recommendation markdown found.",
+              `Create ${globalOmniCodeModelRecommendationsPath()} for global guidance or ${projectOmniCodeModelRecommendationsPath(directory)} for this project.`,
+            ].join("\n");
+          }
+          return [`Source: ${recommendations.sourcePath}`, "", recommendations.content].join("\n");
         },
       }),
 

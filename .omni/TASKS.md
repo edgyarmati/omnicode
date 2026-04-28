@@ -58,5 +58,5 @@
 
 - [x] Slice 1: add `.omnicode` settings primitives, project gitignore handling, and tests for global/project precedence.
 - [x] Slice 2: register bundled native OpenCode subagents when enabled, including orchestrator task permissions and model overrides.
-- [ ] Slice 3: add `/omni-agents` command/setup guidance, model recommendation helpers, docs, and tests.
-- [ ] Verify each slice with `npm run check` and `npm test`, then commit before moving to the next slice.
+- [x] Slice 3: add `/omni-agents` command/setup guidance, model recommendation helpers, docs, and tests.
+- [x] Verify each slice with `npm run check` and `npm test`, then commit before moving to the next slice.

@@ -17,7 +17,9 @@ import {
   planningArtifactsReady,
   setOmniMode,
   readOmniCodeSettings,
+  readOmniCodeModelRecommendations,
   suggestSkills,
+  updateOmniCodeAgentsSettings,
   updateSkillsFile,
   updateStateFile,
   writeFileAtomic,
@@ -180,6 +182,68 @@ test("ensureOmniCodeProjectGitignore adds project .omnicode settings directory",
   });
 });
 
+test("updateOmniCodeAgentsSettings writes scoped settings without copying agent defaults", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    const projectDir = path.join(dir, "project");
+
+    const globalResult = await updateOmniCodeAgentsSettings(
+      projectDir,
+      {
+        scope: "global",
+        enabled: true,
+        defaultModel: "anthropic/subagents",
+      },
+      { homeDir },
+    );
+    const projectResult = await updateOmniCodeAgentsSettings(
+      projectDir,
+      {
+        scope: "project",
+        models: {
+          "omni-worker": "openai/worker",
+        },
+      },
+      { homeDir },
+    );
+
+    const globalFile = JSON.parse(await readFile(globalResult.outputPath, "utf8"));
+    const projectFile = JSON.parse(await readFile(projectResult.outputPath, "utf8"));
+    const gitignore = await readFile(path.join(projectDir, ".gitignore"), "utf8");
+
+    assert.deepEqual(globalFile, {
+      agents: {
+        enabled: true,
+        defaultModel: "anthropic/subagents",
+      },
+    });
+    assert.deepEqual(projectFile, {
+      agents: {
+        models: {
+          "omni-worker": "openai/worker",
+        },
+      },
+    });
+    assert.match(gitignore, /^\.omnicode\/$/m);
+  });
+});
+
+test("readOmniCodeModelRecommendations prefers project guidance over global guidance", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    const projectDir = path.join(dir, "project");
+    await mkdir(path.join(homeDir, ".omnicode"), { recursive: true });
+    await mkdir(path.join(projectDir, ".omnicode"), { recursive: true });
+    await writeFile(path.join(homeDir, ".omnicode", "model-recommendations.md"), "# Global\n", "utf8");
+    await writeFile(path.join(projectDir, ".omnicode", "model-recommendations.md"), "# Project\n", "utf8");
+
+    const recommendations = await readOmniCodeModelRecommendations(projectDir, { homeDir });
+
+    assert.equal(recommendations.content, "# Project\n");
+    assert.equal(recommendations.sourcePath, path.join(projectDir, ".omnicode", "model-recommendations.md"));
+  });
+});
+
 test("plugin config does not register Omni subagents when agents are disabled", async () => {
   await withTempDir(async (dir) => {
     const config = await buildPluginConfig(dir);
@@ -234,6 +298,19 @@ test("plugin config registers enabled Omni subagents with permissions and model 
         "omni-worker": "allow",
       },
     });
+  });
+});
+
+test("plugin config registers omni-agents command for status and setup", async () => {
+  await withTempDir(async (dir) => {
+    const config = await buildPluginConfig(dir);
+
+    const command = config.command?.["omni-agents"];
+    assert.equal(command?.agent, "omnicode");
+    assert.match(String(command?.template), /omnicode_agents_status/);
+    assert.match(String(command?.template), /opencode models/);
+    assert.match(String(command?.template), /omnicode_update_agents_settings/);
+    assert.match(String(command?.template), /model-recommendations\.md/);
   });
 });
 
