@@ -262,3 +262,34 @@ Implement these slices independently, verifying and committing each one:
 - Tests cover settings merge/defaults/status, branch guard blocking and overrides, branch slug/work-directory selection, planning readiness with active work and root fallback, and collaboration checkpoint output.
 - README/AGENTS/docs describe the implemented behavior as it lands.
 - `npm run check` and `npm test` pass for each slice before commit.
+
+---
+
+## Current Implementation Task — Collaboration Polish Follow-Ups
+
+### Problem
+
+Core collaboration support is implemented, but the workflow still lacks the polish needed to make branch-based collaboration smooth end-to-end: starting work from protected branches, offering/creating PRs, migrating legacy root plans, and isolating runtime state by branch.
+
+### Requested Behavior
+
+Implement these follow-up slices independently, verifying and committing each one:
+
+1. Add an explicit `omnicode_start_work` tool that creates or switches to a feature branch and initializes the active `.omni/work/<branch-slug>/` planning directory. It must refuse dirty working trees by default, show the dirty status, and propose solutions; `allowDirty` is an explicit advanced override.
+2. Add workflow PR settings: `offerPrOnCompletion` default `true` and `autoCreatePrOnCompletion` default `false`. Add explicit PR creation support that can push the branch when needed and create a PR only when requested or when the auto setting is enabled by user/project settings.
+3. Add a root-plan migration tool that copies non-placeholder root `.omni/SPEC.md`, `TASKS.md`, and `TESTS.md` into the active work directory, refuses overwrites unless requested, and writes migration notes.
+4. Move runtime state/session summaries to branch-scoped `.omni/runtime/<branch-slug-or-root>/` paths instead of root singleton runtime files.
+
+### Constraints
+
+- Do not silently branch from a guard hook; branch changes happen only through explicit workflow/tooling.
+- Do not auto-create PRs by default; offer PRs unless disabled by settings.
+- Auto-create PR implies auto-push only when `autoCreatePrOnCompletion` is explicitly enabled.
+- Do not treat `CHANGELOG.md` as an OmniCode-wide rule; it remains this repository's release-note requirement.
+- Keep each slice narrow and commit after verification.
+
+### Success Criteria
+
+- Tests cover start-work branch behavior, dirty checkout refusal/proposed fixes, PR settings and PR prerequisite helpers, root plan migration copy/overwrite behavior, and branch-scoped runtime state paths.
+- README/AGENTS/design docs/CHANGELOG describe the implemented behavior as it lands.
+- `npm run check` and `npm test` pass for each slice before commit.

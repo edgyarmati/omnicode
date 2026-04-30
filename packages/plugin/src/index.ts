@@ -61,6 +61,14 @@ export type PlanningArtifactReadiness = {
   usedRootFallback: boolean;
 };
 
+export type StartWorkResult = {
+  action: "created" | "switched" | "already-current" | "blocked-dirty";
+  branch: string;
+  dirtyStatus: string;
+  activePaths: PlanningArtifactPaths | null;
+  message: string;
+};
+
 export type WorkflowSettings = {
   protectedBranches: string[];
   requireFeatureBranchForChanges: boolean;
@@ -329,6 +337,24 @@ export function branchNameToWorkId(branch: string): string {
   return slug;
 }
 
+export function validateWorkBranchName(branch: string): string {
+  const trimmed = branch.trim();
+  if (!/^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$/u.test(trimmed)) {
+    throw new Error(`OmniCode: invalid branch name: ${branch}`);
+  }
+  if (
+    trimmed.includes("..") ||
+    trimmed.includes("//") ||
+    trimmed.includes("@{") ||
+    trimmed.endsWith("/") ||
+    trimmed.endsWith(".lock") ||
+    trimmed.split("/").some((segment) => segment.length === 0 || segment.startsWith("."))
+  ) {
+    throw new Error(`OmniCode: invalid branch name: ${branch}`);
+  }
+  return trimmed;
+}
+
 function planningArtifactPaths(baseDir: string, workId: string | null, source: "work" | "root"): PlanningArtifactPaths {
   return {
     baseDir,
@@ -347,6 +373,108 @@ export async function activePlanningArtifactPaths(directory: string): Promise<Pl
   }
   const workId = branchNameToWorkId(branch);
   return planningArtifactPaths(path.join(directory, ".omni", "work", workId), workId, "work");
+}
+
+async function writePlanningTemplateIfMissing(paths: PlanningArtifactPaths): Promise<void> {
+  await mkdir(paths.baseDir, { recursive: true });
+  const templates: Array<[string, string]> = [
+    [paths.specPath, OMNI_FILES["SPEC.md"]],
+    [paths.tasksPath, OMNI_FILES["TASKS.md"]],
+    [paths.testsPath, OMNI_FILES["TESTS.md"]],
+  ];
+  for (const [filePath, content] of templates) {
+    try {
+      await stat(filePath);
+    } catch {
+      await writeFileAtomic(filePath, content);
+    }
+  }
+}
+
+function runGit(directory: string, args: string[]): Promise<{ stdout: string; stderr: string; code: number }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("git", args, { cwd: directory, shell: false });
+    let stdout = "";
+    let stderr = "";
+    child.stdout?.on("data", (chunk) => {
+      stdout += String(chunk);
+    });
+    child.stderr?.on("data", (chunk) => {
+      stderr += String(chunk);
+    });
+    child.on("error", reject);
+    child.on("close", (code) => resolve({ stdout, stderr, code: code ?? 1 }));
+  });
+}
+
+async function runGitOrThrow(directory: string, args: string[]): Promise<string> {
+  const result = await runGit(directory, args);
+  if (result.code !== 0) {
+    throw new Error(`OmniCode: git ${args.join(" ")} failed: ${(result.stderr || result.stdout).trim()}`);
+  }
+  return result.stdout;
+}
+
+async function gitBranchExists(directory: string, branch: string): Promise<boolean> {
+  const result = await runGit(directory, ["rev-parse", "--verify", `refs/heads/${branch}`]);
+  return result.code === 0;
+}
+
+export function dirtyWorktreeGuidance(status: string): string {
+  return [
+    "OmniCode start-work blocked because the working tree has uncommitted changes:",
+    "",
+    status.trimEnd(),
+    "",
+    "Proposed solutions:",
+    "- Commit the current changes, then start work again.",
+    "- Stash the current changes with git stash push, then start work again.",
+    "- If these changes intentionally belong on the new branch, rerun with allowDirty: true.",
+  ].join("\n");
+}
+
+export async function startWorkBranch(
+  directory: string,
+  options: { branch: string; base?: string; allowDirty?: boolean },
+): Promise<StartWorkResult> {
+  const branch = validateWorkBranchName(options.branch);
+  const status = (await runGitOrThrow(directory, ["status", "--short"])).trimEnd();
+  if (status.length > 0 && !options.allowDirty) {
+    return {
+      action: "blocked-dirty",
+      branch,
+      dirtyStatus: status,
+      activePaths: null,
+      message: dirtyWorktreeGuidance(status),
+    };
+  }
+
+  const currentBranch = await readCurrentGitBranch(directory);
+  let action: StartWorkResult["action"];
+  if (currentBranch === branch) {
+    action = "already-current";
+  } else if (await gitBranchExists(directory, branch)) {
+    await runGitOrThrow(directory, ["switch", branch]);
+    action = "switched";
+  } else {
+    const args = ["switch", "-c", branch];
+    if (options.base) args.push(options.base);
+    await runGitOrThrow(directory, args);
+    action = "created";
+  }
+
+  const activePaths = await activePlanningArtifactPaths(directory);
+  await writePlanningTemplateIfMissing(activePaths);
+  return {
+    action,
+    branch,
+    dirtyStatus: status,
+    activePaths,
+    message: [
+      `OmniCode start-work ${action} branch ${branch}.`,
+      `Active planning directory: ${path.relative(directory, activePaths.baseDir).split(path.sep).join("/")}`,
+    ].join("\n"),
+  };
 }
 
 function rootPlanningArtifactPaths(directory: string): PlanningArtifactPaths {
@@ -1314,6 +1442,24 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
         async execute() {
           await ensureOmniDir(directory);
           return buildCollaborationCheckpoint(directory);
+        },
+      }),
+
+      omnicode_start_work: tool({
+        description:
+          "Explicitly create or switch to a feature branch and initialize the active .omni/work planning directory.",
+        args: {
+          branch: tool.schema.string().describe("Feature branch name to create or switch to."),
+          base: tool.schema.string().optional().describe("Optional base ref for creating a new branch."),
+          allowDirty: tool.schema.boolean().optional().describe("Allow carrying a dirty working tree into the branch."),
+        },
+        async execute(args) {
+          const result = await startWorkBranch(directory, {
+            branch: args.branch,
+            base: args.base,
+            allowDirty: args.allowDirty,
+          });
+          return result.message;
         },
       }),
 

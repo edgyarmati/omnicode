@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
@@ -14,6 +15,7 @@ import {
   buildRepoMap,
   buildCollaborationCheckpoint,
   DEFAULT_WORKFLOW_SETTINGS,
+  dirtyWorktreeGuidance,
   discoverStandards,
   ensureOmniDir,
   formatWorkflowSettingsStatus,
@@ -27,10 +29,12 @@ import {
   resolveGlobalSettingsPath,
   resolveProjectSettingsPath,
   setOmniMode,
+  startWorkBranch,
   suggestSkills,
   updateSkillsFile,
   updateStateFile,
   writeFileAtomic,
+  validateWorkBranchName,
 } from "../src/index.ts";
 
 async function withTempDir(run: (dir: string) => Promise<void>) {
@@ -44,6 +48,24 @@ async function withTempDir(run: (dir: string) => Promise<void>) {
 
 function modeBits(mode: number): number {
   return mode & 0o777;
+}
+
+function runGitTest(directory: string, args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("git", args, { cwd: directory, shell: false });
+    let output = "";
+    child.stdout?.on("data", (chunk) => {
+      output += String(chunk);
+    });
+    child.stderr?.on("data", (chunk) => {
+      output += String(chunk);
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`git ${args.join(" ")} failed: ${output}`));
+    });
+  });
 }
 
 async function writeRealPlanningFiles(baseDir: string) {
@@ -229,6 +251,68 @@ test("branchNameToWorkId creates filesystem-safe branch slugs", () => {
   assert.equal(branchNameToWorkId("feature/Collaborative Memory"), "feature-collaborative-memory");
   assert.equal(branchNameToWorkId("fix..release__guard"), "fix-release-guard");
   assert.throws(() => branchNameToWorkId("///"), /cannot derive work id/);
+});
+
+test("validateWorkBranchName rejects unsafe branch names", () => {
+  assert.equal(validateWorkBranchName("feat/collaboration-polish"), "feat/collaboration-polish");
+  assert.throws(() => validateWorkBranchName("-bad"), /invalid branch name/);
+  assert.throws(() => validateWorkBranchName("feat//bad"), /invalid branch name/);
+  assert.throws(() => validateWorkBranchName("feat/bad.lock"), /invalid branch name/);
+});
+
+test("dirtyWorktreeGuidance proposes safe dirty checkout solutions", () => {
+  const guidance = dirtyWorktreeGuidance("?? src/example.ts");
+
+  assert.match(guidance, /uncommitted changes/);
+  assert.match(guidance, /\?\? src\/example\.ts/);
+  assert.match(guidance, /Commit the current changes/);
+  assert.match(guidance, /git stash push/);
+  assert.match(guidance, /allowDirty: true/);
+});
+
+test("startWorkBranch refuses dirty checkouts by default", async () => {
+  await withTempDir(async (dir) => {
+    await runGitTest(dir, ["init", "-b", "main"]);
+    await writeFile(path.join(dir, "dirty.txt"), "dirty\n", "utf8");
+
+    const result = await startWorkBranch(dir, { branch: "feat/test" });
+
+    assert.equal(result.action, "blocked-dirty");
+    assert.match(result.dirtyStatus, /dirty\.txt/);
+    assert.equal(result.activePaths, null);
+  });
+});
+
+test("startWorkBranch creates branches and initializes active planning files", async () => {
+  await withTempDir(async (dir) => {
+    await runGitTest(dir, ["init", "-b", "main"]);
+
+    const result = await startWorkBranch(dir, { branch: "feat/test" });
+    const branch = await readCurrentGitBranch(dir);
+
+    assert.equal(result.action, "created");
+    assert.equal(branch, "feat/test");
+    assert.equal(result.activePaths?.workId, "feat-test");
+    assert.match(await readFile(path.join(result.activePaths!.baseDir, "SPEC.md"), "utf8"), /# Spec/);
+    assert.match(await readFile(path.join(result.activePaths!.baseDir, "TASKS.md"), "utf8"), /# Tasks/);
+    assert.match(await readFile(path.join(result.activePaths!.baseDir, "TESTS.md"), "utf8"), /# Tests/);
+  });
+});
+
+test("startWorkBranch switches to existing branches", async () => {
+  await withTempDir(async (dir) => {
+    await runGitTest(dir, ["init", "-b", "main"]);
+    await writeFile(path.join(dir, "README.md"), "# test\n", "utf8");
+    await runGitTest(dir, ["add", "README.md"]);
+    await runGitTest(dir, ["-c", "user.email=test@example.com", "-c", "user.name=Test", "commit", "-m", "init"]);
+    await runGitTest(dir, ["switch", "-c", "feat/existing"]);
+    await runGitTest(dir, ["switch", "main"]);
+
+    const result = await startWorkBranch(dir, { branch: "feat/existing" });
+
+    assert.equal(result.action, "switched");
+    assert.equal(await readCurrentGitBranch(dir), "feat/existing");
+  });
 });
 
 test("activePlanningArtifactPaths selects .omni/work for branch-backed work", async () => {

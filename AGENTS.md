@@ -73,6 +73,7 @@ Current features:
   - `omnicode_list_skills`
   - `omnicode_read_skill`
   - `omnicode_collaboration_status`
+  - `omnicode_start_work`
 - bootstraps `.omni/` on `session.created`
 - adds `.omni/STATE.md` into compaction context
 - guards `write` / `edit` when Omni mode is on and planning artifacts are missing

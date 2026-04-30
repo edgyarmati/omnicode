@@ -79,3 +79,12 @@
 - [x] Slice 3: add active `.omni/work/<branch-slug>/` planning directory selection helpers, verify, and commit.
 - [x] Slice 4: update planning-artifact guard to accept active work planning with root fallback, verify, and commit.
 - [x] Slice 5: add collaboration checkpoint UX/docs, verify, and commit.
+
+---
+
+## Collaboration Polish Follow-Ups
+
+- [x] Slice 1: add explicit `omnicode_start_work` branch workflow tool, dirty checkout guidance, tests, docs, verify, and commit.
+- [ ] Slice 2: add PR offer/auto settings and explicit PR creation support, tests, docs, verify, and commit.
+- [ ] Slice 3: add root planning migration tool, tests, docs, verify, and commit.
+- [ ] Slice 4: move runtime state/session summaries to branch-scoped `.omni/runtime/<id>/`, tests, docs, verify, and commit.

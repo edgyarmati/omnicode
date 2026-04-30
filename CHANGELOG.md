@@ -12,6 +12,7 @@
 - **Branch-scoped planning path helpers** — OmniCode can derive safe work IDs from git branch names and select `.omni/work/<branch-slug>/` planning paths with root planning fallback when no branch is available.
 - **Active work planning guard** — the plan-before-edit guard now prefers branch-scoped `.omni/work/<branch-slug>/SPEC.md`, `TASKS.md`, and `TESTS.md` while still accepting legacy root planning files as a migration fallback.
 - **Collaboration checkpoint status** — agents can now report the current branch, protected-branch policy, active Omni work-memory path, planning readiness, root fallback use, and next recommended action before starting or resuming change work.
+- **Explicit start-work workflow** — added `omnicode_start_work` to create or switch to a feature branch, initialize `.omni/work/<branch-slug>/`, and refuse dirty checkouts by default with proposed safe next steps.
 
 ### Fixes
 
@@ -53,6 +54,7 @@
 - Added tests for branch slug generation and active `.omni/work/<branch-slug>/` planning path selection.
 - Added tests for active work planning readiness, legacy root fallback, and branch-aware planning guard messages.
 - Added tests for collaboration checkpoint status output on feature and protected branches.
+- Added tests for start-work branch validation, dirty checkout guidance, branch creation, branch switching, and planning-directory initialization.
 - Added tests for SKILLS project notes preservation and large repo-map file skipping.
 - Added tests for launcher `--check`/`--version` non-launching behavior.
 - Added tests for Windows-safe plugin shim import specifiers.

@@ -96,3 +96,13 @@
 - [x] Slice 4: tests cover active work planning readiness, root fallback, and guard messaging.
 - [x] Slice 5: tests/docs cover collaboration checkpoint output.
 - [x] Run `npm run check` and `npm test` after each slice.
+
+---
+
+## Collaboration Polish Follow-Ups Verification
+
+- [x] Slice 1: tests cover branch name validation, dirty status refusal/proposed solutions, existing branch switch, and new branch creation helper behavior.
+- [ ] Slice 2: tests cover PR settings defaults/overrides, PR prerequisite summaries, and PR body generation without requiring GitHub network access.
+- [ ] Slice 3: tests cover root plan copy, placeholder refusal, overwrite refusal, overwrite success, and migration notes.
+- [ ] Slice 4: tests cover branch-scoped state/session paths, no-branch root runtime fallback, gitignore update, and compaction/read behavior.
+- [ ] Run `npm run check` and `npm test` after each slice.
