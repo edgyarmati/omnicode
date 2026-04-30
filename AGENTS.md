@@ -181,6 +181,8 @@ npm test
 
 For OmniCode, `.omni/` is intentionally split.
 
+Every committed change must also update `CHANGELOG.md` with the user-facing change, fix, test, documentation, or process note that should appear in the next release. Keep the changelog current during each slice so release prep is a cleanup pass, not archaeology.
+
 Durable `.omni` files may be committed when they reflect real project intent:
 - `PROJECT.md`
 - `SPEC.md`

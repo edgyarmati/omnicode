@@ -176,3 +176,27 @@ Use Matt Pocock's `write-a-skill` skill as the primary style reference: concise 
 - README describes the local skill creation fallback.
 - Tests cover bundled/default `skill-maker` inclusion and suggestion behavior.
 - `npm run check` and `npm test` pass.
+
+---
+
+## Current Implementation Task — Changelog Update Discipline
+
+### Problem
+
+Committed changes can be easy to miss during release prep if the changelog is updated only at the end. OmniCode needs a repository instruction that every committed change also updates `CHANGELOG.md` for the upcoming release.
+
+### Requested Behavior
+
+- Update `AGENTS.md` to state that every change intended to be committed must include an appropriate `CHANGELOG.md` entry for the next release.
+- Apply the rule to this change by updating `CHANGELOG.md` in the same slice.
+
+### Constraints
+
+- Keep the instruction concise and located with repo hygiene / agent workflow guidance.
+- Do not change release versioning in this slice.
+
+### Success Criteria
+
+- `AGENTS.md` clearly requires changelog updates for committed changes.
+- `CHANGELOG.md` includes this documentation/process change for the next release.
+- Verification passes before commit.

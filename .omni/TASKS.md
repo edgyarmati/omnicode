@@ -57,3 +57,9 @@
 ## Project-Local Skill Maker
 
 - [x] Slice 1: add bundled `skill-maker`, update skill-fit instructions/docs/default skill memory/suggestion heuristics, add tests, verify, and commit.
+
+---
+
+## Changelog Update Discipline
+
+- [x] Slice 1: document the changelog-update requirement in `AGENTS.md`, update `CHANGELOG.md`, verify, and commit.

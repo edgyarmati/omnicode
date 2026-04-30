@@ -66,3 +66,12 @@
 - [x] README documents that generated missing skills are project-local under `.omni/skills/` and not global.
 - [x] `npm run check` passes.
 - [x] `npm test` passes.
+
+---
+
+## Changelog Update Discipline Verification
+
+- [x] `AGENTS.md` requires updating `CHANGELOG.md` for every committed change.
+- [x] `CHANGELOG.md` records this process/documentation update for the next release.
+- [x] `npm run check` passes.
+- [x] `npm test` passes.

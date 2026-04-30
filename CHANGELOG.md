@@ -30,6 +30,7 @@
 - **Publish installer scripts as release assets** — `install.sh` and `install.ps1` are uploaded alongside the tarball and `SHA256SUMS`.
 - **Verify SHA256SUMS in installers** — both POSIX and Windows installers download and verify checksums before extracting the release archive.
 - **Align release bundle documentation** — release metadata, workflow, installers, README, AGENTS, and release checklist now consistently describe the current generic JS bundle artifact.
+- **Keep changelog updates with every committed change** — repository agent guidance now requires each committed slice to update `CHANGELOG.md` for the next release so release notes stay complete.
 
 ### Tests
 
