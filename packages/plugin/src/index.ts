@@ -54,6 +54,13 @@ export type PlanningArtifactPaths = {
   source: "work" | "root";
 };
 
+export type PlanningArtifactReadiness = {
+  ready: boolean;
+  activePaths: PlanningArtifactPaths;
+  readyPaths: PlanningArtifactPaths | null;
+  usedRootFallback: boolean;
+};
+
 export type WorkflowSettings = {
   protectedBranches: string[];
   requireFeatureBranchForChanges: boolean;
@@ -340,6 +347,10 @@ export async function activePlanningArtifactPaths(directory: string): Promise<Pl
   }
   const workId = branchNameToWorkId(branch);
   return planningArtifactPaths(path.join(directory, ".omni", "work", workId), workId, "work");
+}
+
+function rootPlanningArtifactPaths(directory: string): PlanningArtifactPaths {
+  return planningArtifactPaths(path.join(directory, ".omni"), null, "root");
 }
 
 function tempPathFor(filePath: string): string {
@@ -1025,16 +1036,12 @@ async function checkRtkAvailable(): Promise<boolean> {
   });
 }
 
-export async function planningArtifactsReady(directory: string): Promise<boolean> {
-  const specPath = path.join(directory, ".omni", "SPEC.md");
-  const tasksPath = path.join(directory, ".omni", "TASKS.md");
-  const testsPath = path.join(directory, ".omni", "TESTS.md");
-
+export async function planningArtifactsReadyAt(paths: PlanningArtifactPaths): Promise<boolean> {
   try {
     const [specContent, tasksContent, testsContent] = await Promise.all([
-      readFile(specPath, "utf8"),
-      readFile(tasksPath, "utf8"),
-      readFile(testsPath, "utf8"),
+      readFile(paths.specPath, "utf8"),
+      readFile(paths.tasksPath, "utf8"),
+      readFile(paths.testsPath, "utf8"),
     ]);
 
     const normalizedSpec = specContent.trim();
@@ -1055,6 +1062,33 @@ export async function planningArtifactsReady(directory: string): Promise<boolean
   } catch {
     return false;
   }
+}
+
+export async function resolvePlanningArtifactReadiness(directory: string): Promise<PlanningArtifactReadiness> {
+  const activePaths = await activePlanningArtifactPaths(directory);
+  if (await planningArtifactsReadyAt(activePaths)) {
+    return { ready: true, activePaths, readyPaths: activePaths, usedRootFallback: false };
+  }
+
+  if (activePaths.source === "work") {
+    const rootPaths = rootPlanningArtifactPaths(directory);
+    if (await planningArtifactsReadyAt(rootPaths)) {
+      return { ready: true, activePaths, readyPaths: rootPaths, usedRootFallback: true };
+    }
+  }
+
+  return { ready: false, activePaths, readyPaths: null, usedRootFallback: false };
+}
+
+export async function planningArtifactsReady(directory: string): Promise<boolean> {
+  return (await resolvePlanningArtifactReadiness(directory)).ready;
+}
+
+export function planningGuardMessage(readiness: PlanningArtifactReadiness): string {
+  if (readiness.activePaths.source === "work") {
+    return `OmniCode guard: before editing source files or running mutating shell commands, write real planning content into ${readiness.activePaths.baseDir}/SPEC.md, TASKS.md, and TESTS.md. Legacy root .omni/SPEC.md, .omni/TASKS.md, and .omni/TESTS.md can still satisfy this guard during migration.`;
+  }
+  return "OmniCode guard: before editing source files or running mutating shell commands, write real planning content into .omni/SPEC.md, .omni/TASKS.md, and .omni/TESTS.md (placeholder bootstrap files are not enough).";
 }
 
 function extractFilePath(args: Record<string, unknown>): string | null {
@@ -1168,11 +1202,9 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
         return;
       }
 
-      const hasPlanningArtifacts = await planningArtifactsReady(directory);
-      if (!hasPlanningArtifacts) {
-        throw new Error(
-          "OmniCode guard: before editing source files or running mutating shell commands, write real planning content into .omni/SPEC.md, .omni/TASKS.md, and .omni/TESTS.md (placeholder bootstrap files are not enough).",
-        );
+      const planningReadiness = await resolvePlanningArtifactReadiness(directory);
+      if (!planningReadiness.ready) {
+        throw new Error(planningGuardMessage(planningReadiness));
       }
 
       const settings = await readOmniCodeSettings(directory);

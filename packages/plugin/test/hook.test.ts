@@ -140,6 +140,23 @@ test("tool.execute.before rejects write/edit when planning artifacts are placeho
   });
 });
 
+test("tool.execute.before names active work planning path when branch planning is missing", async () => {
+  await withTempDir(async (dir) => {
+    await ensureOmniDir(dir);
+    await setOmniMode(dir, "on");
+    await writeGitBranch(dir, "feature/collab-memory");
+    const hook = await buildHook(dir);
+
+    await assert.rejects(
+      () => hook(
+        { tool: "write" },
+        { args: { filePath: path.join(dir, "src", "example.ts") } },
+      ),
+      /\.omni\/work\/feature-collab-memory/,
+    );
+  });
+});
+
 test("tool.execute.before rejects mutating bash commands when planning artifacts are placeholders", async () => {
   await withTempDir(async (dir) => {
     await ensureOmniDir(dir);

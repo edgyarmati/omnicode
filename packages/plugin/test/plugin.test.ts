@@ -18,8 +18,11 @@ import {
   formatWorkflowSettingsStatus,
   importStandards,
   planningArtifactsReady,
+  planningArtifactsReadyAt,
+  planningGuardMessage,
   readCurrentGitBranch,
   readOmniCodeSettings,
+  resolvePlanningArtifactReadiness,
   resolveGlobalSettingsPath,
   resolveProjectSettingsPath,
   setOmniMode,
@@ -40,6 +43,13 @@ async function withTempDir(run: (dir: string) => Promise<void>) {
 
 function modeBits(mode: number): number {
   return mode & 0o777;
+}
+
+async function writeRealPlanningFiles(baseDir: string) {
+  await mkdir(baseDir, { recursive: true });
+  await writeFile(path.join(baseDir, "SPEC.md"), `${OMNI_FILES["SPEC.md"]}\n## Real\nSpec content\n`, "utf8");
+  await writeFile(path.join(baseDir, "TASKS.md"), `${OMNI_FILES["TASKS.md"]}\n## Real\n- [ ] Task\n`, "utf8");
+  await writeFile(path.join(baseDir, "TESTS.md"), `${OMNI_FILES["TESTS.md"]}\n## Real\n- [ ] Test\n`, "utf8");
 }
 
 test("discoverStandards finds supported standards files and ignores .omni", async () => {
@@ -316,6 +326,51 @@ test("planningArtifactsReady rejects placeholders and requires SPEC, TASKS, and 
     );
 
     assert.equal(await planningArtifactsReady(dir), true);
+  });
+});
+
+test("resolvePlanningArtifactReadiness prefers active work planning when ready", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feature/collab-memory\n", "utf8");
+    const activePaths = await activePlanningArtifactPaths(dir);
+    await writeRealPlanningFiles(activePaths.baseDir);
+
+    const readiness = await resolvePlanningArtifactReadiness(dir);
+
+    assert.equal(await planningArtifactsReadyAt(activePaths), true);
+    assert.equal(readiness.ready, true);
+    assert.equal(readiness.readyPaths?.source, "work");
+    assert.equal(readiness.usedRootFallback, false);
+    assert.equal(await planningArtifactsReady(dir), true);
+  });
+});
+
+test("resolvePlanningArtifactReadiness uses root fallback when active work planning is missing", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feature/collab-memory\n", "utf8");
+    await ensureOmniDir(dir);
+    await writeRealPlanningFiles(path.join(dir, ".omni"));
+
+    const readiness = await resolvePlanningArtifactReadiness(dir);
+
+    assert.equal(readiness.ready, true);
+    assert.equal(readiness.readyPaths?.source, "root");
+    assert.equal(readiness.usedRootFallback, true);
+  });
+});
+
+test("planningGuardMessage names active work planning with root fallback", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feature/collab-memory\n", "utf8");
+
+    const readiness = await resolvePlanningArtifactReadiness(dir);
+    const message = planningGuardMessage(readiness);
+
+    assert.match(message, /\.omni\/work\/feature-collab-memory/);
+    assert.match(message, /Legacy root \.omni\/SPEC\.md/);
   });
 });
 

@@ -77,5 +77,5 @@
 - [x] Slice 1: add workflow settings primitives and status visibility, verify, and commit.
 - [x] Slice 2: add branch detection plus protected-branch mutating-tool guard, verify, and commit.
 - [x] Slice 3: add active `.omni/work/<branch-slug>/` planning directory selection helpers, verify, and commit.
-- [ ] Slice 4: update planning-artifact guard to accept active work planning with root fallback, verify, and commit.
+- [x] Slice 4: update planning-artifact guard to accept active work planning with root fallback, verify, and commit.
 - [ ] Slice 5: add collaboration checkpoint UX/docs, verify, and commit.

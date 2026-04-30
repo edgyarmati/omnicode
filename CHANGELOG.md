@@ -10,6 +10,7 @@
 - **Workflow settings primitives** — OmniCode now resolves protected-branch workflow policy from global `~/.omnicode/settings.json` plus optional project-local `.omnicode/settings.json` overrides and exposes the effective policy in state output.
 - **Protected-branch workflow guard** — source edits and mutating shell commands are blocked on protected branches such as `main`/`master` by default once planning is ready, unless global or project OmniCode settings explicitly allow direct protected-branch changes.
 - **Branch-scoped planning path helpers** — OmniCode can derive safe work IDs from git branch names and select `.omni/work/<branch-slug>/` planning paths with root planning fallback when no branch is available.
+- **Active work planning guard** — the plan-before-edit guard now prefers branch-scoped `.omni/work/<branch-slug>/SPEC.md`, `TASKS.md`, and `TESTS.md` while still accepting legacy root planning files as a migration fallback.
 
 ### Fixes
 
@@ -49,6 +50,7 @@
 - Added tests for workflow settings defaults, global/project override merge, invalid settings fallback, and status formatting.
 - Added tests for git branch detection, protected-branch blocking, and project settings overrides in the mutating-tool guard.
 - Added tests for branch slug generation and active `.omni/work/<branch-slug>/` planning path selection.
+- Added tests for active work planning readiness, legacy root fallback, and branch-aware planning guard messages.
 - Added tests for SKILLS project notes preservation and large repo-map file skipping.
 - Added tests for launcher `--check`/`--version` non-launching behavior.
 - Added tests for Windows-safe plugin shim import specifiers.
