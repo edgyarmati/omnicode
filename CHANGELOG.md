@@ -6,6 +6,7 @@
 
 - **Automatic grill-me clarification** — change requests (new features, fixes, refactors, migrations) now automatically trigger a one-question-at-a-time interview until behavior, constraints, non-goals, edge cases, and success criteria are concrete enough to plan safely.
 - **Enforced skill-fit checkpoint** — after clarification, the agent judges whether bundled/project skills cover the task. If not, it uses `find-skills` to discover relevant external skills before planning. Supports removing skills from project memory when the user requests it.
+- **Project-local skill maker workflow** — when `find-skills` cannot find adequate coverage, OmniCode can create a narrow local skill under `.omni/skills/` for the current project without installing global user skills.
 
 ### Fixes
 
@@ -31,6 +32,7 @@
 - **Verify SHA256SUMS in installers** — both POSIX and Windows installers download and verify checksums before extracting the release archive.
 - **Align release bundle documentation** — release metadata, workflow, installers, README, AGENTS, and release checklist now consistently describe the current generic JS bundle artifact.
 - **Keep changelog updates with every committed change** — repository agent guidance now requires each committed slice to update `CHANGELOG.md` for the next release so release notes stay complete.
+- **Design collaboration-safe Omni memory** — documented the planned split between shared project memory, per-branch `.omni/work/<branch>/` planning, untracked runtime state, and protected-branch settings guardrails.
 
 ### Tests
 
@@ -40,6 +42,7 @@
 - Added tests for markdown sanitization and embedded fence handling.
 - Added tests for semver prerelease ordering and build metadata.
 - Added tests for `grill-me` and `find-skills` suggestion heuristics.
+- Added tests for `skill-maker` suggestion heuristics.
 - Added tests for SKILLS project notes preservation and large repo-map file skipping.
 - Added tests for launcher `--check`/`--version` non-launching behavior.
 - Added tests for Windows-safe plugin shim import specifiers.

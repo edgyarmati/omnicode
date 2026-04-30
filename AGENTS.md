@@ -22,6 +22,7 @@ Core idea:
 - load OmniCode as a plugin
 - preserve the Omni workflow:
   - `.omni/` durable memory
+  - collaboration-safe per-work memory direction for parallel branches
   - automatic grill-me clarification before change requests
   - explicit skill-fit checkpoint before planning
   - planning before implementation
@@ -127,6 +128,7 @@ Current behavior:
 
 - `README.md`
 - `docs/2026-04-24-omnicode-design.md`
+- `docs/2026-04-30-collaborative-memory-design.md`
 - `docs/implementation-plan.md`
 
 ## Smoke-tested behavior
@@ -151,10 +153,15 @@ These are the next most valuable slices:
    - current enforcement blocks `write`/`edit` until `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md` contain non-placeholder planning content
    - may need stronger or more precise guarding once more real OpenCode sessions are observed
 
-2. **Standards UX improvement**
+2. **Collaborative memory / branch workflow**
+   - implement the design in `docs/2026-04-30-collaborative-memory-design.md`
+   - select `.omni/work/<branch-slug>/` as active planning memory for collaborative work
+   - block protected-branch implementation by default unless OmniCode settings explicitly allow it
+
+3. **Standards UX improvement**
    - support friendlier selection/review flows beyond import-all or explicit relative paths
 
-3. **Repo map + skill routing refinement**
+4. **Repo map + skill routing refinement**
    - improve incrementality/ranking further and move beyond heuristic skill suggestion if needed
 
 ## Build / check

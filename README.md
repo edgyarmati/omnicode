@@ -39,6 +39,7 @@ omnicode
 - **Plan before edit** — when Omni mode is on, the agent can't touch your files until `SPEC.md`, `TASKS.md`, and `TESTS.md` have real content.
 - **Repo awareness** — a ranked repo map keeps the agent oriented in large codebases.
 - **Skill discovery and local creation** — relevant skills are surfaced and loaded automatically; if discovery cannot find a fit, OmniCode can write a narrow local skill under `.omni/skills/` without touching global user skills.
+- **Collaboration-safe memory direction** — shared project knowledge stays durable, while active work is moving toward per-branch `.omni/work/<branch>/` plans and protected-branch guardrails.
 - **Token savings** — RTK is installed and wired up automatically, compressing bash command output by 60-90% so the agent uses fewer tokens on git, ls, test runs, and more.
 - **Zero impact on your normal setup** — the `omnicode` launcher uses its own isolated config, so regular `opencode` keeps working exactly as before.
 
@@ -52,6 +53,8 @@ OpenCode still owns the terminal UI, models, providers, auth, sessions, tools, a
 4. **Plan** — write real `SPEC.md`, `TASKS.md`, and `TESTS.md`. Until you do, the edit/write guard is active.
 5. **Execute** — work bounded task slices guided by the plan.
 6. **Verify** — state and session summaries are updated through OmniCode tools so the next run picks up where you left off.
+
+For collaborative repositories, see the planned per-branch work-memory model in [`docs/2026-04-30-collaborative-memory-design.md`](docs/2026-04-30-collaborative-memory-design.md).
 
 `.omni/STATE.md` is also injected into OpenCode's compaction context, so active state survives long sessions.
 
@@ -219,5 +222,6 @@ Release artifacts are produced by `.github/workflows/release.yml` from tagged ve
 - [`docs/2026-04-24-omnicode-design.md`](docs/2026-04-24-omnicode-design.md) — original OmniCode design record.
 - [`docs/2026-04-24-native-launcher-design.md`](docs/2026-04-24-native-launcher-design.md) — native launcher design record.
 - [`docs/2026-04-24-release-setup-design.md`](docs/2026-04-24-release-setup-design.md) — release setup design record.
+- [`docs/2026-04-30-collaborative-memory-design.md`](docs/2026-04-30-collaborative-memory-design.md) — collaboration-safe memory and protected-branch design.
 - [`docs/implementation-plan.md`](docs/implementation-plan.md) — phased implementation plan.
 - [`docs/release-checklist.md`](docs/release-checklist.md) — release runbook.

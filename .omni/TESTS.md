@@ -75,3 +75,13 @@
 - [x] `CHANGELOG.md` records this process/documentation update for the next release.
 - [x] `npm run check` passes.
 - [x] `npm test` passes.
+
+---
+
+## Collaborative Omni Memory Design Verification
+
+- [x] Design doc covers shared memory, per-work-item plans, runtime state, branch slug defaults, protected-branch settings, and non-Omni contributors.
+- [x] README/AGENTS reference or summarize the collaborative memory direction.
+- [x] CHANGELOG records the collaboration design update.
+- [x] `npm run check` passes.
+- [x] `npm test` passes.

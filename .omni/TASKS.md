@@ -63,3 +63,9 @@
 ## Changelog Update Discipline
 
 - [x] Slice 1: document the changelog-update requirement in `AGENTS.md`, update `CHANGELOG.md`, verify, and commit.
+
+---
+
+## Collaborative Omni Memory Design
+
+- [x] Slice 1: document collaboration-safe memory design, update README/AGENTS/CHANGELOG, verify, and commit.

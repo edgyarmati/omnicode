@@ -200,3 +200,33 @@ Committed changes can be easy to miss during release prep if the changelog is up
 - `AGENTS.md` clearly requires changelog updates for committed changes.
 - `CHANGELOG.md` includes this documentation/process change for the next release.
 - Verification passes before commit.
+
+---
+
+## Current Implementation Task — Collaborative Omni Memory Design
+
+### Problem
+
+The current root `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md` model works well for solo sessions, but collaborative projects can have multiple contributors, branches, issues, and non-Omni workflows in flight at the same time. A single shared active plan can become stale or conflict-prone.
+
+### Requested Behavior
+
+- Produce a design document for collaboration-safe Omni memory before implementation.
+- Split future memory responsibilities into stable shared project knowledge, per-work-item plans, and untracked runtime/session state.
+- Default per-work-item IDs to the current git branch slug.
+- Design protected-branch behavior: change requests should not implement directly on `main`/`master` by default.
+- Store protected-branch behavior in effective OmniCode settings JSON, with global defaults and optional project-local overrides; both scopes may explicitly allow protected-branch changes.
+- Preserve backward compatibility with current root planning files for solo/existing projects until migration is implemented.
+
+### Constraints
+
+- This slice is design/docs only; do not implement branch detection or guard enforcement yet.
+- Do not introduce committed repo policy JSON for branch overrides; settings belong to the OmniCode settings JSON layer discussed for subagents/global/project overrides.
+- Update `CHANGELOG.md` as part of the slice.
+
+### Success Criteria
+
+- A design doc describes `.omni/work/<branch-slug>/` planning, branch protection defaults, settings overrides, non-Omni contributor rehydration, and staged implementation slices.
+- README/AGENTS point to the collaboration design or summarize the direction.
+- CHANGELOG records the design/process update for the next release.
+- Verification passes before commit.
