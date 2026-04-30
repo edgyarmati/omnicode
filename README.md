@@ -35,10 +35,10 @@ omnicode
 
 - **Durable project memory** in `.omni/` — spec, tasks, tests, decisions, standards, and session summaries stay on disk between runs.
 - **Automatic grilling before changes** — for new features, fixes, refactors, and behavior changes, OmniCode asks one focused question at a time until the request is unambiguous.
-- **Skill-fit checkpoint** — after clarification, OmniCode checks whether available skills cover the task and uses `find-skills` when relevant skills are missing.
+- **Skill-fit checkpoint** — after clarification, OmniCode checks whether available skills cover the task, uses `find-skills` when relevant skills are missing, and can create a project-local skill when none exists.
 - **Plan before edit** — when Omni mode is on, the agent can't touch your files until `SPEC.md`, `TASKS.md`, and `TESTS.md` have real content.
 - **Repo awareness** — a ranked repo map keeps the agent oriented in large codebases.
-- **Skill discovery** — relevant skills are surfaced and loaded automatically for the task at hand.
+- **Skill discovery and local creation** — relevant skills are surfaced and loaded automatically; if discovery cannot find a fit, OmniCode can write a narrow local skill under `.omni/skills/` without touching global user skills.
 - **Token savings** — RTK is installed and wired up automatically, compressing bash command output by 60-90% so the agent uses fewer tokens on git, ls, test runs, and more.
 - **Zero impact on your normal setup** — the `omnicode` launcher uses its own isolated config, so regular `opencode` keeps working exactly as before.
 
@@ -48,7 +48,7 @@ OpenCode still owns the terminal UI, models, providers, auth, sessions, tools, a
 
 1. **Bootstrap** — `.omni/` is seeded in your project the first time you run OmniCode there.
 2. **Grill** — for change requests, clarify one question at a time until behavior, constraints, non-goals, tests, and success criteria are concrete.
-3. **Check skills** — judge whether bundled/project skills cover the clarified task; if not, use `find-skills` before planning.
+3. **Check skills** — judge whether bundled/project skills cover the clarified task; if not, use `find-skills`, then create a project-local `.omni/skills/` skill with `skill-maker` when no adequate skill exists.
 4. **Plan** — write real `SPEC.md`, `TASKS.md`, and `TESTS.md`. Until you do, the edit/write guard is active.
 5. **Execute** — work bounded task slices guided by the plan.
 6. **Verify** — state and session summaries are updated through OmniCode tools so the next run picks up where you left off.

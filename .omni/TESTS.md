@@ -54,3 +54,15 @@
 - [x] Agent instructions document the post-grill coverage judgment and skill-loading boundary.
 - [x] `npm run check` passes.
 - [x] `npm test` passes.
+
+---
+
+## Project-Local Skill Maker Verification
+
+- [x] `omnicode_list_skills`/skill listing includes `skill-maker`.
+- [x] Generated/default `.omni/SKILLS.md` bundled list includes `skill-maker`.
+- [x] `suggestSkills` returns `skill-maker` for missing/no-relevant-skill and create/write-skill requests.
+- [x] Agent instructions document `find-skills` before automatic project-local `skill-maker` fallback.
+- [x] README documents that generated missing skills are project-local under `.omni/skills/` and not global.
+- [x] `npm run check` passes.
+- [x] `npm test` passes.

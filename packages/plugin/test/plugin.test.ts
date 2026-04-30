@@ -221,6 +221,7 @@ test("suggestSkills and updateSkillsFile infer workflow skills from task text", 
     assert.match(skillsFile, /## Suggested For Current Work/);
     assert.match(skillsFile, /grill-me/);
     assert.match(skillsFile, /find-skills/);
+    assert.match(skillsFile, /skill-maker/);
     assert.match(skillsFile, /brainstorming/);
     assert.match(skillsFile, /omni-verification/);
   });
@@ -239,6 +240,14 @@ test("suggestSkills recommends find-skills for skill discovery and removal reque
 
   assert.equal(discovery[0]?.name, "find-skills");
   assert.equal(removal[0]?.name, "find-skills");
+});
+
+test("suggestSkills recommends skill-maker for missing skill creation requests", async () => {
+  const missing = await suggestSkills("No relevant skill exists for this project-local workflow");
+  const creation = await suggestSkills("Create a project-local skill for our release checklist");
+
+  assert.equal(missing[0]?.name, "skill-maker");
+  assert.equal(creation[0]?.name, "skill-maker");
 });
 
 test("updateSkillsFile preserves user-managed project notes", async () => {

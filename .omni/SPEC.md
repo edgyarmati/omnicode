@@ -135,3 +135,44 @@ After `grill-me` and before writing final planning artifacts, OmniCode must perf
 - `omnicode_suggest_skills` suggests `find-skills` for skill discovery and insufficient-domain-coverage wording.
 - Tests cover find-skills suggestion behavior and bundled skill updates.
 - `npm run check` and `npm test` pass.
+
+---
+
+## Current Implementation Task — Project-Local Skill Maker
+
+### Problem
+
+The skill-fit checkpoint can discover missing skill coverage with `find-skills`, but it has no automatic fallback when no adequate skill exists or when an existing skill should not be installed globally. OmniCode needs a workflow-native way to create narrow, reusable, project-local skills before planning and before any worker subagents start execution.
+
+### Requested Behavior
+
+After `grill-me` clarification and during the skill-fit checkpoint:
+
+1. Inventory bundled/project skills and judge coverage.
+2. If coverage is insufficient, use `find-skills` to look for existing relevant skills first.
+3. If no adequate existing skill is available, automatically use a new bundled `skill-maker` workflow skill.
+4. `skill-maker` researches the missing expertise, preferably with a research/explore subagent when subagent-driven development is available, otherwise inline in the main agent.
+5. `skill-maker` writes a narrow project-local skill under `.omni/skills/<skill-name>/SKILL.md` and records it in `.omni/SKILLS.md` so the main agent and future omni-worker subagents can load the needed context from the start.
+6. Generated project-local skills must not be installed globally or mutate the user's global skill directories.
+
+### Reference Model
+
+Use Matt Pocock's `write-a-skill` skill as the primary style reference: concise SKILL.md, strong description triggers, progressive disclosure, optional scripts only for deterministic repeated work, and a lightweight review checklist. Borrow only lightweight research/testing ideas from Anthropic's `skill-creator`; do not require browser/eval-viewer loops for this automatic workflow.
+
+### Constraints
+
+- Keep the existing `find-skills` first; `skill-maker` is the fallback after discovery is inadequate.
+- Do not ask for another approval before creating the local skill once the user has already approved automatic behavior.
+- Keep generated skills project-local in `.omni/skills/`.
+- Keep bundled workflow resources simple markdown files for now; no new public tool names are required for this slice.
+- Preserve existing skill listing and suggestion tool compatibility.
+
+### Success Criteria
+
+- Bundled skills/default skill memory include `skill-maker`.
+- Agent instructions document the post-find-skills automatic local-skill creation fallback.
+- `find-skills` documents handing off to `skill-maker` when discovery is inadequate.
+- `omnicode_suggest_skills` suggests `skill-maker` for missing/no relevant skill and skill-creation wording.
+- README describes the local skill creation fallback.
+- Tests cover bundled/default `skill-maker` inclusion and suggestion behavior.
+- `npm run check` and `npm test` pass.

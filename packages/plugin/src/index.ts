@@ -112,6 +112,17 @@ const SKILL_RULES: Array<{ name: string; patterns: RegExp[]; reason: string; sco
     score: 5,
   },
   {
+    name: "skill-maker",
+    patterns: [
+      /\b(create|write|build|make|generate)\b[^.!?\n]{0,80}\b(?:a\s+)?skills?\b/iu,
+      /\b(?:no|none|missing|insufficient|inadequate|not covered|can't find|cannot find)\b[^.!?\n]{0,100}\b(?:relevant\s+)?skills?\b/iu,
+      /\bskills?\b[^.!?\n]{0,100}\b(?:no|none|missing|insufficient|inadequate|not covered|can't find|cannot find)\b/iu,
+      /\bproject[- ]local\b[^.!?\n]{0,80}\bskills?\b/iu,
+    ],
+    reason: "use after find-skills when no adequate skill exists to create a project-local skill",
+    score: 5,
+  },
+  {
     name: "grill-me",
     patterns: [
       /\b(grill me|stress[- ]test|poke holes|challenge (?:this|my)|what am i missing)\b/iu,
@@ -242,7 +253,7 @@ export const OMNI_FILES: Record<string, string> = {
   "STATE.md": "# State\n\nCurrent Phase: discovery\nActive Task: bootstrap\nStatus Summary: OmniCode workspace bootstrapped and ready for planning.\nBlockers: None\nNext Step: Clarify scope, write spec, define tests, and break work into tasks before implementation.\n",
   "DECISIONS.md": "# Decisions\n\nRecord important choices and why they were made.\n",
   "STANDARDS.md": "# Imported Standards\n\nRecord imported standards from AGENTS.md, CLAUDE.md, Cursor rules, and similar files.\n",
-  "SKILLS.md": "# Skills\n\n## Bundled\n\n- grill-me\n- find-skills\n- brainstorming\n- omni-planning\n- omni-execution\n- omni-verification\n\n## Suggested For Current Work\n\n- None inferred from the current task yet.\n\n## Project Notes\n\nRecord required and project-specific skills here.\n",
+  "SKILLS.md": "# Skills\n\n## Bundled\n\n- grill-me\n- find-skills\n- skill-maker\n- brainstorming\n- omni-planning\n- omni-execution\n- omni-verification\n\n## Suggested For Current Work\n\n- None inferred from the current task yet.\n\n## Project Notes\n\nRecord required and project-specific skills here.\n",
   "SESSION-SUMMARY.md": "# Session Summary\n\n## Progress Made\n\n- Bootstrapped OmniCode durable memory for this project.\n\n## Remaining Work\n\n- Clarify the request and write the first real spec, tasks, and tests.\n\n## Notes\n\nUse this file for concise cross-session handoff notes.\n",
   "CONFIG.md": "# Omni Configuration\n\nOmni Mode: on\n",
   VERSION: `${OMNI_VERSION}\n`,
@@ -700,6 +711,7 @@ export async function updateSkillsFile(
     "",
     "- grill-me",
     "- find-skills",
+    "- skill-maker",
     "- brainstorming",
     "- omni-planning",
     "- omni-execution",

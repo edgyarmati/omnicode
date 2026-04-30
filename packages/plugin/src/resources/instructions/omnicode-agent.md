@@ -18,7 +18,7 @@ For every task after bootstrap:
 
 1. classify whether the request is a change request (new feature, bug fix, refactor, migration, behavior update, docs/release/process change, or anything that edits the project)
 2. for change requests, automatically use `grill-me`: ask one question at a time, include a recommended answer, inspect the codebase instead of asking when the answer is discoverable, and continue until behavior, constraints, non-goals, edge cases, tests, and success criteria are concrete
-3. run the skill-fit checkpoint: inventory bundled/project skills, judge whether they cover the clarified task, load only the relevant skills if coverage is sufficient, and use `find-skills` before planning if coverage is insufficient
+3. run the skill-fit checkpoint: inventory bundled/project skills, judge whether they cover the clarified task, load only the relevant skills if coverage is sufficient, use `find-skills` before planning if coverage is insufficient, and if no adequate skill exists then automatically use `skill-maker` to create a project-local skill under `.omni/skills/`
 4. if the user asks to delete/remove skills from the project, update `.omni/SKILLS.md` during the skill-fit checkpoint so those skills are no longer recorded or suggested
 5. make sure `.omni/` reflects the current understanding
 6. write or refine the spec in `.omni/SPEC.md`
@@ -32,7 +32,7 @@ For every task after bootstrap:
 - before editing source files, make sure planning artifacts exist in `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md`
 - do not skip `grill-me` for change requests unless the user explicitly says not to ask clarification questions or the request is already fully specified
 - do not load domain/implementation skills opportunistically before the skill-fit checkpoint; skills for the task are selected and loaded only at that checkpoint
-- at the skill-fit checkpoint, explicitly decide whether current skills are sufficient; use `find-skills` when relevant skills are missing or the user asks for skill discovery
+- at the skill-fit checkpoint, explicitly decide whether current skills are sufficient; use `find-skills` when relevant skills are missing or the user asks for skill discovery; if discovery is inadequate, use `skill-maker` to create a narrow project-local skill without installing global/user skills
 - keep changes narrow and verifiable
 - RTK is installed and transparently compresses bash command output (git, ls, test runners, etc.) for 60-90% token savings — you do not need to do anything special; it rewrites commands automatically
 - **always use conventional commit style** for every commit: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`, `ci:`, `build:`, `perf:` — summary lines must be specific and useful, not generic
@@ -49,6 +49,7 @@ For every task after bootstrap:
 
 - use `grill-me` automatically before planning or implementing change requests so the agent and user are fully aligned
 - use `find-skills` during the skill-fit checkpoint when bundled/project skills do not cover the clarified task or when the user asks to find/install/remove skills
+- use `skill-maker` after `find-skills` when no adequate skill exists; write only project-local skills in `.omni/skills/` and record them in `.omni/SKILLS.md` before planning or omni-worker delegation
 - use `brainstorming` before creative work or behavior changes
 - use `omni-planning` before implementation of a new feature or migration slice
 - use `omni-execution` when implementing a planned slice

@@ -51,3 +51,9 @@
 - [x] Support remove/delete-skill instructions by documenting project memory cleanup in `.omni/SKILLS.md`.
 - [x] Update suggestion heuristics/tests/docs for `find-skills`.
 - [x] Verify with `npm run check` and `npm test`, then commit.
+
+---
+
+## Project-Local Skill Maker
+
+- [x] Slice 1: add bundled `skill-maker`, update skill-fit instructions/docs/default skill memory/suggestion heuristics, add tests, verify, and commit.
