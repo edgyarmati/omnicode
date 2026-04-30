@@ -21,6 +21,7 @@ import {
   ensureOmniDir,
   formatWorkflowSettingsStatus,
   importStandards,
+  migrateRootPlanToActiveWork,
   planningArtifactsReady,
   planningArtifactsReadyAt,
   planningGuardMessage,
@@ -484,6 +485,43 @@ test("resolvePlanningArtifactReadiness uses root fallback when active work plann
     assert.equal(readiness.ready, true);
     assert.equal(readiness.readyPaths?.source, "root");
     assert.equal(readiness.usedRootFallback, true);
+  });
+});
+
+test("migrateRootPlanToActiveWork copies root planning into active work", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feat/migrate\n", "utf8");
+    await ensureOmniDir(dir);
+    await writeRealPlanningFiles(path.join(dir, ".omni"));
+
+    const result = await migrateRootPlanToActiveWork(dir);
+
+    assert.deepEqual(result.copied.sort(), [
+      ".omni/work/feat-migrate/SPEC.md",
+      ".omni/work/feat-migrate/TASKS.md",
+      ".omni/work/feat-migrate/TESTS.md",
+    ].sort());
+    assert.match(await readFile(path.join(result.activePaths.baseDir, "SPEC.md"), "utf8"), /Spec content/);
+    assert.match(await readFile(result.notesPath, "utf8"), /Migrated root planning files/);
+  });
+});
+
+test("migrateRootPlanToActiveWork rejects placeholders and overwrite conflicts", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feat/migrate\n", "utf8");
+    await ensureOmniDir(dir);
+
+    await assert.rejects(() => migrateRootPlanToActiveWork(dir), /nothing to migrate/);
+
+    await writeRealPlanningFiles(path.join(dir, ".omni"));
+    const activePaths = await activePlanningArtifactPaths(dir);
+    await mkdir(activePaths.baseDir, { recursive: true });
+    await writeFile(activePaths.specPath, "existing\n", "utf8");
+
+    await assert.rejects(() => migrateRootPlanToActiveWork(dir), /refusing to overwrite/);
+    await assert.doesNotReject(() => migrateRootPlanToActiveWork(dir, { overwrite: true }));
   });
 });
 

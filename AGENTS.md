@@ -75,6 +75,7 @@ Current features:
   - `omnicode_collaboration_status`
   - `omnicode_start_work`
   - `omnicode_create_pr`
+  - `omnicode_migrate_root_plan`
 - bootstraps `.omni/` on `session.created`
 - adds `.omni/STATE.md` into compaction context
 - guards `write` / `edit` when Omni mode is on and planning artifacts are missing

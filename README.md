@@ -58,6 +58,7 @@ For collaborative repositories, see the planned per-branch work-memory model in 
 OmniCode's collaboration checkpoint reports the current branch, protected-branch policy, active `.omni/work/<branch-slug>/` planning directory, planning readiness, and next recommended action when starting or resuming change work.
 Use `omnicode_start_work` to deliberately create or switch to a feature branch and initialize that branch's work-memory directory; it refuses dirty checkouts by default and suggests committing, stashing, or explicitly allowing dirty work.
 PR behavior is controlled by `workflow.offerPrOnCompletion` and `workflow.autoCreatePrOnCompletion`; by default OmniCode offers to open a PR when work is complete but does not create one unless asked.
+Use `omnicode_migrate_root_plan` to copy an existing non-placeholder root plan into the active branch-scoped `.omni/work/<branch-slug>/` directory while keeping root files intact for compatibility.
 
 `.omni/STATE.md` is also injected into OpenCode's compaction context, so active state survives long sessions.
 

@@ -86,5 +86,5 @@
 
 - [x] Slice 1: add explicit `omnicode_start_work` branch workflow tool, dirty checkout guidance, tests, docs, verify, and commit.
 - [x] Slice 2: add PR offer/auto settings and explicit PR creation support, tests, docs, verify, and commit.
-- [ ] Slice 3: add root planning migration tool, tests, docs, verify, and commit.
+- [x] Slice 3: add root planning migration tool, tests, docs, verify, and commit.
 - [ ] Slice 4: move runtime state/session summaries to branch-scoped `.omni/runtime/<id>/`, tests, docs, verify, and commit.

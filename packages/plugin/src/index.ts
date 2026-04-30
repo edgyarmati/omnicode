@@ -69,6 +69,13 @@ export type StartWorkResult = {
   message: string;
 };
 
+export type MigrateRootPlanResult = {
+  copied: string[];
+  activePaths: PlanningArtifactPaths;
+  notesPath: string;
+  message: string;
+};
+
 export type WorkflowSettings = {
   protectedBranches: string[];
   requireFeatureBranchForChanges: boolean;
@@ -587,6 +594,74 @@ export async function createPullRequest(
     throw new Error(`OmniCode: gh pr create failed: ${(result.stderr || result.stdout).trim()}`);
   }
   return result.stdout.trim();
+}
+
+async function pathExists(filePath: string): Promise<boolean> {
+  try {
+    await stat(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function migrateRootPlanToActiveWork(
+  directory: string,
+  options: { overwrite?: boolean } = {},
+): Promise<MigrateRootPlanResult> {
+  const activePaths = await activePlanningArtifactPaths(directory);
+  if (activePaths.source !== "work") {
+    throw new Error("OmniCode: root planning migration requires a branch-backed active work directory.");
+  }
+  const rootPaths = rootPlanningArtifactPaths(directory);
+  if (!(await planningArtifactsReadyAt(rootPaths))) {
+    throw new Error("OmniCode: root planning artifacts are missing or still placeholders; nothing to migrate.");
+  }
+  const targets = [activePaths.specPath, activePaths.tasksPath, activePaths.testsPath];
+  const existingTargets = [];
+  for (const target of targets) {
+    if (await pathExists(target)) existingTargets.push(relativeDisplayPath(directory, target));
+  }
+  if (existingTargets.length > 0 && !options.overwrite) {
+    throw new Error(
+      [
+        "OmniCode: active work planning files already exist; refusing to overwrite.",
+        ...existingTargets.map((target) => `- ${target}`),
+        "Rerun with overwrite: true to replace them.",
+      ].join("\n"),
+    );
+  }
+
+  await mkdir(activePaths.baseDir, { recursive: true });
+  const copies: Array<[string, string]> = [
+    [rootPaths.specPath, activePaths.specPath],
+    [rootPaths.tasksPath, activePaths.tasksPath],
+    [rootPaths.testsPath, activePaths.testsPath],
+  ];
+  const copied: string[] = [];
+  for (const [source, target] of copies) {
+    await writeFileAtomic(target, await readFile(source, "utf8"));
+    copied.push(relativeDisplayPath(directory, target));
+  }
+  const notesPath = path.join(activePaths.baseDir, "NOTES.md");
+  const note = [
+    "# Notes",
+    "",
+    `- Migrated root planning files from .omni/ into ${relativeDisplayPath(directory, activePaths.baseDir)} on ${new Date().toISOString()}.`,
+    "- Root planning files were left intact for compatibility.",
+    "",
+  ].join("\n");
+  await writeFileAtomic(notesPath, note);
+  return {
+    copied,
+    activePaths,
+    notesPath,
+    message: [
+      `Migrated root planning into ${relativeDisplayPath(directory, activePaths.baseDir)}.`,
+      ...copied.map((filePath) => `- ${filePath}`),
+      `Notes: ${relativeDisplayPath(directory, notesPath)}`,
+    ].join("\n"),
+  };
 }
 
 function rootPlanningArtifactPaths(directory: string): PlanningArtifactPaths {
@@ -1593,6 +1668,18 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
             draft: args.draft,
             push: args.push,
           });
+        },
+      }),
+
+      omnicode_migrate_root_plan: tool({
+        description:
+          "Copy non-placeholder root .omni planning files into the active branch-scoped .omni/work directory.",
+        args: {
+          overwrite: tool.schema.boolean().optional().describe("Overwrite existing active work planning files."),
+        },
+        async execute(args) {
+          const result = await migrateRootPlanToActiveWork(directory, { overwrite: args.overwrite });
+          return result.message;
         },
       }),
 
