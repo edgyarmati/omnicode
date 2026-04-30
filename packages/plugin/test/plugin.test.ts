@@ -9,6 +9,8 @@ import {
   OMNI_GITIGNORE,
   appendSessionSummary,
   assertProtectedBranchAllowsMutation,
+  activePlanningArtifactPaths,
+  branchNameToWorkId,
   buildRepoMap,
   DEFAULT_WORKFLOW_SETTINGS,
   discoverStandards,
@@ -209,6 +211,38 @@ test("assertProtectedBranchAllowsMutation respects protected branch overrides", 
         requireFeatureBranchForChanges: false,
       },
     }));
+  });
+});
+
+test("branchNameToWorkId creates filesystem-safe branch slugs", () => {
+  assert.equal(branchNameToWorkId("feature/Collaborative Memory"), "feature-collaborative-memory");
+  assert.equal(branchNameToWorkId("fix..release__guard"), "fix-release-guard");
+  assert.throws(() => branchNameToWorkId("///"), /cannot derive work id/);
+});
+
+test("activePlanningArtifactPaths selects .omni/work for branch-backed work", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feature/collab-memory\n", "utf8");
+
+    const paths = await activePlanningArtifactPaths(dir);
+
+    assert.equal(paths.source, "work");
+    assert.equal(paths.workId, "feature-collab-memory");
+    assert.equal(paths.baseDir, path.join(dir, ".omni", "work", "feature-collab-memory"));
+    assert.equal(paths.specPath, path.join(paths.baseDir, "SPEC.md"));
+    assert.equal(paths.tasksPath, path.join(paths.baseDir, "TASKS.md"));
+    assert.equal(paths.testsPath, path.join(paths.baseDir, "TESTS.md"));
+  });
+});
+
+test("activePlanningArtifactPaths falls back to root planning when no branch is available", async () => {
+  await withTempDir(async (dir) => {
+    const paths = await activePlanningArtifactPaths(dir);
+
+    assert.equal(paths.source, "root");
+    assert.equal(paths.workId, null);
+    assert.equal(paths.baseDir, path.join(dir, ".omni"));
   });
 });
 

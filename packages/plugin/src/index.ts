@@ -45,6 +45,15 @@ export type StandardCandidate = {
   kind: string;
 };
 
+export type PlanningArtifactPaths = {
+  baseDir: string;
+  specPath: string;
+  tasksPath: string;
+  testsPath: string;
+  workId: string | null;
+  source: "work" | "root";
+};
+
 export type WorkflowSettings = {
   protectedBranches: string[];
   requireFeatureBranchForChanges: boolean;
@@ -298,6 +307,39 @@ export async function assertProtectedBranchAllowsMutation(
   if (branch && isProtectedBranch(branch, settings)) {
     throw new Error(protectedBranchGuardMessage(branch));
   }
+}
+
+export function branchNameToWorkId(branch: string): string {
+  const slug = branch
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/gu, "-")
+    .replace(/[-_.]{2,}/gu, "-")
+    .replace(/^[-_.]+|[-_.]+$/gu, "");
+  if (slug.length === 0) {
+    throw new Error(`OmniCode: cannot derive work id from branch name: ${branch}`);
+  }
+  return slug;
+}
+
+function planningArtifactPaths(baseDir: string, workId: string | null, source: "work" | "root"): PlanningArtifactPaths {
+  return {
+    baseDir,
+    specPath: path.join(baseDir, "SPEC.md"),
+    tasksPath: path.join(baseDir, "TASKS.md"),
+    testsPath: path.join(baseDir, "TESTS.md"),
+    workId,
+    source,
+  };
+}
+
+export async function activePlanningArtifactPaths(directory: string): Promise<PlanningArtifactPaths> {
+  const branch = await readCurrentGitBranch(directory);
+  if (!branch) {
+    return planningArtifactPaths(path.join(directory, ".omni"), null, "root");
+  }
+  const workId = branchNameToWorkId(branch);
+  return planningArtifactPaths(path.join(directory, ".omni", "work", workId), workId, "work");
 }
 
 function tempPathFor(filePath: string): string {
