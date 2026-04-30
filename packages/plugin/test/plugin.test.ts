@@ -8,6 +8,7 @@ import {
   OMNI_FILES,
   OMNI_GITIGNORE,
   appendSessionSummary,
+  assertProtectedBranchAllowsMutation,
   buildRepoMap,
   DEFAULT_WORKFLOW_SETTINGS,
   discoverStandards,
@@ -15,6 +16,7 @@ import {
   formatWorkflowSettingsStatus,
   importStandards,
   planningArtifactsReady,
+  readCurrentGitBranch,
   readOmniCodeSettings,
   resolveGlobalSettingsPath,
   resolveProjectSettingsPath,
@@ -167,6 +169,47 @@ test("formatWorkflowSettingsStatus exposes effective workflow policy", async () 
   assert.match(status, /Protected Branches: main, release/);
   assert.match(status, /Require Feature Branch For Changes: no/);
   assert.match(status, /Allow Protected Branch Changes: yes/);
+});
+
+test("readCurrentGitBranch reads branch names from git HEAD", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feature/collab\n", "utf8");
+
+    assert.equal(await readCurrentGitBranch(dir), "feature/collab");
+  });
+});
+
+test("assertProtectedBranchAllowsMutation blocks protected branches by default", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/main\n", "utf8");
+
+    await assert.rejects(
+      () => assertProtectedBranchAllowsMutation(dir, { workflow: DEFAULT_WORKFLOW_SETTINGS }),
+      /change requests should run on a feature branch, not main/,
+    );
+  });
+});
+
+test("assertProtectedBranchAllowsMutation respects protected branch overrides", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/main\n", "utf8");
+
+    await assert.doesNotReject(() => assertProtectedBranchAllowsMutation(dir, {
+      workflow: {
+        ...DEFAULT_WORKFLOW_SETTINGS,
+        allowProtectedBranchChanges: true,
+      },
+    }));
+    await assert.doesNotReject(() => assertProtectedBranchAllowsMutation(dir, {
+      workflow: {
+        ...DEFAULT_WORKFLOW_SETTINGS,
+        requireFeatureBranchForChanges: false,
+      },
+    }));
+  });
 });
 
 test("updateStateFile preserves permissions through atomic replacement", async () => {

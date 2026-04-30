@@ -104,7 +104,7 @@ OmniCode behavior settings are resolved from:
 - global user settings: `~/.omnicode/settings.json`
 - optional project-local override: `.omnicode/settings.json`
 
-The current workflow policy supports protected-branch settings such as `workflow.protectedBranches`, `workflow.requireFeatureBranchForChanges`, and `workflow.allowProtectedBranchChanges`.
+The current workflow policy supports protected-branch settings such as `workflow.protectedBranches`, `workflow.requireFeatureBranchForChanges`, and `workflow.allowProtectedBranchChanges`. When feature branches are required, OmniCode blocks source edits and mutating shell commands on protected branches such as `main`/`master` unless an explicit settings override allows them.
 
 ## Use OmniCode as a permanent OpenCode plugin
 

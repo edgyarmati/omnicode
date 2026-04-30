@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 
 import type { PluginInput } from "@opencode-ai/plugin";
 
@@ -99,6 +99,11 @@ async function writeRealPlanning(directory: string) {
   );
 }
 
+async function writeGitBranch(directory: string, branch: string) {
+  await mkdir(path.join(directory, ".git"), { recursive: true });
+  await writeFile(path.join(directory, ".git", "HEAD"), `ref: refs/heads/${branch}\n`, "utf8");
+}
+
 test("tool.execute.before allows non-mutating tools regardless of planning state", async () => {
   await withTempDir(async (dir) => {
     await ensureOmniDir(dir);
@@ -184,6 +189,45 @@ test("tool.execute.before allows write/edit once SPEC, TASKS, and TESTS hold rea
     );
     await hook(
       { tool: "edit" },
+      { args: { filePath: path.join(dir, "src", "example.ts") } },
+    );
+  });
+});
+
+test("tool.execute.before rejects source mutation on protected branches", async () => {
+  await withTempDir(async (dir) => {
+    await ensureOmniDir(dir);
+    await setOmniMode(dir, "on");
+    await writeRealPlanning(dir);
+    await writeGitBranch(dir, "main");
+    const hook = await buildHook(dir);
+
+    await assert.rejects(
+      () => hook(
+        { tool: "write" },
+        { args: { filePath: path.join(dir, "src", "example.ts") } },
+      ),
+      /change requests should run on a feature branch, not main/,
+    );
+  });
+});
+
+test("tool.execute.before allows protected branch mutation with project settings override", async () => {
+  await withTempDir(async (dir) => {
+    await ensureOmniDir(dir);
+    await setOmniMode(dir, "on");
+    await writeRealPlanning(dir);
+    await writeGitBranch(dir, "main");
+    await mkdir(path.join(dir, ".omnicode"), { recursive: true });
+    await writeFile(
+      path.join(dir, ".omnicode", "settings.json"),
+      JSON.stringify({ workflow: { allowProtectedBranchChanges: true } }),
+      "utf8",
+    );
+    const hook = await buildHook(dir);
+
+    await hook(
+      { tool: "write" },
       { args: { filePath: path.join(dir, "src", "example.ts") } },
     );
   });

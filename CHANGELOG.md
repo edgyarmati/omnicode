@@ -8,6 +8,7 @@
 - **Enforced skill-fit checkpoint** — after clarification, the agent judges whether bundled/project skills cover the task. If not, it uses `find-skills` to discover relevant external skills before planning. Supports removing skills from project memory when the user requests it.
 - **Project-local skill maker workflow** — when `find-skills` cannot find adequate coverage, OmniCode can create a narrow local skill under `.omni/skills/` for the current project without installing global user skills.
 - **Workflow settings primitives** — OmniCode now resolves protected-branch workflow policy from global `~/.omnicode/settings.json` plus optional project-local `.omnicode/settings.json` overrides and exposes the effective policy in state output.
+- **Protected-branch workflow guard** — source edits and mutating shell commands are blocked on protected branches such as `main`/`master` by default once planning is ready, unless global or project OmniCode settings explicitly allow direct protected-branch changes.
 
 ### Fixes
 
@@ -45,6 +46,7 @@
 - Added tests for `grill-me` and `find-skills` suggestion heuristics.
 - Added tests for `skill-maker` suggestion heuristics.
 - Added tests for workflow settings defaults, global/project override merge, invalid settings fallback, and status formatting.
+- Added tests for git branch detection, protected-branch blocking, and project settings overrides in the mutating-tool guard.
 - Added tests for SKILLS project notes preservation and large repo-map file skipping.
 - Added tests for launcher `--check`/`--version` non-launching behavior.
 - Added tests for Windows-safe plugin shim import specifiers.

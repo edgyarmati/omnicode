@@ -250,6 +250,56 @@ export function formatWorkflowSettingsStatus(settings: OmniCodeSettings): string
   ].join("\n");
 }
 
+async function resolveGitDir(directory: string): Promise<string | null> {
+  const dotGitPath = path.join(directory, ".git");
+  try {
+    const dotGitStat = await stat(dotGitPath);
+    if (dotGitStat.isDirectory()) return dotGitPath;
+    const dotGitContent = await readFile(dotGitPath, "utf8");
+    const match = dotGitContent.match(/^gitdir:\s*(.+)$/imu);
+    if (!match) return null;
+    return path.resolve(directory, match[1].trim());
+  } catch {
+    return null;
+  }
+}
+
+export async function readCurrentGitBranch(directory: string): Promise<string | null> {
+  const gitDir = await resolveGitDir(directory);
+  if (!gitDir) return null;
+  try {
+    const head = (await readFile(path.join(gitDir, "HEAD"), "utf8")).trim();
+    const match = head.match(/^ref:\s+refs\/heads\/(.+)$/u);
+    return match?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function isProtectedBranch(branch: string | null, settings: OmniCodeSettings): boolean {
+  if (!branch) return false;
+  return settings.workflow.protectedBranches.includes(branch);
+}
+
+export function protectedBranchGuardMessage(branch: string): string {
+  return [
+    `OmniCode guard: change requests should run on a feature branch, not ${branch}.`,
+    "Create or switch to a branch, or set workflow.allowProtectedBranchChanges=true in OmniCode settings if this project intentionally allows direct protected-branch work.",
+  ].join(" ");
+}
+
+export async function assertProtectedBranchAllowsMutation(
+  directory: string,
+  settings: OmniCodeSettings,
+): Promise<void> {
+  if (!settings.workflow.requireFeatureBranchForChanges) return;
+  if (settings.workflow.allowProtectedBranchChanges) return;
+  const branch = await readCurrentGitBranch(directory);
+  if (branch && isProtectedBranch(branch, settings)) {
+    throw new Error(protectedBranchGuardMessage(branch));
+  }
+}
+
 function tempPathFor(filePath: string): string {
   return `${filePath}.${randomBytes(6).toString("hex")}.tmp`;
 }
@@ -1082,6 +1132,9 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
           "OmniCode guard: before editing source files or running mutating shell commands, write real planning content into .omni/SPEC.md, .omni/TASKS.md, and .omni/TESTS.md (placeholder bootstrap files are not enough).",
         );
       }
+
+      const settings = await readOmniCodeSettings(directory);
+      await assertProtectedBranchAllowsMutation(directory, settings);
 
       if (rtkAvailable && input.tool === "bash" && commandKey && typeof args[commandKey] === "string") {
         const originalCommand = args[commandKey] as string;
