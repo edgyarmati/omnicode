@@ -9,10 +9,15 @@ import {
   OMNI_GITIGNORE,
   appendSessionSummary,
   buildRepoMap,
+  DEFAULT_WORKFLOW_SETTINGS,
   discoverStandards,
   ensureOmniDir,
+  formatWorkflowSettingsStatus,
   importStandards,
   planningArtifactsReady,
+  readOmniCodeSettings,
+  resolveGlobalSettingsPath,
+  resolveProjectSettingsPath,
   setOmniMode,
   suggestSkills,
   updateSkillsFile,
@@ -80,6 +85,88 @@ test("writeFileAtomic preserves existing file permissions", async () => {
     assert.equal(await readFile(filePath, "utf8"), "new\n");
     assert.equal(modeBits((await stat(filePath)).mode), 0o600);
   });
+});
+
+test("readOmniCodeSettings returns workflow defaults when settings files are missing", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    const projectDir = path.join(dir, "project");
+    await mkdir(projectDir, { recursive: true });
+
+    const settings = await readOmniCodeSettings(projectDir, { homeDir });
+
+    assert.deepEqual(settings.workflow, DEFAULT_WORKFLOW_SETTINGS);
+  });
+});
+
+test("readOmniCodeSettings merges global defaults with project overrides", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    const projectDir = path.join(dir, "project");
+    await mkdir(path.dirname(resolveGlobalSettingsPath(homeDir)), { recursive: true });
+    await mkdir(path.dirname(resolveProjectSettingsPath(projectDir)), { recursive: true });
+    await writeFile(
+      resolveGlobalSettingsPath(homeDir),
+      JSON.stringify({
+        workflow: {
+          protectedBranches: ["main", "trunk"],
+          requireFeatureBranchForChanges: true,
+          allowProtectedBranchChanges: false,
+        },
+      }),
+      "utf8",
+    );
+    await writeFile(
+      resolveProjectSettingsPath(projectDir),
+      JSON.stringify({
+        workflow: {
+          allowProtectedBranchChanges: true,
+        },
+      }),
+      "utf8",
+    );
+
+    const settings = await readOmniCodeSettings(projectDir, { homeDir });
+
+    assert.deepEqual(settings.workflow, {
+      protectedBranches: ["main", "trunk"],
+      requireFeatureBranchForChanges: true,
+      allowProtectedBranchChanges: true,
+    });
+  });
+});
+
+test("readOmniCodeSettings ignores invalid workflow settings", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    const projectDir = path.join(dir, "project");
+    await mkdir(path.dirname(resolveGlobalSettingsPath(homeDir)), { recursive: true });
+    await mkdir(path.dirname(resolveProjectSettingsPath(projectDir)), { recursive: true });
+    await writeFile(
+      resolveGlobalSettingsPath(homeDir),
+      JSON.stringify({ workflow: { protectedBranches: [], requireFeatureBranchForChanges: "yes" } }),
+      "utf8",
+    );
+    await writeFile(resolveProjectSettingsPath(projectDir), "not json", "utf8");
+
+    const settings = await readOmniCodeSettings(projectDir, { homeDir });
+
+    assert.deepEqual(settings.workflow, DEFAULT_WORKFLOW_SETTINGS);
+  });
+});
+
+test("formatWorkflowSettingsStatus exposes effective workflow policy", async () => {
+  const status = formatWorkflowSettingsStatus({
+    workflow: {
+      protectedBranches: ["main", "release"],
+      requireFeatureBranchForChanges: false,
+      allowProtectedBranchChanges: true,
+    },
+  });
+
+  assert.match(status, /Protected Branches: main, release/);
+  assert.match(status, /Require Feature Branch For Changes: no/);
+  assert.match(status, /Allow Protected Branch Changes: yes/);
 });
 
 test("updateStateFile preserves permissions through atomic replacement", async () => {

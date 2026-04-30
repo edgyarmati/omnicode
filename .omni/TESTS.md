@@ -85,3 +85,14 @@
 - [x] CHANGELOG records the collaboration design update.
 - [x] `npm run check` passes.
 - [x] `npm test` passes.
+
+---
+
+## Collaborative Workflow Implementation Verification
+
+- [x] Slice 1: tests cover workflow settings defaults, global/project merge, invalid fallback, and status visibility.
+- [ ] Slice 2: tests cover protected branch blocking for mutating tools and global/project override behavior.
+- [ ] Slice 3: tests cover branch slug generation and active work planning path selection.
+- [ ] Slice 4: tests cover active work planning readiness, root fallback, and guard messaging.
+- [ ] Slice 5: tests/docs cover collaboration checkpoint output.
+- [ ] Run `npm run check` and `npm test` after each slice.

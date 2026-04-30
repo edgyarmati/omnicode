@@ -99,6 +99,13 @@ The `omnicode` launcher starts OpenCode with an OmniCode-specific config home so
 
 Both `omnicode` and your regular `opencode` use the same underlying OpenCode binary — they just point at different config roots.
 
+OmniCode behavior settings are resolved from:
+
+- global user settings: `~/.omnicode/settings.json`
+- optional project-local override: `.omnicode/settings.json`
+
+The current workflow policy supports protected-branch settings such as `workflow.protectedBranches`, `workflow.requireFeatureBranchForChanges`, and `workflow.allowProtectedBranchChanges`.
+
 ## Use OmniCode as a permanent OpenCode plugin
 
 If you'd rather have OmniCode available in every `opencode` session, you can load it as a regular plugin instead of going through the `omnicode` launcher. This trades isolation for always-on availability.

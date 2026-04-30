@@ -230,3 +230,35 @@ The current root `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md` model w
 - README/AGENTS point to the collaboration design or summarize the direction.
 - CHANGELOG records the design/process update for the next release.
 - Verification passes before commit.
+
+---
+
+## Current Implementation Task — Collaborative Workflow Implementation
+
+### Problem
+
+The collaboration design is documented, but OmniCode still uses root planning artifacts only and does not expose or enforce feature-branch workflow policy. Implement the design in bounded slices so collaboration-safe memory works incrementally without regressing solo projects.
+
+### Requested Behavior
+
+Implement these slices independently, verifying and committing each one:
+
+1. Add workflow settings primitives for protected branches, feature-branch requirement, and override visibility.
+2. Add branch detection and protected-branch guard enforcement for mutating tools.
+3. Add active `.omni/work/<branch-slug>/` planning directory selection helpers.
+4. Update planning-artifact readiness/guard behavior to use the active work directory with root fallback.
+5. Add collaboration checkpoint UX/docs so users can see branch, policy, and active work-memory status.
+
+### Constraints
+
+- Preserve existing root `SPEC.md`, `TASKS.md`, and `TESTS.md` compatibility until work-specific planning is ready.
+- Keep settings in the OmniCode settings JSON layer: global settings plus project-local override, not committed `.omni/CONFIG.md` policy.
+- Allow both global and project-local settings to explicitly permit protected-branch changes.
+- Keep each slice narrow and commit after verification.
+- Update `CHANGELOG.md` for each committed slice.
+
+### Success Criteria
+
+- Tests cover settings merge/defaults/status, branch guard blocking and overrides, branch slug/work-directory selection, planning readiness with active work and root fallback, and collaboration checkpoint output.
+- README/AGENTS/docs describe the implemented behavior as it lands.
+- `npm run check` and `npm test` pass for each slice before commit.

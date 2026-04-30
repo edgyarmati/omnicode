@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { chmod, mkdir, readFile, readdir, realpath, rename, stat, unlink, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
@@ -44,7 +45,22 @@ export type StandardCandidate = {
   kind: string;
 };
 
+export type WorkflowSettings = {
+  protectedBranches: string[];
+  requireFeatureBranchForChanges: boolean;
+  allowProtectedBranchChanges: boolean;
+};
+
+export type OmniCodeSettings = {
+  workflow: WorkflowSettings;
+};
+
 const OMNI_VERSION = "1";
+export const DEFAULT_WORKFLOW_SETTINGS: WorkflowSettings = {
+  protectedBranches: ["main", "master"],
+  requireFeatureBranchForChanges: true,
+  allowProtectedBranchChanges: false,
+};
 const RESOURCE_ROOT_CANDIDATES = [
   path.join(import.meta.dirname, "resources"),
   path.join(import.meta.dirname, "..", "src", "resources"),
@@ -162,6 +178,77 @@ const SKILL_RULES: Array<{ name: string; patterns: RegExp[]; reason: string; sco
 
 const REPO_MAP_MAX_SUMMARY_BYTES = 128 * 1024;
 const SKILLS_PROJECT_NOTES_HEADING = "## Project Notes";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeProtectedBranches(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const branches = value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+  return branches.length > 0 ? [...new Set(branches)] : undefined;
+}
+
+function parseWorkflowSettings(value: unknown): Partial<WorkflowSettings> {
+  if (!isRecord(value)) return {};
+  const parsed: Partial<WorkflowSettings> = {};
+  const protectedBranches = normalizeProtectedBranches(value.protectedBranches);
+  if (protectedBranches) parsed.protectedBranches = protectedBranches;
+  if (typeof value.requireFeatureBranchForChanges === "boolean") {
+    parsed.requireFeatureBranchForChanges = value.requireFeatureBranchForChanges;
+  }
+  if (typeof value.allowProtectedBranchChanges === "boolean") {
+    parsed.allowProtectedBranchChanges = value.allowProtectedBranchChanges;
+  }
+  return parsed;
+}
+
+async function readSettingsFile(filePath: string): Promise<Partial<OmniCodeSettings>> {
+  try {
+    const content = await readFile(filePath, "utf8");
+    const parsed = JSON.parse(content) as unknown;
+    if (!isRecord(parsed)) return {};
+    return { workflow: parseWorkflowSettings(parsed.workflow) as WorkflowSettings };
+  } catch {
+    return {};
+  }
+}
+
+export function resolveGlobalSettingsPath(homeDir = os.homedir()): string {
+  return path.join(homeDir, ".omnicode", "settings.json");
+}
+
+export function resolveProjectSettingsPath(directory: string): string {
+  return path.join(directory, ".omnicode", "settings.json");
+}
+
+export async function readOmniCodeSettings(
+  directory: string,
+  options: { homeDir?: string } = {},
+): Promise<OmniCodeSettings> {
+  const globalSettings = await readSettingsFile(resolveGlobalSettingsPath(options.homeDir));
+  const projectSettings = await readSettingsFile(resolveProjectSettingsPath(directory));
+  return {
+    workflow: {
+      ...DEFAULT_WORKFLOW_SETTINGS,
+      ...(globalSettings.workflow ?? {}),
+      ...(projectSettings.workflow ?? {}),
+    },
+  };
+}
+
+export function formatWorkflowSettingsStatus(settings: OmniCodeSettings): string {
+  return [
+    "## OmniCode Workflow Settings",
+    "",
+    `Protected Branches: ${settings.workflow.protectedBranches.join(", ")}`,
+    `Require Feature Branch For Changes: ${settings.workflow.requireFeatureBranchForChanges ? "yes" : "no"}`,
+    `Allow Protected Branch Changes: ${settings.workflow.allowProtectedBranchChanges ? "yes" : "no"}`,
+  ].join("\n");
+}
 
 function tempPathFor(filePath: string): string {
   return `${filePath}.${randomBytes(6).toString("hex")}.tmp`;
@@ -1042,7 +1129,11 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
         args: {},
         async execute() {
           await ensureOmniDir(directory);
-          return readStateSummary(directory);
+          const [stateSummary, settings] = await Promise.all([
+            readStateSummary(directory),
+            readOmniCodeSettings(directory),
+          ]);
+          return `${stateSummary.trimEnd()}\n\n${formatWorkflowSettingsStatus(settings)}`;
         },
       }),
 

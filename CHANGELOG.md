@@ -7,6 +7,7 @@
 - **Automatic grill-me clarification** — change requests (new features, fixes, refactors, migrations) now automatically trigger a one-question-at-a-time interview until behavior, constraints, non-goals, edge cases, and success criteria are concrete enough to plan safely.
 - **Enforced skill-fit checkpoint** — after clarification, the agent judges whether bundled/project skills cover the task. If not, it uses `find-skills` to discover relevant external skills before planning. Supports removing skills from project memory when the user requests it.
 - **Project-local skill maker workflow** — when `find-skills` cannot find adequate coverage, OmniCode can create a narrow local skill under `.omni/skills/` for the current project without installing global user skills.
+- **Workflow settings primitives** — OmniCode now resolves protected-branch workflow policy from global `~/.omnicode/settings.json` plus optional project-local `.omnicode/settings.json` overrides and exposes the effective policy in state output.
 
 ### Fixes
 
@@ -43,6 +44,7 @@
 - Added tests for semver prerelease ordering and build metadata.
 - Added tests for `grill-me` and `find-skills` suggestion heuristics.
 - Added tests for `skill-maker` suggestion heuristics.
+- Added tests for workflow settings defaults, global/project override merge, invalid settings fallback, and status formatting.
 - Added tests for SKILLS project notes preservation and large repo-map file skipping.
 - Added tests for launcher `--check`/`--version` non-launching behavior.
 - Added tests for Windows-safe plugin shim import specifiers.
