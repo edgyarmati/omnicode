@@ -54,3 +54,22 @@
 - [x] Agent instructions document the post-grill coverage judgment and skill-loading boundary.
 - [x] `npm run check` passes.
 - [x] `npm test` passes.
+
+---
+
+## Optional Native Sub-Agents Verification
+
+- [x] Settings resolver reads `~/.omnicode/settings.json`, reads `<project>/.omnicode/settings.json`, and applies project override precedence.
+- [x] Invalid/missing settings safely fall back to disabled/default values.
+- [x] Project `.omnicode/` is added to the project `.gitignore` without overwriting existing entries.
+- [x] Plugin config does not register OmniCode subagents when the effective setting is disabled or absent.
+- [x] Plugin config registers `omni-explorer`, `omni-planner`, `omni-verifier`, and `omni-worker` as native subagents when enabled.
+- [x] Orchestrator task permissions allow the bundled Omni subagents without exposing arbitrary subagents by default.
+- [x] Model overrides from settings are applied without copying bundled prompts into settings.
+- [x] `/omni-agents` command resource exists and guides on/off/status/setup, including model inventory and recommendation markdown behavior.
+- [x] Slice 1: `npm run check` passes.
+- [x] Slice 1: `npm test` passes.
+- [x] Slice 2: `npm run check` passes.
+- [x] Slice 2: `npm test` passes.
+- [x] Slice 3: `npm run check` passes.
+- [x] Slice 3: `npm test` passes.

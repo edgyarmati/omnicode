@@ -5,8 +5,10 @@ import path from "node:path";
 import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 
 import {
+  OmniCodePlugin,
   OMNI_FILES,
   OMNI_GITIGNORE,
+  ensureOmniCodeProjectGitignore,
   appendSessionSummary,
   buildRepoMap,
   discoverStandards,
@@ -14,11 +16,21 @@ import {
   importStandards,
   planningArtifactsReady,
   setOmniMode,
+  readOmniCodeSettings,
+  readOmniCodeModelRecommendations,
   suggestSkills,
+  updateOmniCodeAgentsSettings,
   updateSkillsFile,
   updateStateFile,
   writeFileAtomic,
 } from "../src/index.ts";
+
+type MutableOpenCodeConfig = {
+  agent?: Record<string, Record<string, unknown>>;
+  command?: Record<string, Record<string, unknown>>;
+  instructions?: string[];
+  default_agent?: string;
+};
 
 async function withTempDir(run: (dir: string) => Promise<void>) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "omnicode-plugin-test-"));
@@ -31,6 +43,14 @@ async function withTempDir(run: (dir: string) => Promise<void>) {
 
 function modeBits(mode: number): number {
   return mode & 0o777;
+}
+
+async function buildPluginConfig(directory: string): Promise<MutableOpenCodeConfig> {
+  const hooks = await OmniCodePlugin({ directory } as never);
+  const config: MutableOpenCodeConfig = {};
+  if (!hooks.config) throw new Error("OmniCodePlugin did not register config hook");
+  await hooks.config(config as never);
+  return config;
 }
 
 test("discoverStandards finds supported standards files and ignores .omni", async () => {
@@ -79,6 +99,218 @@ test("writeFileAtomic preserves existing file permissions", async () => {
 
     assert.equal(await readFile(filePath, "utf8"), "new\n");
     assert.equal(modeBits((await stat(filePath)).mode), 0o600);
+  });
+});
+
+test("readOmniCodeSettings merges global settings with project override precedence", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    const projectDir = path.join(dir, "project");
+    await mkdir(path.join(homeDir, ".omnicode"), { recursive: true });
+    await mkdir(path.join(projectDir, ".omnicode"), { recursive: true });
+    await writeFile(
+      path.join(homeDir, ".omnicode", "settings.json"),
+      JSON.stringify(
+        {
+          agents: {
+            enabled: true,
+            defaultModel: "anthropic/global-default",
+            models: {
+              "omni-explorer": "anthropic/global-explorer",
+              "omni-worker": "anthropic/global-worker",
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    await writeFile(
+      path.join(projectDir, ".omnicode", "settings.json"),
+      JSON.stringify(
+        {
+          agents: {
+            enabled: false,
+            models: {
+              "omni-worker": "openai/project-worker",
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const settings = await readOmniCodeSettings(projectDir, { homeDir });
+
+    assert.equal(settings.agents.enabled, false);
+    assert.equal(settings.agents.defaultModel, "anthropic/global-default");
+    assert.deepEqual(settings.agents.models, {
+      "omni-explorer": "anthropic/global-explorer",
+      "omni-worker": "openai/project-worker",
+    });
+  });
+});
+
+test("readOmniCodeSettings safely defaults when settings are missing or invalid", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    const projectDir = path.join(dir, "project");
+    await mkdir(path.join(homeDir, ".omnicode"), { recursive: true });
+    await writeFile(path.join(homeDir, ".omnicode", "settings.json"), "{ nope", "utf8");
+
+    const settings = await readOmniCodeSettings(projectDir, { homeDir });
+
+    assert.equal(settings.agents.enabled, false);
+    assert.equal(settings.agents.defaultModel, undefined);
+    assert.deepEqual(settings.agents.models, {});
+  });
+});
+
+test("ensureOmniCodeProjectGitignore adds project .omnicode settings directory", async () => {
+  await withTempDir(async (dir) => {
+    await writeFile(path.join(dir, ".gitignore"), "node_modules/\n", "utf8");
+
+    await ensureOmniCodeProjectGitignore(dir);
+    await ensureOmniCodeProjectGitignore(dir);
+
+    const gitignore = await readFile(path.join(dir, ".gitignore"), "utf8");
+    assert.equal(gitignore.match(/^\.omnicode\/$/gmu)?.length, 1);
+    assert.match(gitignore, /^node_modules\/$/m);
+  });
+});
+
+test("updateOmniCodeAgentsSettings writes scoped settings without copying agent defaults", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    const projectDir = path.join(dir, "project");
+
+    const globalResult = await updateOmniCodeAgentsSettings(
+      projectDir,
+      {
+        scope: "global",
+        enabled: true,
+        defaultModel: "anthropic/subagents",
+      },
+      { homeDir },
+    );
+    const projectResult = await updateOmniCodeAgentsSettings(
+      projectDir,
+      {
+        scope: "project",
+        models: {
+          "omni-worker": "openai/worker",
+        },
+      },
+      { homeDir },
+    );
+
+    const globalFile = JSON.parse(await readFile(globalResult.outputPath, "utf8"));
+    const projectFile = JSON.parse(await readFile(projectResult.outputPath, "utf8"));
+    const gitignore = await readFile(path.join(projectDir, ".gitignore"), "utf8");
+
+    assert.deepEqual(globalFile, {
+      agents: {
+        enabled: true,
+        defaultModel: "anthropic/subagents",
+      },
+    });
+    assert.deepEqual(projectFile, {
+      agents: {
+        models: {
+          "omni-worker": "openai/worker",
+        },
+      },
+    });
+    assert.match(gitignore, /^\.omnicode\/$/m);
+  });
+});
+
+test("readOmniCodeModelRecommendations prefers project guidance over global guidance", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    const projectDir = path.join(dir, "project");
+    await mkdir(path.join(homeDir, ".omnicode"), { recursive: true });
+    await mkdir(path.join(projectDir, ".omnicode"), { recursive: true });
+    await writeFile(path.join(homeDir, ".omnicode", "model-recommendations.md"), "# Global\n", "utf8");
+    await writeFile(path.join(projectDir, ".omnicode", "model-recommendations.md"), "# Project\n", "utf8");
+
+    const recommendations = await readOmniCodeModelRecommendations(projectDir, { homeDir });
+
+    assert.equal(recommendations.content, "# Project\n");
+    assert.equal(recommendations.sourcePath, path.join(projectDir, ".omnicode", "model-recommendations.md"));
+  });
+});
+
+test("plugin config does not register Omni subagents when agents are disabled", async () => {
+  await withTempDir(async (dir) => {
+    const config = await buildPluginConfig(dir);
+
+    assert.equal(config.default_agent, "omnicode");
+    assert.ok(config.agent?.omnicode);
+    assert.equal(config.agent?.["omni-explorer"], undefined);
+    assert.equal(config.agent?.["omni-planner"], undefined);
+    assert.equal(config.agent?.["omni-verifier"], undefined);
+    assert.equal(config.agent?.["omni-worker"], undefined);
+  });
+});
+
+test("plugin config registers enabled Omni subagents with permissions and model overrides", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".omnicode"), { recursive: true });
+    await writeFile(
+      path.join(dir, ".omnicode", "settings.json"),
+      JSON.stringify(
+        {
+          agents: {
+            enabled: true,
+            defaultModel: "anthropic/shared-subagent",
+            models: {
+              "omni-worker": "openai/worker-model",
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const config = await buildPluginConfig(dir);
+    const agents = config.agent ?? {};
+
+    for (const agentName of ["omni-explorer", "omni-planner", "omni-verifier", "omni-worker"]) {
+      assert.equal(agents[agentName]?.mode, "subagent");
+      assert.equal(typeof agents[agentName]?.description, "string");
+      assert.equal(typeof agents[agentName]?.prompt, "string");
+    }
+
+    assert.equal(agents["omni-explorer"]?.model, "anthropic/shared-subagent");
+    assert.equal(agents["omni-worker"]?.model, "openai/worker-model");
+    assert.deepEqual(agents.omnicode?.permission, {
+      task: {
+        "*": "deny",
+        "omni-explorer": "allow",
+        "omni-planner": "allow",
+        "omni-verifier": "allow",
+        "omni-worker": "allow",
+      },
+    });
+  });
+});
+
+test("plugin config registers omni-agents command for status and setup", async () => {
+  await withTempDir(async (dir) => {
+    const config = await buildPluginConfig(dir);
+
+    const command = config.command?.["omni-agents"];
+    assert.equal(command?.agent, "omnicode");
+    assert.match(String(command?.template), /omnicode_agents_status/);
+    assert.match(String(command?.template), /opencode models/);
+    assert.match(String(command?.template), /omnicode_update_agents_settings/);
+    assert.match(String(command?.template), /model-recommendations\.md/);
   });
 });
 

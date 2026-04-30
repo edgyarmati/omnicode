@@ -39,6 +39,7 @@ omnicode
 - **Plan before edit** — when Omni mode is on, the agent can't touch your files until `SPEC.md`, `TASKS.md`, and `TESTS.md` have real content.
 - **Repo awareness** — a ranked repo map keeps the agent oriented in large codebases.
 - **Skill discovery** — relevant skills are surfaced and loaded automatically for the task at hand.
+- **Optional native sub-agents** — `/omni-agents setup` can enable OpenCode-native OmniCode workers for exploration, planning, verification, and bounded implementation slices.
 - **Token savings** — RTK is installed and wired up automatically, compressing bash command output by 60-90% so the agent uses fewer tokens on git, ls, test runs, and more.
 - **Zero impact on your normal setup** — the `omnicode` launcher uses its own isolated config, so regular `opencode` keeps working exactly as before.
 
@@ -72,6 +73,30 @@ Then just talk to it. For example:
 OmniCode will bootstrap `.omni/` automatically on first use in a new project, then follow a plan → implement → verify workflow for every task. You don't need to pass inline prompts or CLI flags — just open it and have a conversation.
 
 Replace `<provider>/<model>` with any model identifier OpenCode supports (for example, `opencode/hy3-preview-free`).
+
+### Optional sub-agents
+
+OmniCode can opt into an orchestrator-and-workers workflow using OpenCode's native subagent support. It is off by default.
+
+Use:
+
+```bash
+/omni-agents status
+/omni-agents setup
+/omni-agents on
+/omni-agents off
+```
+
+By default, `/omni-agents on` and `/omni-agents off` write global settings to `~/.omnicode/settings.json`. Add `--project` to write a local project override to `.omnicode/settings.json`; OmniCode keeps project `.omnicode/` gitignored.
+
+When enabled, OmniCode registers native OpenCode subagents:
+
+- `omni-explorer` — read-only codebase discovery.
+- `omni-planner` — read-only planning/spec/test support.
+- `omni-verifier` — runs checks and reports pass/fail without source edits.
+- `omni-worker` — implements one bounded planned slice and reports back.
+
+For guided model choices, create `~/.omnicode/model-recommendations.md` or a project `.omnicode/model-recommendations.md`; `/omni-agents setup` reads that guidance and tries `opencode models` for available model inventory.
 
 ---
 

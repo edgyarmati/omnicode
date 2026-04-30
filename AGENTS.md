@@ -30,6 +30,7 @@ Core idea:
   - repo map for codebase awareness
   - skill discovery / required-skill guidance
 - launch OpenCode through an `omnicode` command that uses OmniCode-specific config without mutating the user's normal OpenCode setup
+- optionally enable native OpenCode sub-agents through `/omni-agents` without making them the default for every user
 
 ## Current architecture
 
@@ -57,6 +58,7 @@ Implemented in `packages/plugin/src/index.ts`.
 
 Current features:
 - registers default `omnicode` agent
+- optionally registers native OpenCode subagents (`omni-explorer`, `omni-planner`, `omni-verifier`, `omni-worker`) when enabled through OmniCode settings
 - loads OmniCode command markdown files from `src/resources/commands/`
 - exposes custom tools:
   - `omnicode_bootstrap`
@@ -71,6 +73,9 @@ Current features:
   - `omnicode_update_skills`
   - `omnicode_list_skills`
   - `omnicode_read_skill`
+  - `omnicode_agents_status`
+  - `omnicode_update_agents_settings`
+  - `omnicode_read_model_recommendations`
 - bootstraps `.omni/` on `session.created`
 - adds `.omni/STATE.md` into compaction context
 - guards `write` / `edit` when Omni mode is on and planning artifacts are missing
@@ -88,6 +93,7 @@ Under `packages/plugin/src/resources/`:
 - `commands/omni-init.md`
 - `commands/omni-mode.md`
 - `commands/omni-status.md`
+- `commands/omni-agents.md`
 - `commands/omni-import-standards.md`
 - `commands/omni-skills.md`
 - `commands/commit.md`
@@ -141,6 +147,7 @@ Verified in a real OpenCode runtime:
 - skill suggestion/sync works and writes `.omni/SKILLS.md`
 - the write/edit guard blocks early writes until real planning content exists in `SPEC.md`, `TASKS.md`, and `TESTS.md`
 - state/session-summary lifecycle tools work in tests and runtime
+- optional native subagents are controlled by `~/.omnicode/settings.json` with gitignored project overrides in `.omnicode/settings.json`
 - automated tests cover launcher config isolation, standards discovery/import, repo map generation, skill suggestion, lifecycle updates, and planning-artifact readiness
 
 ## Known gaps / next work

@@ -135,3 +135,54 @@ After `grill-me` and before writing final planning artifacts, OmniCode must perf
 - `omnicode_suggest_skills` suggests `find-skills` for skill discovery and insufficient-domain-coverage wording.
 - Tests cover find-skills suggestion behavior and bundled skill updates.
 - `npm run check` and `npm test` pass.
+
+---
+
+## Current Implementation Task — Optional Native Sub-Agents
+
+### Problem
+
+OmniCode currently runs as a single OpenCode primary agent. OpenCode now has native primary/subagent support, including plugin-registered agents, hidden subagents, and task permissions. OmniCode should be able to opt into an orchestrator-and-workers workflow without inventing a custom subagent runtime or making the behavior an ironclad default.
+
+### Requested Behavior
+
+Implement optional configurable native OpenCode subagents for OmniCode:
+
+1. Keep `omnicode` as the default primary orchestrator agent.
+2. Register bundled native subagents only when the feature is effectively enabled:
+   - `omni-explorer`: read-only codebase discovery and context retrieval.
+   - `omni-planner`: read-only planning/spec/test support.
+   - `omni-verifier`: verification and review; may run checks but should not edit source by default.
+   - `omni-worker`: bounded implementation worker with edit/bash ability, still subject to OmniCode planning guards.
+3. Persist enablement and model choices outside `.omni/`:
+   - global default: `~/.omnicode/settings.json`
+   - project override: `<project>/.omnicode/settings.json`
+   - project override wins over global settings.
+4. Keep `.omni/` for workflow memory only. Project `.omnicode/` is local settings and should be gitignored.
+5. Add an `/omni-agents` command with:
+   - `on` / `off`: write the global setting by default.
+   - `on --project` / `off --project`: write the project override.
+   - `status`: report global, project, and effective values.
+   - `setup`: guide the user through enabling agents and choosing shared/per-agent models using OpenCode-visible model inventory plus optional recommendation markdown.
+6. Model recommendation docs may be read from:
+   - `~/.omnicode/model-recommendations.md`
+   - `<project>/.omnicode/model-recommendations.md`
+   with project guidance taking precedence.
+
+### Constraints
+
+- Use OpenCode-native `config.agent` and `permission.task`; do not build a separate subagent runner.
+- Built-in subagent defaults must remain bundled/updateable by plugin releases; settings should store only enablement and user-selected overrides such as models.
+- Preserve launcher isolation and normal OpenCode config behavior.
+- Keep public existing tools/commands compatible.
+- Keep slices bounded and commit each verified slice with a conventional commit.
+
+### Success Criteria
+
+- Subagents are not registered when the effective setting is disabled or absent.
+- When enabled, the plugin registers the four bundled subagents with native `mode: "subagent"` configs and gives the orchestrator task permission for them.
+- Global and project settings merge with project override precedence.
+- `/omni-agents` command exists and documents on/off/status/setup behavior.
+- Setup guidance can inspect available OpenCode models and optional recommendation markdown without making defaults immutable.
+- Tests cover settings resolution, gitignore handling for project `.omnicode/`, agent registration enabled/disabled behavior, and command/resource presence.
+- `npm run check` and `npm test` pass after each slice.

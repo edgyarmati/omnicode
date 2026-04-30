@@ -2,6 +2,8 @@
 
 ## Bundled
 
+- grill-me
+- find-skills
 - brainstorming
 - omni-planning
 - omni-execution
@@ -9,7 +11,9 @@
 
 ## Suggested For Current Work
 
-- omni-planning: use before implementation to refine spec, tasks, and tests
-- brainstorming: use before creative work, migrations, or behavior changes
+- grill-me: use automatically before change requests to reach shared understanding
+- omni-execution: use when implementing a planned slice
+
+## Project Notes
 
 Record required and project-specific skills here.
