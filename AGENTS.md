@@ -72,6 +72,7 @@ Current features:
   - `omnicode_update_skills`
   - `omnicode_list_skills`
   - `omnicode_read_skill`
+  - `omnicode_collaboration_status`
 - bootstraps `.omni/` on `session.created`
 - adds `.omni/STATE.md` into compaction context
 - guards `write` / `edit` when Omni mode is on and planning artifacts are missing
@@ -144,6 +145,7 @@ Verified in a real OpenCode runtime:
 - the write/edit guard blocks early writes until real planning content exists in `SPEC.md`, `TASKS.md`, and `TESTS.md`
 - state/session-summary lifecycle tools work in tests and runtime
 - automated tests cover launcher config isolation, standards discovery/import, repo map generation, skill suggestion, lifecycle updates, and planning-artifact readiness
+- collaboration status reports the current branch, protected-branch policy, active `.omni/work/<branch-slug>/` planning path, and planning readiness
 
 ## Known gaps / next work
 

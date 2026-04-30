@@ -55,6 +55,7 @@ OpenCode still owns the terminal UI, models, providers, auth, sessions, tools, a
 6. **Verify** — state and session summaries are updated through OmniCode tools so the next run picks up where you left off.
 
 For collaborative repositories, see the planned per-branch work-memory model in [`docs/2026-04-30-collaborative-memory-design.md`](docs/2026-04-30-collaborative-memory-design.md).
+OmniCode's collaboration checkpoint reports the current branch, protected-branch policy, active `.omni/work/<branch-slug>/` planning directory, planning readiness, and next recommended action when starting or resuming change work.
 
 `.omni/STATE.md` is also injected into OpenCode's compaction context, so active state survives long sessions.
 

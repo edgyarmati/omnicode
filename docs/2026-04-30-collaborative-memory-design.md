@@ -1,7 +1,7 @@
 # Collaborative Omni Memory Design
 
 Date: 2026-04-30
-Status: Design approved, implementation pending
+Status: Core implementation in progress; workflow settings, protected-branch guard, active work planning, and collaboration status are implemented.
 
 ## Problem
 
@@ -187,7 +187,7 @@ Phase 1 implementation should preserve current behavior:
    - Allow source edits when either active work planning artifacts or legacy root artifacts are ready.
    - Update guard messages to name the selected planning directory.
 
-5. **Collaboration checkpoint UX**
+5. **Collaboration checkpoint UX** ✅
    - Document/start using a session checkpoint that reports branch, active work path, protected-branch policy, stale/missing work memory, and recommended next action.
 
 ## Open questions

@@ -12,6 +12,7 @@ import {
   activePlanningArtifactPaths,
   branchNameToWorkId,
   buildRepoMap,
+  buildCollaborationCheckpoint,
   DEFAULT_WORKFLOW_SETTINGS,
   discoverStandards,
   ensureOmniDir,
@@ -371,6 +372,38 @@ test("planningGuardMessage names active work planning with root fallback", async
 
     assert.match(message, /\.omni\/work\/feature-collab-memory/);
     assert.match(message, /Legacy root \.omni\/SPEC\.md/);
+  });
+});
+
+test("buildCollaborationCheckpoint reports branch, policy, and active planning status", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feature/collab-memory\n", "utf8");
+
+    const checkpoint = await buildCollaborationCheckpoint(dir);
+
+    assert.match(checkpoint, /# Collaboration Checkpoint/);
+    assert.match(checkpoint, /Branch: feature\/collab-memory/);
+    assert.match(checkpoint, /Protected Branch Policy: not protected/);
+    assert.match(checkpoint, /Active Work ID: feature-collab-memory/);
+    assert.match(checkpoint, /Active Planning Directory: \.omni\/work\/feature-collab-memory/);
+    assert.match(checkpoint, /Planning Status: not ready/);
+  });
+});
+
+test("buildCollaborationCheckpoint reports protected branch blocks and root fallback", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/main\n", "utf8");
+    await ensureOmniDir(dir);
+    await writeRealPlanningFiles(path.join(dir, ".omni"));
+
+    const checkpoint = await buildCollaborationCheckpoint(dir);
+
+    assert.match(checkpoint, /Protected Branch: yes/);
+    assert.match(checkpoint, /Protected Branch Policy: blocked for change implementation/);
+    assert.match(checkpoint, /Planning Status: ready via legacy root fallback/);
+    assert.match(checkpoint, /Next Step: Create or switch to a feature branch/);
   });
 });
 

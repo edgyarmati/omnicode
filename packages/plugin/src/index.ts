@@ -1091,6 +1091,49 @@ export function planningGuardMessage(readiness: PlanningArtifactReadiness): stri
   return "OmniCode guard: before editing source files or running mutating shell commands, write real planning content into .omni/SPEC.md, .omni/TASKS.md, and .omni/TESTS.md (placeholder bootstrap files are not enough).";
 }
 
+function relativeDisplayPath(directory: string, filePath: string): string {
+  return path.relative(directory, filePath).split(path.sep).join("/") || ".";
+}
+
+export async function buildCollaborationCheckpoint(directory: string): Promise<string> {
+  const [settings, branch, readiness] = await Promise.all([
+    readOmniCodeSettings(directory),
+    readCurrentGitBranch(directory),
+    resolvePlanningArtifactReadiness(directory),
+  ]);
+  const protectedBranch = isProtectedBranch(branch, settings);
+  const protectedBranchStatus = !branch
+    ? "not in a branch-backed git checkout"
+    : protectedBranch && settings.workflow.requireFeatureBranchForChanges && !settings.workflow.allowProtectedBranchChanges
+      ? "blocked for change implementation"
+      : protectedBranch
+        ? "allowed by settings"
+        : "not protected";
+  const planningStatus = readiness.ready
+    ? readiness.usedRootFallback
+      ? `ready via legacy root fallback (${relativeDisplayPath(directory, readiness.readyPaths?.baseDir ?? readiness.activePaths.baseDir)})`
+      : `ready (${relativeDisplayPath(directory, readiness.readyPaths?.baseDir ?? readiness.activePaths.baseDir)})`
+    : `not ready (${relativeDisplayPath(directory, readiness.activePaths.baseDir)})`;
+  const nextStep = readiness.ready
+    ? protectedBranchStatus === "blocked for change implementation"
+      ? "Create or switch to a feature branch, or explicitly allow protected branch changes in OmniCode settings."
+      : "Proceed with the planned slice and verify before committing."
+    : `Write real SPEC.md, TASKS.md, and TESTS.md in ${relativeDisplayPath(directory, readiness.activePaths.baseDir)}.`;
+
+  return [
+    "# Collaboration Checkpoint",
+    "",
+    `Branch: ${branch ?? "none detected"}`,
+    `Protected Branch: ${protectedBranch ? "yes" : "no"}`,
+    `Protected Branch Policy: ${protectedBranchStatus}`,
+    `Active Work ID: ${readiness.activePaths.workId ?? "root"}`,
+    `Active Planning Directory: ${relativeDisplayPath(directory, readiness.activePaths.baseDir)}`,
+    `Planning Status: ${planningStatus}`,
+    `Root Fallback Used: ${readiness.usedRootFallback ? "yes" : "no"}`,
+    `Next Step: ${nextStep}`,
+  ].join("\n");
+}
+
 function extractFilePath(args: Record<string, unknown>): string | null {
   const candidateKeys = ["filePath", "path", "target", "filename"];
   for (const key of candidateKeys) {
@@ -1261,6 +1304,16 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
             readOmniCodeSettings(directory),
           ]);
           return `${stateSummary.trimEnd()}\n\n${formatWorkflowSettingsStatus(settings)}`;
+        },
+      }),
+
+      omnicode_collaboration_status: tool({
+        description:
+          "Report current branch, protected-branch policy, active Omni work-memory path, and planning readiness.",
+        args: {},
+        async execute() {
+          await ensureOmniDir(directory);
+          return buildCollaborationCheckpoint(directory);
         },
       }),
 
