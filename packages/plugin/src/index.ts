@@ -211,6 +211,17 @@ const SKILL_RULES: Array<{ name: string; patterns: RegExp[]; reason: string; sco
     score: 5,
   },
   {
+    name: "grill-with-docs",
+    patterns: [
+      /\bgrill\b[^.!?\n]{0,100}\b(docs?|documentation|domain|glossary|adr|decision|context|terminology|language)\b/iu,
+      /\b(domain|glossary|terminology|ubiquitous language|project context)\b/iu,
+      /\b(adr|architecture decision record|decision record|durable decision|hard to reverse|trade[- ]off)\b/iu,
+      /\b(update|capture|record|document)\b[^.!?\n]{0,100}\b(context|domain|glossary|adr|decision|terminology)\b/iu,
+    ],
+    reason: "use the grill-me interview plus durable domain/context/ADR updates when decisions should be documented",
+    score: 6,
+  },
+  {
     name: "brainstorming",
     patterns: [
       /\b(brainstorm|design|approach|option|trade-?off|migration|feature|behavior change|refactor)\b/iu,
@@ -802,7 +813,7 @@ export const OMNI_FILES: Record<string, string> = {
   "TESTS.md": "# Tests\n\n## Checks\n\n- [ ] define the checks to run after each implementation slice\n\n## Expected outcomes\n\nDescribe what passing looks like.\n",
   "DECISIONS.md": "# Decisions\n\nRecord important choices and why they were made.\n",
   "STANDARDS.md": "# Imported Standards\n\nRecord imported standards from AGENTS.md, CLAUDE.md, Cursor rules, and similar files.\n",
-  "SKILLS.md": "# Skills\n\n## Bundled\n\n- grill-me\n- find-skills\n- skill-maker\n- tdd\n- diagnose\n- brainstorming\n- omni-planning\n- omni-execution\n- omni-verification\n\n## Suggested For Current Work\n\n- None inferred from the current task yet.\n\n## Project Notes\n\nRecord required and project-specific skills here.\n",
+  "SKILLS.md": "# Skills\n\n## Bundled\n\n- grill-me\n- grill-with-docs\n- find-skills\n- skill-maker\n- tdd\n- diagnose\n- brainstorming\n- omni-planning\n- omni-execution\n- omni-verification\n\n## Suggested For Current Work\n\n- None inferred from the current task yet.\n\n## Project Notes\n\nRecord required and project-specific skills here.\n",
   "CONFIG.md": "# Omni Configuration\n\nOmni Mode: on\n",
   VERSION: `${OMNI_VERSION}\n`,
 };
@@ -1277,6 +1288,7 @@ export async function updateSkillsFile(
     "## Bundled",
     "",
     "- grill-me",
+    "- grill-with-docs",
     "- find-skills",
     "- skill-maker",
     "- tdd",

@@ -3,6 +3,7 @@
 ## Bundled
 
 - grill-me
+- grill-with-docs
 - find-skills
 - skill-maker
 - tdd
@@ -16,6 +17,7 @@
 
 - tdd: use a red-green-refactor loop for behavior-changing implementation slices
 - diagnose: use a disciplined reproduce-minimize-hypothesize-instrument-fix loop for bugs and regressions
+- grill-with-docs: use the grill-me interview plus durable domain/context/ADR updates when decisions should be documented
 - omni-execution: use when implementing a planned slice
 
 ## Project Notes

@@ -18,6 +18,7 @@
 - **Branch-scoped runtime state** — runtime state and session summaries now write to `.omni/runtime/<branch-slug-or-root>/` instead of root singleton files, with runtime directories ignored by git.
 - **TDD workflow skill** — added bundled `tdd` guidance for behavior-changing slices, with active-work `TESTS.md` expectations for red-green-refactor planning and verification.
 - **Diagnose workflow skill** — added bundled bug/performance-regression guidance for reproduce, minimize, hypothesize, instrument, fix, and regression-test loops.
+- **Grill-with-docs workflow skill** — added a documentation-aware clarification variant for domain language, durable context, and ADR-worthy decisions.
 
 ### Fixes
 
@@ -65,6 +66,7 @@
 - Added tests for branch-scoped runtime paths, root runtime fallback, gitignore updates, and state/session writes.
 - Added tests for `tdd` bundled skill memory and suggestion heuristics.
 - Added tests for `diagnose` bundled skill memory and suggestion heuristics.
+- Added tests for `grill-with-docs` bundled skill memory and suggestion heuristics.
 - Added tests for SKILLS project notes preservation and large repo-map file skipping.
 - Added tests for launcher `--check`/`--version` non-launching behavior.
 - Added tests for Windows-safe plugin shim import specifiers.

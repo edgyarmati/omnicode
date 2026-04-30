@@ -24,6 +24,7 @@ Core idea:
   - `.omni/` durable memory
   - collaboration-safe per-work memory direction for parallel branches
   - automatic grill-me clarification before change requests
+  - documentation-aware grilling for domain language and durable decisions
   - explicit skill-fit checkpoint before planning
   - planning before implementation
   - TDD/red-green-refactor guidance for behavior-changing implementation slices
@@ -101,6 +102,7 @@ Under `packages/plugin/src/resources/`:
 - `commands/push.md`
 - workflow skills:
   - `grill-me.md`
+  - `grill-with-docs.md`
   - `find-skills.md`
   - `skill-maker.md`
   - `tdd.md`
@@ -151,6 +153,7 @@ Verified in a real OpenCode runtime:
 - ranked repo map output works and writes `.omni/REPO-MAP.md` plus `.omni/REPO-MAP.json`
 - skill suggestion/sync works and writes `.omni/SKILLS.md`
 - the write/edit guard blocks early writes until real planning content exists in `SPEC.md`, `TASKS.md`, and `TESTS.md`
+- bundled `grill-with-docs` guidance is available for domain-language and ADR-aware clarification
 - bundled `tdd` guidance is available for behavior-changing slices and records expectations in the active work `TESTS.md`
 - bundled `diagnose` guidance is available for bugs/performance regressions before patching
 - state/session-summary lifecycle tools work in tests and runtime

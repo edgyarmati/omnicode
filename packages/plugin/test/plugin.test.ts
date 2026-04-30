@@ -676,6 +676,7 @@ test("suggestSkills and updateSkillsFile infer workflow skills from task text", 
     assert.match(skillsFile, /skill-maker/);
     assert.match(skillsFile, /tdd/);
     assert.match(skillsFile, /diagnose/);
+    assert.match(skillsFile, /grill-with-docs/);
     assert.match(skillsFile, /brainstorming/);
     assert.match(skillsFile, /omni-verification/);
   });
@@ -703,6 +704,14 @@ test("suggestSkills recommends diagnose for bugs and performance regressions", a
 
   assert.equal(bug[0]?.name, "diagnose");
   assert.ok(performance.some((item) => item.name === "diagnose"));
+});
+
+test("suggestSkills recommends grill-with-docs for durable domain decisions", async () => {
+  const domain = await suggestSkills("Grill this plan against our domain language and glossary");
+  const adr = await suggestSkills("We need an ADR for this durable architecture decision");
+
+  assert.equal(domain[0]?.name, "grill-with-docs");
+  assert.ok(adr.some((item) => item.name === "grill-with-docs"));
 });
 
 test("suggestSkills recommends find-skills for skill discovery and removal requests", async () => {

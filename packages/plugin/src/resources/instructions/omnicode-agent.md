@@ -34,6 +34,7 @@ For every task after bootstrap:
 
 - before editing source files, make sure planning artifacts exist in the active planning directory, usually `.omni/work/<branch-slug>/SPEC.md`, `TASKS.md`, and `TESTS.md`; legacy root `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md` can still satisfy the guard during migration
 - do not skip `grill-me` for change requests unless the user explicitly says not to ask clarification questions or the request is already fully specified
+- use `grill-with-docs` instead of plain `grill-me` only when clarification should also update durable domain language, project context, or ADR-worthy decisions; otherwise keep `grill-me` lightweight
 - use `tdd` for feature work, behavior changes, bug fixes with clear seams, and behavior-preserving refactors; enforce it through planning and verification notes rather than brittle tool-level guards
 - use `diagnose` for bugs, failing behavior, flaky tests, crashes, and performance regressions; build a feedback loop and understand the cause before fixing, then use `tdd` for the regression test/fix when a valid seam exists
 - do not load domain/implementation skills opportunistically before the skill-fit checkpoint; skills for the task are selected and loaded only at that checkpoint
@@ -55,6 +56,7 @@ For every task after bootstrap:
 ## Bundled-skill policy
 
 - use `grill-me` automatically before planning or implementing change requests so the agent and user are fully aligned
+- use `grill-with-docs` as an enhanced clarification variant when domain vocabulary, durable context, or ADR-worthy decisions should be captured during the interview
 - use `find-skills` during the skill-fit checkpoint when bundled/project skills do not cover the clarified task or when the user asks to find/install/remove skills
 - use `skill-maker` after `find-skills` when no adequate skill exists; write only project-local skills in `.omni/skills/` and record them in `.omni/SKILLS.md` before planning or omni-worker delegation
 - use `tdd` for behavior-changing implementation slices: one failing behavior test, minimal implementation, then refactor while green; record red/green/refactor evidence in the active `TESTS.md`

@@ -35,6 +35,7 @@ omnicode
 
 - **Durable project memory** in `.omni/` — spec, tasks, tests, decisions, standards, and session summaries stay on disk between runs.
 - **Automatic grilling before changes** — for new features, fixes, refactors, and behavior changes, OmniCode asks one focused question at a time until the request is unambiguous.
+- **Documentation-aware grilling when needed** — when a change exposes domain language or durable decisions, OmniCode can use an enhanced grill workflow that updates project context or ADRs instead of losing that reasoning in chat.
 - **Skill-fit checkpoint** — after clarification, OmniCode checks whether available skills cover the task, uses `find-skills` when relevant skills are missing, and can create a project-local skill when none exists.
 - **TDD implementation discipline** — behavior-changing slices can be guided by a bundled red-green-refactor workflow, recorded in the active work `TESTS.md` before implementation.
 - **Disciplined diagnosis** — bug and performance-regression work can route through a reproduce → minimize → hypothesize → instrument → fix → regression-test loop before patching.
@@ -50,7 +51,7 @@ OpenCode still owns the terminal UI, models, providers, auth, sessions, tools, a
 ## The Omni workflow
 
 1. **Bootstrap** — `.omni/` is seeded in your project the first time you run OmniCode there.
-2. **Grill** — for change requests, clarify one question at a time until behavior, constraints, non-goals, tests, and success criteria are concrete.
+2. **Grill** — for change requests, clarify one question at a time until behavior, constraints, non-goals, tests, and success criteria are concrete. Use the docs-aware variant when domain terms or durable decisions should be recorded.
 3. **Check skills** — judge whether bundled/project skills cover the clarified task; if not, use `find-skills`, then create a project-local `.omni/skills/` skill with `skill-maker` when no adequate skill exists.
 4. **Plan** — write real `SPEC.md`, `TASKS.md`, and `TESTS.md` in the active planning directory. Until you do, the edit/write guard is active.
 5. **Test-drive when applicable** — for behavior-changing slices, record the behavior, public seam, expected red failure, focused test command, and verification command in `TESTS.md`.

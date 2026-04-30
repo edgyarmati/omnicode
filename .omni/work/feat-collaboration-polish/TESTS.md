@@ -20,13 +20,12 @@ Expected outcome: bug/performance workflows route through diagnosis before TDD/r
 
 ## Slice 3 — Grill with docs workflow
 
-- [ ] Add/update tests proving bundled skill listing/reading includes `grill-with-docs`.
-- [ ] Add/update tests proving default generated `.omni/SKILLS.md` includes `grill-with-docs`.
-- [ ] Add/update tests proving `omnicode_suggest_skills` suggests `grill-with-docs` for domain language, ADR, decision-record, and durable-doc planning wording.
-- [ ] Run `npm run check`.
-- [ ] Run `npm test`.
+- [x] Add/update tests proving bundled/default skill memory includes `grill-with-docs`.
+- [x] Add/update tests proving `omnicode_suggest_skills` suggests `grill-with-docs` for domain language, ADR, decision-record, and durable-doc planning wording.
+- [x] Run `npm run check`.
+- [x] Run `npm test`.
 
-Expected outcome: `grill-me` remains default; `grill-with-docs` is available for documentation-aware clarification.
+Expected outcome: `grill-me` remains default; `grill-with-docs` is available for documentation-aware clarification. Observed red first: tests failed before implementation because `grill-with-docs` was missing from bundled skill memory and suggestions. After implementation, `npm run check` passed and `npm test` passed with launcher 10 tests and plugin 61 tests.
 
 ## Slice 4 — Architecture improvement command
 
