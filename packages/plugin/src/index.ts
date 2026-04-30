@@ -190,6 +190,16 @@ const SKILL_RULES: Array<{ name: string; patterns: RegExp[]; reason: string; sco
     score: 5,
   },
   {
+    name: "tdd",
+    patterns: [
+      /\b(tdd|test[- ]driven|red[- ]green[- ]refactor|test[- ]first)\b/iu,
+      /\b(add|build|create|change|modify|update|fix|refactor|implement)\b[^.!?\n]{0,100}\b(feature|behavior|flow|logic|bug|regression|test)\b/iu,
+      /\b(feature|behavior|flow|logic|bug|regression|test)\b[^.!?\n]{0,100}\b(add|build|create|change|modify|update|fix|refactor|implement)\b/iu,
+    ],
+    reason: "use a red-green-refactor loop for behavior-changing implementation slices",
+    score: 4,
+  },
+  {
     name: "brainstorming",
     patterns: [
       /\b(brainstorm|design|approach|option|trade-?off|migration|feature|behavior change|refactor)\b/iu,
@@ -781,7 +791,7 @@ export const OMNI_FILES: Record<string, string> = {
   "TESTS.md": "# Tests\n\n## Checks\n\n- [ ] define the checks to run after each implementation slice\n\n## Expected outcomes\n\nDescribe what passing looks like.\n",
   "DECISIONS.md": "# Decisions\n\nRecord important choices and why they were made.\n",
   "STANDARDS.md": "# Imported Standards\n\nRecord imported standards from AGENTS.md, CLAUDE.md, Cursor rules, and similar files.\n",
-  "SKILLS.md": "# Skills\n\n## Bundled\n\n- grill-me\n- find-skills\n- skill-maker\n- brainstorming\n- omni-planning\n- omni-execution\n- omni-verification\n\n## Suggested For Current Work\n\n- None inferred from the current task yet.\n\n## Project Notes\n\nRecord required and project-specific skills here.\n",
+  "SKILLS.md": "# Skills\n\n## Bundled\n\n- grill-me\n- find-skills\n- skill-maker\n- tdd\n- brainstorming\n- omni-planning\n- omni-execution\n- omni-verification\n\n## Suggested For Current Work\n\n- None inferred from the current task yet.\n\n## Project Notes\n\nRecord required and project-specific skills here.\n",
   "CONFIG.md": "# Omni Configuration\n\nOmni Mode: on\n",
   VERSION: `${OMNI_VERSION}\n`,
 };
@@ -1258,6 +1268,7 @@ export async function updateSkillsFile(
     "- grill-me",
     "- find-skills",
     "- skill-maker",
+    "- tdd",
     "- brainstorming",
     "- omni-planning",
     "- omni-execution",

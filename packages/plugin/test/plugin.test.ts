@@ -663,17 +663,18 @@ test("suggestSkills and updateSkillsFile infer workflow skills from task text", 
 
     assert.deepEqual(
       [...suggestions.map((item) => item.name)].sort(),
-      ["brainstorming", "grill-me", "omni-execution", "omni-planning", "omni-verification"],
+      ["brainstorming", "grill-me", "omni-execution", "omni-planning", "omni-verification", "tdd"],
     );
 
     const result = await updateSkillsFile(dir, task);
     const skillsFile = await readFile(path.join(dir, ".omni", "SKILLS.md"), "utf8");
 
-    assert.equal(result.suggested.length, 5);
+    assert.equal(result.suggested.length, 6);
     assert.match(skillsFile, /## Suggested For Current Work/);
     assert.match(skillsFile, /grill-me/);
     assert.match(skillsFile, /find-skills/);
     assert.match(skillsFile, /skill-maker/);
+    assert.match(skillsFile, /tdd/);
     assert.match(skillsFile, /brainstorming/);
     assert.match(skillsFile, /omni-verification/);
   });
@@ -684,6 +685,15 @@ test("suggestSkills prioritizes grill-me for change requests", async () => {
 
   assert.equal(suggestions[0]?.name, "grill-me");
   assert.ok(suggestions.some((item) => item.name === "brainstorming"));
+  assert.ok(suggestions.some((item) => item.name === "tdd"));
+});
+
+test("suggestSkills recommends tdd for behavior-changing implementation", async () => {
+  const explicit = await suggestSkills("Use TDD with a red-green-refactor loop for this feature");
+  const behavior = await suggestSkills("Update the checkout behavior and add regression tests");
+
+  assert.ok(explicit.some((item) => item.name === "tdd"));
+  assert.ok(behavior.some((item) => item.name === "tdd"));
 });
 
 test("suggestSkills recommends find-skills for skill discovery and removal requests", async () => {

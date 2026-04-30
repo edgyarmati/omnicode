@@ -5,6 +5,7 @@
 - grill-me
 - find-skills
 - skill-maker
+- tdd
 - brainstorming
 - omni-planning
 - omni-execution
@@ -12,11 +13,10 @@
 
 ## Suggested For Current Work
 
-- find-skills: use during the skill-fit checkpoint to find or remove relevant skills
-- grill-me: use automatically before change requests to reach shared understanding
-- skill-maker: use after find-skills when no adequate skill exists to create a project-local skill
-- brainstorming: use before creative work, migrations, or behavior changes
+- tdd: use a red-green-refactor loop for behavior-changing implementation slices
+- omni-execution: use when implementing a planned slice
 
 ## Project Notes
 
+Record required and project-specific skills here.
 - Generated missing-task skills must stay project-local under `.omni/skills/<skill-name>/SKILL.md`; global/user skills are user-managed.

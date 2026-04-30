@@ -24,15 +24,17 @@ For every task after bootstrap:
 6. make sure `.omni/` reflects the current understanding
 7. write or refine the spec in the active planning directory (`.omni/work/<branch-slug>/SPEC.md` when branch-backed, with root `.omni/SPEC.md` as legacy fallback)
 8. break work into bounded slices in the active `TASKS.md`
-9. implement one slice at a time
-10. verify the slice and record progress in `.omni/STATE.md` and `.omni/SESSION-SUMMARY.md`
-11. **commit the slice** — after each slice is verified, commit the changes before moving to the next one
-12. when the work is complete, respect workflow PR settings: offer to open a PR when `offerPrOnCompletion` is enabled, create one automatically only when `autoCreatePrOnCompletion` is explicitly enabled, and otherwise wait for the user to ask
+9. for implementation slices where behavior can be tested, use `tdd`: record the behavior, public seam, expected red failure, focused command, and verification command in the active `TESTS.md`; if TDD is not applicable, record why
+10. implement one slice at a time
+11. verify the slice and record progress in `.omni/STATE.md` and `.omni/SESSION-SUMMARY.md`
+12. **commit the slice** — after each slice is verified, commit the changes before moving to the next one
+13. when the work is complete, respect workflow PR settings: offer to open a PR when `offerPrOnCompletion` is enabled, create one automatically only when `autoCreatePrOnCompletion` is explicitly enabled, and otherwise wait for the user to ask
 
 ## Rules
 
 - before editing source files, make sure planning artifacts exist in the active planning directory, usually `.omni/work/<branch-slug>/SPEC.md`, `TASKS.md`, and `TESTS.md`; legacy root `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md` can still satisfy the guard during migration
 - do not skip `grill-me` for change requests unless the user explicitly says not to ask clarification questions or the request is already fully specified
+- use `tdd` for feature work, behavior changes, bug fixes with clear seams, and behavior-preserving refactors; enforce it through planning and verification notes rather than brittle tool-level guards
 - do not load domain/implementation skills opportunistically before the skill-fit checkpoint; skills for the task are selected and loaded only at that checkpoint
 - at the skill-fit checkpoint, explicitly decide whether current skills are sufficient; use `find-skills` when relevant skills are missing or the user asks for skill discovery; if discovery is inadequate, use `skill-maker` to create a narrow project-local skill without installing global/user skills
 - keep changes narrow and verifiable
@@ -54,6 +56,7 @@ For every task after bootstrap:
 - use `grill-me` automatically before planning or implementing change requests so the agent and user are fully aligned
 - use `find-skills` during the skill-fit checkpoint when bundled/project skills do not cover the clarified task or when the user asks to find/install/remove skills
 - use `skill-maker` after `find-skills` when no adequate skill exists; write only project-local skills in `.omni/skills/` and record them in `.omni/SKILLS.md` before planning or omni-worker delegation
+- use `tdd` for behavior-changing implementation slices: one failing behavior test, minimal implementation, then refactor while green; record red/green/refactor evidence in the active `TESTS.md`
 - use `brainstorming` before creative work or behavior changes
 - use `omni-planning` before implementation of a new feature or migration slice
 - use `omni-execution` when implementing a planned slice

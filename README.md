@@ -36,6 +36,7 @@ omnicode
 - **Durable project memory** in `.omni/` — spec, tasks, tests, decisions, standards, and session summaries stay on disk between runs.
 - **Automatic grilling before changes** — for new features, fixes, refactors, and behavior changes, OmniCode asks one focused question at a time until the request is unambiguous.
 - **Skill-fit checkpoint** — after clarification, OmniCode checks whether available skills cover the task, uses `find-skills` when relevant skills are missing, and can create a project-local skill when none exists.
+- **TDD implementation discipline** — behavior-changing slices can be guided by a bundled red-green-refactor workflow, recorded in the active work `TESTS.md` before implementation.
 - **Plan before edit** — when Omni mode is on, the agent can't touch your files until `SPEC.md`, `TASKS.md`, and `TESTS.md` have real content.
 - **Repo awareness** — a ranked repo map keeps the agent oriented in large codebases.
 - **Skill discovery and local creation** — relevant skills are surfaced and loaded automatically; if discovery cannot find a fit, OmniCode can write a narrow local skill under `.omni/skills/` without touching global user skills.
@@ -50,9 +51,10 @@ OpenCode still owns the terminal UI, models, providers, auth, sessions, tools, a
 1. **Bootstrap** — `.omni/` is seeded in your project the first time you run OmniCode there.
 2. **Grill** — for change requests, clarify one question at a time until behavior, constraints, non-goals, tests, and success criteria are concrete.
 3. **Check skills** — judge whether bundled/project skills cover the clarified task; if not, use `find-skills`, then create a project-local `.omni/skills/` skill with `skill-maker` when no adequate skill exists.
-4. **Plan** — write real `SPEC.md`, `TASKS.md`, and `TESTS.md`. Until you do, the edit/write guard is active.
-5. **Execute** — work bounded task slices guided by the plan.
-6. **Verify** — state and session summaries are updated through OmniCode tools so the next run picks up where you left off.
+4. **Plan** — write real `SPEC.md`, `TASKS.md`, and `TESTS.md` in the active planning directory. Until you do, the edit/write guard is active.
+5. **Test-drive when applicable** — for behavior-changing slices, record the behavior, public seam, expected red failure, focused test command, and verification command in `TESTS.md`.
+6. **Execute** — work bounded task slices guided by the plan.
+7. **Verify** — state and session summaries are updated through OmniCode tools so the next run picks up where you left off.
 
 For collaborative repositories, see the planned per-branch work-memory model in [`docs/2026-04-30-collaborative-memory-design.md`](docs/2026-04-30-collaborative-memory-design.md).
 OmniCode's collaboration checkpoint reports the current branch, protected-branch policy, active `.omni/work/<branch-slug>/` planning directory, planning readiness, and next recommended action when starting or resuming change work.

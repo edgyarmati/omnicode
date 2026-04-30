@@ -26,6 +26,7 @@ Core idea:
   - automatic grill-me clarification before change requests
   - explicit skill-fit checkpoint before planning
   - planning before implementation
+  - TDD/red-green-refactor guidance for behavior-changing implementation slices
   - bounded task slices
   - verification after implementation
   - repo map for codebase awareness
@@ -100,6 +101,8 @@ Under `packages/plugin/src/resources/`:
 - workflow skills:
   - `grill-me.md`
   - `find-skills.md`
+  - `skill-maker.md`
+  - `tdd.md`
   - `brainstorming.md`
   - `omni-planning.md`
   - `omni-execution.md`
@@ -146,6 +149,7 @@ Verified in a real OpenCode runtime:
 - ranked repo map output works and writes `.omni/REPO-MAP.md` plus `.omni/REPO-MAP.json`
 - skill suggestion/sync works and writes `.omni/SKILLS.md`
 - the write/edit guard blocks early writes until real planning content exists in `SPEC.md`, `TASKS.md`, and `TESTS.md`
+- bundled `tdd` guidance is available for behavior-changing slices and records expectations in the active work `TESTS.md`
 - state/session-summary lifecycle tools work in tests and runtime
 - automated tests cover launcher config isolation, standards discovery/import, repo map generation, skill suggestion, lifecycle updates, and planning-artifact readiness
 - collaboration status reports the current branch, protected-branch policy, active `.omni/work/<branch-slug>/` planning path, and planning readiness
