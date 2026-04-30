@@ -17,6 +17,7 @@
 - **Root plan migration tool** — added `omnicode_migrate_root_plan` to copy non-placeholder root `.omni` planning files into the active branch-scoped work directory with overwrite protection and migration notes.
 - **Branch-scoped runtime state** — runtime state and session summaries now write to `.omni/runtime/<branch-slug-or-root>/` instead of root singleton files, with runtime directories ignored by git.
 - **TDD workflow skill** — added bundled `tdd` guidance for behavior-changing slices, with active-work `TESTS.md` expectations for red-green-refactor planning and verification.
+- **Diagnose workflow skill** — added bundled bug/performance-regression guidance for reproduce, minimize, hypothesize, instrument, fix, and regression-test loops.
 
 ### Fixes
 
@@ -63,6 +64,7 @@
 - Added tests for root plan migration, placeholder refusal, overwrite refusal, overwrite success, and migration notes.
 - Added tests for branch-scoped runtime paths, root runtime fallback, gitignore updates, and state/session writes.
 - Added tests for `tdd` bundled skill memory and suggestion heuristics.
+- Added tests for `diagnose` bundled skill memory and suggestion heuristics.
 - Added tests for SKILLS project notes preservation and large repo-map file skipping.
 - Added tests for launcher `--check`/`--version` non-launching behavior.
 - Added tests for Windows-safe plugin shim import specifiers.

@@ -27,6 +27,7 @@ Core idea:
   - explicit skill-fit checkpoint before planning
   - planning before implementation
   - TDD/red-green-refactor guidance for behavior-changing implementation slices
+  - diagnose workflow guidance for bugs and performance regressions
   - bounded task slices
   - verification after implementation
   - repo map for codebase awareness
@@ -103,6 +104,7 @@ Under `packages/plugin/src/resources/`:
   - `find-skills.md`
   - `skill-maker.md`
   - `tdd.md`
+  - `diagnose.md`
   - `brainstorming.md`
   - `omni-planning.md`
   - `omni-execution.md`
@@ -150,6 +152,7 @@ Verified in a real OpenCode runtime:
 - skill suggestion/sync works and writes `.omni/SKILLS.md`
 - the write/edit guard blocks early writes until real planning content exists in `SPEC.md`, `TASKS.md`, and `TESTS.md`
 - bundled `tdd` guidance is available for behavior-changing slices and records expectations in the active work `TESTS.md`
+- bundled `diagnose` guidance is available for bugs/performance regressions before patching
 - state/session-summary lifecycle tools work in tests and runtime
 - automated tests cover launcher config isolation, standards discovery/import, repo map generation, skill suggestion, lifecycle updates, and planning-artifact readiness
 - collaboration status reports the current branch, protected-branch policy, active `.omni/work/<branch-slug>/` planning path, and planning readiness

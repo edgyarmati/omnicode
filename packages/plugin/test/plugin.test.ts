@@ -675,6 +675,7 @@ test("suggestSkills and updateSkillsFile infer workflow skills from task text", 
     assert.match(skillsFile, /find-skills/);
     assert.match(skillsFile, /skill-maker/);
     assert.match(skillsFile, /tdd/);
+    assert.match(skillsFile, /diagnose/);
     assert.match(skillsFile, /brainstorming/);
     assert.match(skillsFile, /omni-verification/);
   });
@@ -694,6 +695,14 @@ test("suggestSkills recommends tdd for behavior-changing implementation", async 
 
   assert.ok(explicit.some((item) => item.name === "tdd"));
   assert.ok(behavior.some((item) => item.name === "tdd"));
+});
+
+test("suggestSkills recommends diagnose for bugs and performance regressions", async () => {
+  const bug = await suggestSkills("Diagnose the checkout bug that fails intermittently");
+  const performance = await suggestSkills("Debug this performance regression in repo map generation");
+
+  assert.equal(bug[0]?.name, "diagnose");
+  assert.ok(performance.some((item) => item.name === "diagnose"));
 });
 
 test("suggestSkills recommends find-skills for skill discovery and removal requests", async () => {

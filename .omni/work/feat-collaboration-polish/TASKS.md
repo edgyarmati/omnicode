@@ -3,7 +3,7 @@
 ## Planned slices
 
 - [x] Slice 1: add `tdd` bundled skill, active `TESTS.md` guidance, suggestion heuristics, docs, tests, verify, and commit.
-- [ ] Slice 2: add `diagnose` bundled skill, bug/performance routing, docs, tests, verify, and commit.
+- [x] Slice 2: add `diagnose` bundled skill, bug/performance routing, docs, tests, verify, and commit.
 - [ ] Slice 3: add `grill-with-docs` bundled skill as enhanced clarification variant, docs, tests, verify, and commit.
 - [ ] Slice 4: add `improve-codebase-architecture` bundled skill plus slash command, docs, tests, verify, and commit.
 

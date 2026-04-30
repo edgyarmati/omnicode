@@ -11,13 +11,12 @@ Expected outcome: type-check passes and the full test suite passes; TDD behavior
 
 ## Slice 2 — Diagnose workflow
 
-- [ ] Add/update tests proving bundled skill listing/reading includes `diagnose`.
-- [ ] Add/update tests proving default generated `.omni/SKILLS.md` includes `diagnose`.
-- [ ] Add/update tests proving `omnicode_suggest_skills` suggests `diagnose` for bug, failure, debugging, and performance-regression wording.
-- [ ] Run `npm run check`.
-- [ ] Run `npm test`.
+- [x] Add/update tests proving bundled/default skill memory includes `diagnose`.
+- [x] Add/update tests proving `omnicode_suggest_skills` suggests `diagnose` for bug, failure, debugging, and performance-regression wording.
+- [x] Run `npm run check`.
+- [x] Run `npm test`.
 
-Expected outcome: bug/performance workflows route through diagnosis before TDD/regression-test work where applicable.
+Expected outcome: bug/performance workflows route through diagnosis before TDD/regression-test work where applicable. Observed red first: tests failed before implementation because `diagnose` was missing from bundled skill memory and suggestions. After implementation, `npm run check` passed and `npm test` passed with launcher 10 tests and plugin 60 tests.
 
 ## Slice 3 — Grill with docs workflow
 

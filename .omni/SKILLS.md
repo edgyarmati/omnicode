@@ -6,6 +6,7 @@
 - find-skills
 - skill-maker
 - tdd
+- diagnose
 - brainstorming
 - omni-planning
 - omni-execution
@@ -14,6 +15,7 @@
 ## Suggested For Current Work
 
 - tdd: use a red-green-refactor loop for behavior-changing implementation slices
+- diagnose: use a disciplined reproduce-minimize-hypothesize-instrument-fix loop for bugs and regressions
 - omni-execution: use when implementing a planned slice
 
 ## Project Notes

@@ -37,6 +37,7 @@ omnicode
 - **Automatic grilling before changes** — for new features, fixes, refactors, and behavior changes, OmniCode asks one focused question at a time until the request is unambiguous.
 - **Skill-fit checkpoint** — after clarification, OmniCode checks whether available skills cover the task, uses `find-skills` when relevant skills are missing, and can create a project-local skill when none exists.
 - **TDD implementation discipline** — behavior-changing slices can be guided by a bundled red-green-refactor workflow, recorded in the active work `TESTS.md` before implementation.
+- **Disciplined diagnosis** — bug and performance-regression work can route through a reproduce → minimize → hypothesize → instrument → fix → regression-test loop before patching.
 - **Plan before edit** — when Omni mode is on, the agent can't touch your files until `SPEC.md`, `TASKS.md`, and `TESTS.md` have real content.
 - **Repo awareness** — a ranked repo map keeps the agent oriented in large codebases.
 - **Skill discovery and local creation** — relevant skills are surfaced and loaded automatically; if discovery cannot find a fit, OmniCode can write a narrow local skill under `.omni/skills/` without touching global user skills.
@@ -53,8 +54,9 @@ OpenCode still owns the terminal UI, models, providers, auth, sessions, tools, a
 3. **Check skills** — judge whether bundled/project skills cover the clarified task; if not, use `find-skills`, then create a project-local `.omni/skills/` skill with `skill-maker` when no adequate skill exists.
 4. **Plan** — write real `SPEC.md`, `TASKS.md`, and `TESTS.md` in the active planning directory. Until you do, the edit/write guard is active.
 5. **Test-drive when applicable** — for behavior-changing slices, record the behavior, public seam, expected red failure, focused test command, and verification command in `TESTS.md`.
-6. **Execute** — work bounded task slices guided by the plan.
-7. **Verify** — state and session summaries are updated through OmniCode tools so the next run picks up where you left off.
+6. **Diagnose before patching** — for unknown bugs and regressions, establish a feedback loop and cause before writing the fix.
+7. **Execute** — work bounded task slices guided by the plan.
+8. **Verify** — state and session summaries are updated through OmniCode tools so the next run picks up where you left off.
 
 For collaborative repositories, see the planned per-branch work-memory model in [`docs/2026-04-30-collaborative-memory-design.md`](docs/2026-04-30-collaborative-memory-design.md).
 OmniCode's collaboration checkpoint reports the current branch, protected-branch policy, active `.omni/work/<branch-slug>/` planning directory, planning readiness, and next recommended action when starting or resuming change work.
