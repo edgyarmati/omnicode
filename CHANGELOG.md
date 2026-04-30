@@ -15,6 +15,7 @@
 - **Explicit start-work workflow** — added `omnicode_start_work` to create or switch to a feature branch, initialize `.omni/work/<branch-slug>/`, and refuse dirty checkouts by default with proposed safe next steps.
 - **PR completion settings and tool** — added PR workflow settings for offering or auto-creating PRs on completion plus explicit `omnicode_create_pr` support that can push the branch when needed and builds a PR body from active planning context.
 - **Root plan migration tool** — added `omnicode_migrate_root_plan` to copy non-placeholder root `.omni` planning files into the active branch-scoped work directory with overwrite protection and migration notes.
+- **Branch-scoped runtime state** — runtime state and session summaries now write to `.omni/runtime/<branch-slug-or-root>/` instead of root singleton files, with runtime directories ignored by git.
 
 ### Fixes
 
@@ -59,6 +60,7 @@
 - Added tests for start-work branch validation, dirty checkout guidance, branch creation, branch switching, and planning-directory initialization.
 - Added tests for PR workflow settings, PR prerequisite summaries, and PR body generation without GitHub network access.
 - Added tests for root plan migration, placeholder refusal, overwrite refusal, overwrite success, and migration notes.
+- Added tests for branch-scoped runtime paths, root runtime fallback, gitignore updates, and state/session writes.
 - Added tests for SKILLS project notes preservation and large repo-map file skipping.
 - Added tests for launcher `--check`/`--version` non-launching behavior.
 - Added tests for Windows-safe plugin shim import specifiers.

@@ -104,5 +104,5 @@
 - [x] Slice 1: tests cover branch name validation, dirty status refusal/proposed solutions, existing branch switch, and new branch creation helper behavior.
 - [x] Slice 2: tests cover PR settings defaults/overrides, PR prerequisite summaries, and PR body generation without requiring GitHub network access.
 - [x] Slice 3: tests cover root plan copy, placeholder refusal, overwrite refusal, overwrite success, and migration notes.
-- [ ] Slice 4: tests cover branch-scoped state/session paths, no-branch root runtime fallback, gitignore update, and compaction/read behavior.
-- [ ] Run `npm run check` and `npm test` after each slice.
+- [x] Slice 4: tests cover branch-scoped state/session paths, no-branch root runtime fallback, gitignore update, and compaction/read behavior.
+- [x] Run `npm run check` and `npm test` after each slice.

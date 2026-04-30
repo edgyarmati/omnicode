@@ -60,7 +60,7 @@ Use `omnicode_start_work` to deliberately create or switch to a feature branch a
 PR behavior is controlled by `workflow.offerPrOnCompletion` and `workflow.autoCreatePrOnCompletion`; by default OmniCode offers to open a PR when work is complete but does not create one unless asked.
 Use `omnicode_migrate_root_plan` to copy an existing non-placeholder root plan into the active branch-scoped `.omni/work/<branch-slug>/` directory while keeping root files intact for compatibility.
 
-`.omni/STATE.md` is also injected into OpenCode's compaction context, so active state survives long sessions.
+Branch-scoped runtime state under `.omni/runtime/<branch-slug-or-root>/STATE.md` is injected into OpenCode's compaction context, so active state survives long sessions without creating a shared root-state bottleneck.
 
 ## Quick usage
 
@@ -185,7 +185,7 @@ Commit these when they reflect real project intent:
 
 These stay out of git — they're regenerated each run:
 
-- `STATE.md`, `SESSION-SUMMARY.md`, `REPO-MAP.md`, `REPO-MAP.json`
+- `runtime/`, `STATE.md`, `SESSION-SUMMARY.md`, `REPO-MAP.md`, `REPO-MAP.json`
 
 `.pi/` also stays out of git.
 

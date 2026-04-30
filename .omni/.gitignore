@@ -3,5 +3,6 @@ STATE.md
 SESSION-SUMMARY.md
 REPO-MAP.md
 REPO-MAP.json
+runtime/
 
 # Durable OmniCode memory may be committed when it reflects real project intent.

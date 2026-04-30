@@ -77,7 +77,7 @@ Current features:
   - `omnicode_create_pr`
   - `omnicode_migrate_root_plan`
 - bootstraps `.omni/` on `session.created`
-- adds `.omni/STATE.md` into compaction context
+- adds active `.omni/runtime/<branch-slug-or-root>/STATE.md` into compaction context
 - guards `write` / `edit` when Omni mode is on and planning artifacts are missing
 - placeholder bootstrap planning files are not enough; source edits require real planning content
 
@@ -208,6 +208,7 @@ Durable `.omni` files may be committed when they reflect real project intent:
 - `.gitignore`
 
 Runtime/generated `.omni` files stay out of git by default:
+- `runtime/`
 - `STATE.md`
 - `SESSION-SUMMARY.md`
 - `REPO-MAP.md`

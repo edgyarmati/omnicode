@@ -11,6 +11,7 @@ import {
   appendSessionSummary,
   assertProtectedBranchAllowsMutation,
   activePlanningArtifactPaths,
+  activeRuntimePaths,
   branchNameToWorkId,
   buildRepoMap,
   buildCollaborationCheckpoint,
@@ -109,6 +110,7 @@ test("ensureOmniDir writes a selective .omni/.gitignore for runtime state", asyn
 
     assert.equal(gitignore, `${OMNI_GITIGNORE}\n`);
     assert.match(gitignore, /STATE\.md/);
+    assert.match(gitignore, /runtime\//);
     assert.doesNotMatch(gitignore, /PROJECT\.md/);
   });
 });
@@ -383,10 +385,27 @@ test("activePlanningArtifactPaths falls back to root planning when no branch is 
   });
 });
 
+test("activeRuntimePaths uses branch slug or root fallback", async () => {
+  await withTempDir(async (dir) => {
+    assert.equal((await activeRuntimePaths(dir)).baseDir, path.join(dir, ".omni", "runtime", "root"));
+
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feat/runtime-state\n", "utf8");
+
+    const branchRuntime = await activeRuntimePaths(dir);
+    assert.equal(branchRuntime.runtimeId, "feat-runtime-state");
+    assert.equal(branchRuntime.statePath, path.join(dir, ".omni", "runtime", "feat-runtime-state", "STATE.md"));
+    assert.equal(branchRuntime.sessionSummaryPath, path.join(dir, ".omni", "runtime", "feat-runtime-state", "SESSION-SUMMARY.md"));
+  });
+});
+
 test("updateStateFile preserves permissions through atomic replacement", async () => {
   await withTempDir(async (dir) => {
     await ensureOmniDir(dir);
-    const statePath = path.join(dir, ".omni", "STATE.md");
+    const runtimePaths = await activeRuntimePaths(dir);
+    const statePath = runtimePaths.statePath;
+    await mkdir(path.dirname(statePath), { recursive: true });
+    await writeFile(statePath, "old\n", "utf8");
     await chmod(statePath, 0o600);
 
     await updateStateFile(dir, {
@@ -395,6 +414,24 @@ test("updateStateFile preserves permissions through atomic replacement", async (
     });
 
     assert.equal(modeBits((await stat(statePath)).mode), 0o600);
+  });
+});
+
+test("state and session summaries write to branch-scoped runtime paths", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feat/runtime-state\n", "utf8");
+
+    const statePath = await updateStateFile(dir, { currentPhase: "execution" });
+    const summaryPath = await appendSessionSummary(dir, {
+      title: "Runtime branch",
+      bullets: ["Wrote branch runtime"],
+    });
+
+    assert.equal(statePath, path.join(dir, ".omni", "runtime", "feat-runtime-state", "STATE.md"));
+    assert.equal(summaryPath, path.join(dir, ".omni", "runtime", "feat-runtime-state", "SESSION-SUMMARY.md"));
+    await assert.rejects(() => stat(path.join(dir, ".omni", "STATE.md")));
+    assert.match(await readFile(summaryPath, "utf8"), /Runtime branch/);
   });
 });
 
@@ -741,7 +778,8 @@ test("ensureOmniDir preserves templates and setOmniMode updates state coherently
 
     await ensureOmniDir(dir);
     await setOmniMode(dir, "on");
-    let state = await readFile(path.join(dir, ".omni", "STATE.md"), "utf8");
+    const runtimePaths = await activeRuntimePaths(dir);
+    let state = await readFile(runtimePaths.statePath, "utf8");
     let config = await readFile(path.join(dir, ".omni", "CONFIG.md"), "utf8");
 
     assert.match(config, /Omni Mode: on/);
@@ -749,7 +787,7 @@ test("ensureOmniDir preserves templates and setOmniMode updates state coherently
     assert.match(state, /Workspace ready for planning/);
 
     await setOmniMode(dir, "off");
-    state = await readFile(path.join(dir, ".omni", "STATE.md"), "utf8");
+    state = await readFile(runtimePaths.statePath, "utf8");
     config = await readFile(path.join(dir, ".omni", "CONFIG.md"), "utf8");
 
     assert.match(config, /Omni Mode: off/);

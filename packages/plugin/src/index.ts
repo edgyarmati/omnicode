@@ -76,6 +76,13 @@ export type MigrateRootPlanResult = {
   message: string;
 };
 
+export type RuntimePaths = {
+  runtimeId: string;
+  baseDir: string;
+  statePath: string;
+  sessionSummaryPath: string;
+};
+
 export type WorkflowSettings = {
   protectedBranches: string[];
   requireFeatureBranchForChanges: boolean;
@@ -392,6 +399,18 @@ export async function activePlanningArtifactPaths(directory: string): Promise<Pl
   }
   const workId = branchNameToWorkId(branch);
   return planningArtifactPaths(path.join(directory, ".omni", "work", workId), workId, "work");
+}
+
+export async function activeRuntimePaths(directory: string): Promise<RuntimePaths> {
+  const branch = await readCurrentGitBranch(directory);
+  const runtimeId = branch ? branchNameToWorkId(branch) : "root";
+  const baseDir = path.join(directory, ".omni", "runtime", runtimeId);
+  return {
+    runtimeId,
+    baseDir,
+    statePath: path.join(baseDir, "STATE.md"),
+    sessionSummaryPath: path.join(baseDir, "SESSION-SUMMARY.md"),
+  };
 }
 
 async function writePlanningTemplateIfMissing(paths: PlanningArtifactPaths): Promise<void> {
@@ -728,6 +747,10 @@ export const OMNI_RUNTIME_FILES = [
   "REPO-MAP.json",
 ] as const;
 
+const STATE_TEMPLATE = "# State\n\nCurrent Phase: discovery\nActive Task: bootstrap\nStatus Summary: OmniCode workspace bootstrapped and ready for planning.\nBlockers: None\nNext Step: Clarify scope, write spec, define tests, and break work into tasks before implementation.\n";
+
+const SESSION_SUMMARY_TEMPLATE = "# Session Summary\n\n## Progress Made\n\n- Bootstrapped OmniCode durable memory for this project.\n\n## Remaining Work\n\n- Clarify the request and write the first real spec, tasks, and tests.\n\n## Notes\n\nUse this file for concise cross-session handoff notes.\n";
+
 export const OMNI_DURABLE_FILES = [
   "PROJECT.md",
   "SPEC.md",
@@ -746,6 +769,7 @@ export const OMNI_GITIGNORE = [
   "SESSION-SUMMARY.md",
   "REPO-MAP.md",
   "REPO-MAP.json",
+  "runtime/",
   "",
   "# Durable OmniCode memory may be committed when it reflects real project intent.",
 ].join("\n");
@@ -755,11 +779,9 @@ export const OMNI_FILES: Record<string, string> = {
   "SPEC.md": "# Spec\n\n## Problem\n\nDescribe the specific problem to solve.\n\n## Requested Behavior\n\nList the expected behavior clearly before implementation.\n\n## Constraints\n\nList any implementation constraints or non-goals.\n\n## Success Criteria\n\nList concrete checks that make this request complete.\n",
   "TASKS.md": "# Tasks\n\n## Planned slices\n\n- [ ] Slice 1: define the first bounded implementation step\n\n## Notes\n\nBreak work into bounded, verifiable slices before editing source files.\n",
   "TESTS.md": "# Tests\n\n## Checks\n\n- [ ] define the checks to run after each implementation slice\n\n## Expected outcomes\n\nDescribe what passing looks like.\n",
-  "STATE.md": "# State\n\nCurrent Phase: discovery\nActive Task: bootstrap\nStatus Summary: OmniCode workspace bootstrapped and ready for planning.\nBlockers: None\nNext Step: Clarify scope, write spec, define tests, and break work into tasks before implementation.\n",
   "DECISIONS.md": "# Decisions\n\nRecord important choices and why they were made.\n",
   "STANDARDS.md": "# Imported Standards\n\nRecord imported standards from AGENTS.md, CLAUDE.md, Cursor rules, and similar files.\n",
   "SKILLS.md": "# Skills\n\n## Bundled\n\n- grill-me\n- find-skills\n- skill-maker\n- brainstorming\n- omni-planning\n- omni-execution\n- omni-verification\n\n## Suggested For Current Work\n\n- None inferred from the current task yet.\n\n## Project Notes\n\nRecord required and project-specific skills here.\n",
-  "SESSION-SUMMARY.md": "# Session Summary\n\n## Progress Made\n\n- Bootstrapped OmniCode durable memory for this project.\n\n## Remaining Work\n\n- Clarify the request and write the first real spec, tasks, and tests.\n\n## Notes\n\nUse this file for concise cross-session handoff notes.\n",
   "CONFIG.md": "# Omni Configuration\n\nOmni Mode: on\n",
   VERSION: `${OMNI_VERSION}\n`,
 };
@@ -935,10 +957,28 @@ export async function setOmniMode(directory: string, mode: OmniMode): Promise<vo
 }
 
 async function readStateSummary(directory: string): Promise<string> {
+  const runtimePaths = await activeRuntimePaths(directory);
   try {
-    return await readFile(path.join(directory, ".omni", "STATE.md"), "utf8");
+    return await readFile(runtimePaths.statePath, "utf8");
   } catch {
-    return "No .omni/STATE.md found.";
+    try {
+      return await readFile(path.join(directory, ".omni", "STATE.md"), "utf8");
+    } catch {
+      return `No ${relativeDisplayPath(directory, runtimePaths.statePath)} found.`;
+    }
+  }
+}
+
+async function readSessionSummary(directory: string): Promise<string> {
+  const runtimePaths = await activeRuntimePaths(directory);
+  try {
+    return await readFile(runtimePaths.sessionSummaryPath, "utf8");
+  } catch {
+    try {
+      return await readFile(path.join(directory, ".omni", "SESSION-SUMMARY.md"), "utf8");
+    } catch {
+      return SESSION_SUMMARY_TEMPLATE;
+    }
   }
 }
 
@@ -957,7 +997,8 @@ export async function updateStateFile(
     nextStep?: string;
   },
 ): Promise<string> {
-  const omniDir = await ensureOmniDir(directory);
+  await ensureOmniDir(directory);
+  const runtimePaths = await activeRuntimePaths(directory);
   const nextState = {
     currentPhase: sanitizeMarkdownInline(updates.currentPhase ?? "discovery", 80),
     activeTask: updates.activeTask ? sanitizeMarkdownInline(updates.activeTask, 160) : "",
@@ -981,9 +1022,8 @@ export async function updateStateFile(
     "",
   ].join("\n");
 
-  const outputPath = path.join(omniDir, "STATE.md");
-  await writeFileAtomic(outputPath, content);
-  return outputPath;
+  await writeFileAtomic(runtimePaths.statePath, content);
+  return runtimePaths.statePath;
 }
 
 export async function appendSessionSummary(
@@ -993,9 +1033,10 @@ export async function appendSessionSummary(
     bullets: string[];
   },
 ): Promise<string> {
-  const omniDir = await ensureOmniDir(directory);
-  const summaryPath = path.join(omniDir, "SESSION-SUMMARY.md");
-  const current = await readFile(summaryPath, "utf8").catch(() => OMNI_FILES["SESSION-SUMMARY.md"]);
+  await ensureOmniDir(directory);
+  const runtimePaths = await activeRuntimePaths(directory);
+  const summaryPath = runtimePaths.sessionSummaryPath;
+  const current = await readSessionSummary(directory);
   const title = sanitizeMarkdownInline(entry.title || "Update", 120);
   const bullets = entry.bullets.map((bullet) => sanitizeMarkdownInline(bullet, 240));
   const section = [
@@ -1610,7 +1651,7 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
       }),
 
       omnicode_state: tool({
-        description: "Read the current OmniCode durable state summary from .omni/STATE.md.",
+        description: "Read the current OmniCode runtime state summary from the active .omni/runtime directory.",
         args: {},
         async execute() {
           await ensureOmniDir(directory);
@@ -1684,7 +1725,7 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
       }),
 
       omnicode_update_state: tool({
-        description: "Update .omni/STATE.md with the current phase, active task, blockers, and next step.",
+        description: "Update the active branch-scoped .omni/runtime STATE.md with the current phase, active task, blockers, and next step.",
         args: {
           currentPhase: tool.schema.string().optional().describe("Current workflow phase."),
           activeTask: tool.schema.string().optional().describe("Current active task."),
@@ -1699,7 +1740,7 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
       }),
 
       omnicode_append_session_summary: tool({
-        description: "Append a concise titled update to .omni/SESSION-SUMMARY.md.",
+        description: "Append a concise titled update to the active branch-scoped .omni/runtime SESSION-SUMMARY.md.",
         args: {
           title: tool.schema.string().describe("Short heading for the update."),
           bullets: tool.schema.array(tool.schema.string()).describe("Concise bullet points to append."),

@@ -1,7 +1,7 @@
 # Collaborative Omni Memory Design
 
 Date: 2026-04-30
-Status: Core implementation in progress; workflow settings, protected-branch guard, active work planning, and collaboration status are implemented.
+Status: Core implementation in progress; workflow settings, protected-branch guard, active work planning, collaboration status, start-work, PR tooling, root-plan migration, and branch-scoped runtime state are implemented.
 
 ## Problem
 
@@ -92,7 +92,14 @@ Generated and untracked:
 .omni/REPO-MAP.json
 ```
 
-Future improvement: move runtime state under a branch/session-specific path such as `.omni/runtime/<branch-or-session>/`. That is not required for the first implementation; keeping runtime files untracked avoids team conflicts.
+Runtime state now lives under branch/root scoped paths:
+
+```text
+.omni/runtime/<branch-slug-or-root>/STATE.md
+.omni/runtime/<branch-slug-or-root>/SESSION-SUMMARY.md
+```
+
+This avoids root singleton runtime conflicts while keeping runtime files untracked.
 
 ## Active work selection
 
