@@ -14,6 +14,7 @@ import {
   branchNameToWorkId,
   buildRepoMap,
   buildCollaborationCheckpoint,
+  buildPullRequestBody,
   DEFAULT_WORKFLOW_SETTINGS,
   dirtyWorktreeGuidance,
   discoverStandards,
@@ -31,6 +32,7 @@ import {
   setOmniMode,
   startWorkBranch,
   suggestSkills,
+  summarizePullRequestPrerequisites,
   updateSkillsFile,
   updateStateFile,
   writeFileAtomic,
@@ -158,6 +160,8 @@ test("readOmniCodeSettings merges global defaults with project overrides", async
       JSON.stringify({
         workflow: {
           allowProtectedBranchChanges: true,
+          offerPrOnCompletion: false,
+          autoCreatePrOnCompletion: true,
         },
       }),
       "utf8",
@@ -169,6 +173,8 @@ test("readOmniCodeSettings merges global defaults with project overrides", async
       protectedBranches: ["main", "trunk"],
       requireFeatureBranchForChanges: true,
       allowProtectedBranchChanges: true,
+      offerPrOnCompletion: false,
+      autoCreatePrOnCompletion: true,
     });
   });
 });
@@ -198,12 +204,47 @@ test("formatWorkflowSettingsStatus exposes effective workflow policy", async () 
       protectedBranches: ["main", "release"],
       requireFeatureBranchForChanges: false,
       allowProtectedBranchChanges: true,
+      offerPrOnCompletion: true,
+      autoCreatePrOnCompletion: false,
     },
   });
 
   assert.match(status, /Protected Branches: main, release/);
   assert.match(status, /Require Feature Branch For Changes: no/);
   assert.match(status, /Allow Protected Branch Changes: yes/);
+  assert.match(status, /Offer PR On Completion: yes/);
+  assert.match(status, /Auto Create PR On Completion: no/);
+});
+
+test("summarizePullRequestPrerequisites reports missing PR requirements", () => {
+  const summary = summarizePullRequestPrerequisites({
+    branch: "feat/test",
+    dirtyStatus: " M src/index.ts",
+    hasRemote: false,
+    hasUpstream: false,
+  });
+
+  assert.match(summary, /Working tree has uncommitted changes/);
+  assert.match(summary, /No git remote is configured/);
+  assert.match(summary, /has no upstream/);
+});
+
+test("buildPullRequestBody summarizes active planning and commits", async () => {
+  await withTempDir(async (dir) => {
+    await runGitTest(dir, ["init", "-b", "feat/pr-body"]);
+    await writeFile(path.join(dir, "README.md"), "# test\n", "utf8");
+    await runGitTest(dir, ["add", "README.md"]);
+    await runGitTest(dir, ["-c", "user.email=test@example.com", "-c", "user.name=Test", "commit", "-m", "feat: initial"]);
+    const activePaths = await activePlanningArtifactPaths(dir);
+    await writeRealPlanningFiles(activePaths.baseDir);
+
+    const body = await buildPullRequestBody(dir);
+
+    assert.match(body, /Branch: feat\/pr-body/);
+    assert.match(body, /Active planning: \.omni\/work\/feat-pr-body/);
+    assert.match(body, /## Spec/);
+    assert.match(body, /feat: initial/);
+  });
 });
 
 test("readCurrentGitBranch reads branch names from git HEAD", async () => {

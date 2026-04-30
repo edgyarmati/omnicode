@@ -73,6 +73,8 @@ export type WorkflowSettings = {
   protectedBranches: string[];
   requireFeatureBranchForChanges: boolean;
   allowProtectedBranchChanges: boolean;
+  offerPrOnCompletion: boolean;
+  autoCreatePrOnCompletion: boolean;
 };
 
 export type OmniCodeSettings = {
@@ -84,6 +86,8 @@ export const DEFAULT_WORKFLOW_SETTINGS: WorkflowSettings = {
   protectedBranches: ["main", "master"],
   requireFeatureBranchForChanges: true,
   allowProtectedBranchChanges: false,
+  offerPrOnCompletion: true,
+  autoCreatePrOnCompletion: false,
 };
 const RESOURCE_ROOT_CANDIDATES = [
   path.join(import.meta.dirname, "resources"),
@@ -227,6 +231,12 @@ function parseWorkflowSettings(value: unknown): Partial<WorkflowSettings> {
   if (typeof value.allowProtectedBranchChanges === "boolean") {
     parsed.allowProtectedBranchChanges = value.allowProtectedBranchChanges;
   }
+  if (typeof value.offerPrOnCompletion === "boolean") {
+    parsed.offerPrOnCompletion = value.offerPrOnCompletion;
+  }
+  if (typeof value.autoCreatePrOnCompletion === "boolean") {
+    parsed.autoCreatePrOnCompletion = value.autoCreatePrOnCompletion;
+  }
   return parsed;
 }
 
@@ -271,6 +281,8 @@ export function formatWorkflowSettingsStatus(settings: OmniCodeSettings): string
     `Protected Branches: ${settings.workflow.protectedBranches.join(", ")}`,
     `Require Feature Branch For Changes: ${settings.workflow.requireFeatureBranchForChanges ? "yes" : "no"}`,
     `Allow Protected Branch Changes: ${settings.workflow.allowProtectedBranchChanges ? "yes" : "no"}`,
+    `Offer PR On Completion: ${settings.workflow.offerPrOnCompletion ? "yes" : "no"}`,
+    `Auto Create PR On Completion: ${settings.workflow.autoCreatePrOnCompletion ? "yes" : "no"}`,
   ].join("\n");
 }
 
@@ -475,6 +487,106 @@ export async function startWorkBranch(
       `Active planning directory: ${path.relative(directory, activePaths.baseDir).split(path.sep).join("/")}`,
     ].join("\n"),
   };
+}
+
+export type PullRequestPrerequisites = {
+  branch: string | null;
+  dirtyStatus: string;
+  hasRemote: boolean;
+  hasUpstream: boolean;
+};
+
+export function summarizePullRequestPrerequisites(prerequisites: PullRequestPrerequisites): string {
+  const issues: string[] = [];
+  if (!prerequisites.branch) issues.push("No current branch detected.");
+  if (prerequisites.dirtyStatus.trim().length > 0) issues.push("Working tree has uncommitted changes.");
+  if (!prerequisites.hasRemote) issues.push("No git remote is configured.");
+  if (!prerequisites.hasUpstream) issues.push("Current branch has no upstream; push is required before creating a PR.");
+  if (issues.length === 0) return "PR prerequisites satisfied.";
+  return ["PR prerequisites need attention:", ...issues.map((issue) => `- ${issue}`)].join("\n");
+}
+
+async function collectPullRequestPrerequisites(directory: string): Promise<PullRequestPrerequisites> {
+  const [branch, dirtyStatusResult, remoteResult, upstreamResult] = await Promise.all([
+    readCurrentGitBranch(directory),
+    runGit(directory, ["status", "--short"]),
+    runGit(directory, ["remote"]),
+    runGit(directory, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]),
+  ]);
+  return {
+    branch,
+    dirtyStatus: dirtyStatusResult.stdout.trimEnd(),
+    hasRemote: remoteResult.code === 0 && remoteResult.stdout.trim().length > 0,
+    hasUpstream: upstreamResult.code === 0 && upstreamResult.stdout.trim().length > 0,
+  };
+}
+
+async function readOptionalSnippet(filePath: string, heading: string): Promise<string> {
+  try {
+    const content = await readFile(filePath, "utf8");
+    return [`## ${heading}`, "", content.trim().slice(0, 1800)].join("\n");
+  } catch {
+    return [`## ${heading}`, "", "Not available."].join("\n");
+  }
+}
+
+export async function buildPullRequestBody(directory: string): Promise<string> {
+  const paths = await activePlanningArtifactPaths(directory);
+  const log = await runGit(directory, ["log", "--oneline", "--max-count=10"]);
+  const commits = log.code === 0 && log.stdout.trim().length > 0 ? log.stdout.trim() : "Not available.";
+  return [
+    "## Summary",
+    "",
+    `- Branch: ${(await readCurrentGitBranch(directory)) ?? "unknown"}`,
+    `- Active planning: ${relativeDisplayPath(directory, paths.baseDir)}`,
+    "",
+    await readOptionalSnippet(paths.specPath, "Spec"),
+    "",
+    await readOptionalSnippet(paths.tasksPath, "Tasks"),
+    "",
+    "## Recent commits",
+    "",
+    commits,
+  ].join("\n");
+}
+
+export async function createPullRequest(
+  directory: string,
+  options: { title?: string; body?: string; base?: string; draft?: boolean; push?: boolean } = {},
+): Promise<string> {
+  const prerequisites = await collectPullRequestPrerequisites(directory);
+  if (prerequisites.dirtyStatus.trim().length > 0) {
+    throw new Error(summarizePullRequestPrerequisites(prerequisites));
+  }
+  if (!prerequisites.branch) {
+    throw new Error(summarizePullRequestPrerequisites(prerequisites));
+  }
+  if (!prerequisites.hasRemote) {
+    throw new Error(summarizePullRequestPrerequisites(prerequisites));
+  }
+  if (!prerequisites.hasUpstream) {
+    if (options.push === false) throw new Error(summarizePullRequestPrerequisites(prerequisites));
+    await runGitOrThrow(directory, ["push", "-u", "origin", prerequisites.branch]);
+  }
+
+  const title = options.title ?? prerequisites.branch.replace(/[\/_-]+/gu, " ").trim();
+  const body = options.body ?? (await buildPullRequestBody(directory));
+  const args = ["pr", "create", "--title", title, "--body", body];
+  if (options.base) args.push("--base", options.base);
+  if (options.draft) args.push("--draft");
+  const result = await new Promise<{ stdout: string; stderr: string; code: number }>((resolve, reject) => {
+    const child = spawn("gh", args, { cwd: directory, shell: false });
+    let stdout = "";
+    let stderr = "";
+    child.stdout?.on("data", (chunk) => { stdout += String(chunk); });
+    child.stderr?.on("data", (chunk) => { stderr += String(chunk); });
+    child.on("error", reject);
+    child.on("close", (code) => resolve({ stdout, stderr, code: code ?? 1 }));
+  });
+  if (result.code !== 0) {
+    throw new Error(`OmniCode: gh pr create failed: ${(result.stderr || result.stdout).trim()}`);
+  }
+  return result.stdout.trim();
 }
 
 function rootPlanningArtifactPaths(directory: string): PlanningArtifactPaths {
@@ -1460,6 +1572,27 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
             allowDirty: args.allowDirty,
           });
           return result.message;
+        },
+      }),
+
+      omnicode_create_pr: tool({
+        description:
+          "Create a GitHub pull request for the current branch when the user requests it or PR auto-creation is enabled.",
+        args: {
+          title: tool.schema.string().optional().describe("Optional PR title. Defaults to a title derived from the branch."),
+          body: tool.schema.string().optional().describe("Optional PR body. Defaults to OmniCode planning summary."),
+          base: tool.schema.string().optional().describe("Optional base branch for the PR."),
+          draft: tool.schema.boolean().optional().describe("Create the PR as a draft."),
+          push: tool.schema.boolean().optional().describe("Push the branch if it has no upstream. Defaults to true."),
+        },
+        async execute(args) {
+          return createPullRequest(directory, {
+            title: args.title,
+            body: args.body,
+            base: args.base,
+            draft: args.draft,
+            push: args.push,
+          });
         },
       }),
 
