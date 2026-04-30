@@ -29,6 +29,7 @@ Core idea:
   - planning before implementation
   - TDD/red-green-refactor guidance for behavior-changing implementation slices
   - diagnose workflow guidance for bugs and performance regressions
+  - architecture deepening review available as an explicit user-triggered command
   - bounded task slices
   - verification after implementation
   - repo map for codebase awareness
@@ -100,6 +101,7 @@ Under `packages/plugin/src/resources/`:
 - `commands/omni-skills.md`
 - `commands/commit.md`
 - `commands/push.md`
+- `commands/improve-codebase-architecture.md`
 - workflow skills:
   - `grill-me.md`
   - `grill-with-docs.md`
@@ -107,6 +109,7 @@ Under `packages/plugin/src/resources/`:
   - `skill-maker.md`
   - `tdd.md`
   - `diagnose.md`
+  - `improve-codebase-architecture.md`
   - `brainstorming.md`
   - `omni-planning.md`
   - `omni-execution.md`
@@ -156,6 +159,7 @@ Verified in a real OpenCode runtime:
 - bundled `grill-with-docs` guidance is available for domain-language and ADR-aware clarification
 - bundled `tdd` guidance is available for behavior-changing slices and records expectations in the active work `TESTS.md`
 - bundled `diagnose` guidance is available for bugs/performance regressions before patching
+- `/improve-codebase-architecture` is available as a review-only workflow command for architecture deepening opportunities
 - state/session-summary lifecycle tools work in tests and runtime
 - automated tests cover launcher config isolation, standards discovery/import, repo map generation, skill suggestion, lifecycle updates, and planning-artifact readiness
 - collaboration status reports the current branch, protected-branch policy, active `.omni/work/<branch-slug>/` planning path, and planning readiness

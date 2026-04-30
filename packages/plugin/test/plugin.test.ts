@@ -8,6 +8,7 @@ import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/pr
 import {
   OMNI_FILES,
   OMNI_GITIGNORE,
+  OmniCodePlugin,
   appendSessionSummary,
   assertProtectedBranchAllowsMutation,
   activePlanningArtifactPaths,
@@ -677,6 +678,7 @@ test("suggestSkills and updateSkillsFile infer workflow skills from task text", 
     assert.match(skillsFile, /tdd/);
     assert.match(skillsFile, /diagnose/);
     assert.match(skillsFile, /grill-with-docs/);
+    assert.match(skillsFile, /improve-codebase-architecture/);
     assert.match(skillsFile, /brainstorming/);
     assert.match(skillsFile, /omni-verification/);
   });
@@ -712,6 +714,31 @@ test("suggestSkills recommends grill-with-docs for durable domain decisions", as
 
   assert.equal(domain[0]?.name, "grill-with-docs");
   assert.ok(adr.some((item) => item.name === "grill-with-docs"));
+});
+
+test("suggestSkills recommends improve-codebase-architecture for architecture reviews", async () => {
+  const architecture = await suggestSkills("Find deepening opportunities to improve codebase architecture");
+  const seams = await suggestSkills("Review shallow modules and test seams before refactoring");
+
+  assert.equal(architecture[0]?.name, "improve-codebase-architecture");
+  assert.ok(seams.some((item) => item.name === "improve-codebase-architecture"));
+});
+
+test("OmniCodePlugin registers improve-codebase-architecture command", async () => {
+  await withTempDir(async (dir) => {
+    const plugin = await OmniCodePlugin({ directory: dir } as never);
+    const config = {} as {
+      command?: Record<string, { description?: string; template?: string }>;
+      agent?: Record<string, unknown>;
+      instructions?: string[];
+    };
+
+    await plugin.config?.(config as never);
+
+    assert.ok(config.command?.["improve-codebase-architecture"]);
+    assert.match(config.command["improve-codebase-architecture"].description ?? "", /architecture/i);
+    assert.match(config.command["improve-codebase-architecture"].template ?? "", /deepening opportunities/i);
+  });
 });
 
 test("suggestSkills recommends find-skills for skill discovery and removal requests", async () => {

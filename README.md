@@ -39,6 +39,7 @@ omnicode
 - **Skill-fit checkpoint** — after clarification, OmniCode checks whether available skills cover the task, uses `find-skills` when relevant skills are missing, and can create a project-local skill when none exists.
 - **TDD implementation discipline** — behavior-changing slices can be guided by a bundled red-green-refactor workflow, recorded in the active work `TESTS.md` before implementation.
 - **Disciplined diagnosis** — bug and performance-regression work can route through a reproduce → minimize → hypothesize → instrument → fix → regression-test loop before patching.
+- **Architecture review command** — `/improve-codebase-architecture` finds deepening opportunities and asks what to explore before any refactor starts.
 - **Plan before edit** — when Omni mode is on, the agent can't touch your files until `SPEC.md`, `TASKS.md`, and `TESTS.md` have real content.
 - **Repo awareness** — a ranked repo map keeps the agent oriented in large codebases.
 - **Skill discovery and local creation** — relevant skills are surfaced and loaded automatically; if discovery cannot find a fit, OmniCode can write a narrow local skill under `.omni/skills/` without touching global user skills.
@@ -66,6 +67,8 @@ PR behavior is controlled by `workflow.offerPrOnCompletion` and `workflow.autoCr
 Use `omnicode_migrate_root_plan` to copy an existing non-placeholder root plan into the active branch-scoped `.omni/work/<branch-slug>/` directory while keeping root files intact for compatibility.
 
 Branch-scoped runtime state under `.omni/runtime/<branch-slug-or-root>/STATE.md` is injected into OpenCode's compaction context, so active state survives long sessions without creating a shared root-state bottleneck.
+
+Run `/improve-codebase-architecture` when you want a review-only architecture pass. OmniCode will inspect docs/code and return numbered deepening opportunities, then wait for you to choose a candidate before treating any refactor as an implementation change.
 
 ## Quick usage
 

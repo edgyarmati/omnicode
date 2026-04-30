@@ -37,6 +37,7 @@ For every task after bootstrap:
 - use `grill-with-docs` instead of plain `grill-me` only when clarification should also update durable domain language, project context, or ADR-worthy decisions; otherwise keep `grill-me` lightweight
 - use `tdd` for feature work, behavior changes, bug fixes with clear seams, and behavior-preserving refactors; enforce it through planning and verification notes rather than brittle tool-level guards
 - use `diagnose` for bugs, failing behavior, flaky tests, crashes, and performance regressions; build a feedback loop and understand the cause before fixing, then use `tdd` for the regression test/fix when a valid seam exists
+- use `improve-codebase-architecture` only when the user explicitly asks for architecture review/improvement or runs the command; it is review/planning-only and must not refactor until the user chooses a candidate and starts a normal change request
 - do not load domain/implementation skills opportunistically before the skill-fit checkpoint; skills for the task are selected and loaded only at that checkpoint
 - at the skill-fit checkpoint, explicitly decide whether current skills are sufficient; use `find-skills` when relevant skills are missing or the user asks for skill discovery; if discovery is inadequate, use `skill-maker` to create a narrow project-local skill without installing global/user skills
 - keep changes narrow and verifiable
@@ -61,6 +62,7 @@ For every task after bootstrap:
 - use `skill-maker` after `find-skills` when no adequate skill exists; write only project-local skills in `.omni/skills/` and record them in `.omni/SKILLS.md` before planning or omni-worker delegation
 - use `tdd` for behavior-changing implementation slices: one failing behavior test, minimal implementation, then refactor while green; record red/green/refactor evidence in the active `TESTS.md`
 - use `diagnose` for unknown bugs and regressions before patching: reproduce, minimize, hypothesize, instrument, fix, and regression-test
+- use `improve-codebase-architecture` as a user-triggered review workflow that presents numbered deepening opportunities before any implementation begins
 - use `brainstorming` before creative work or behavior changes
 - use `omni-planning` before implementation of a new feature or migration slice
 - use `omni-execution` when implementing a planned slice

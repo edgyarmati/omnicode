@@ -222,6 +222,16 @@ const SKILL_RULES: Array<{ name: string; patterns: RegExp[]; reason: string; sco
     score: 6,
   },
   {
+    name: "improve-codebase-architecture",
+    patterns: [
+      /\b(improve|review|audit|assess|analyze|analyse|find)\b[^.!?\n]{0,120}\b(architecture|codebase architecture|module|modules|seams?|testability|refactor(?:ing)? opportunities|deepening opportunities)\b/iu,
+      /\b(architecture|codebase architecture|module|modules|seams?|testability|refactor(?:ing)? opportunities|deepening opportunities)\b[^.!?\n]{0,120}\b(improve|review|audit|assess|analyze|analyse|find)\b/iu,
+      /\b(shallow modules?|deep modules?|deepening|locality|leverage|deletion test)\b/iu,
+    ],
+    reason: "use a review-only workflow to find architecture deepening opportunities before any refactor",
+    score: 6,
+  },
+  {
     name: "brainstorming",
     patterns: [
       /\b(brainstorm|design|approach|option|trade-?off|migration|feature|behavior change|refactor)\b/iu,
@@ -813,7 +823,7 @@ export const OMNI_FILES: Record<string, string> = {
   "TESTS.md": "# Tests\n\n## Checks\n\n- [ ] define the checks to run after each implementation slice\n\n## Expected outcomes\n\nDescribe what passing looks like.\n",
   "DECISIONS.md": "# Decisions\n\nRecord important choices and why they were made.\n",
   "STANDARDS.md": "# Imported Standards\n\nRecord imported standards from AGENTS.md, CLAUDE.md, Cursor rules, and similar files.\n",
-  "SKILLS.md": "# Skills\n\n## Bundled\n\n- grill-me\n- grill-with-docs\n- find-skills\n- skill-maker\n- tdd\n- diagnose\n- brainstorming\n- omni-planning\n- omni-execution\n- omni-verification\n\n## Suggested For Current Work\n\n- None inferred from the current task yet.\n\n## Project Notes\n\nRecord required and project-specific skills here.\n",
+  "SKILLS.md": "# Skills\n\n## Bundled\n\n- grill-me\n- grill-with-docs\n- find-skills\n- skill-maker\n- tdd\n- diagnose\n- improve-codebase-architecture\n- brainstorming\n- omni-planning\n- omni-execution\n- omni-verification\n\n## Suggested For Current Work\n\n- None inferred from the current task yet.\n\n## Project Notes\n\nRecord required and project-specific skills here.\n",
   "CONFIG.md": "# Omni Configuration\n\nOmni Mode: on\n",
   VERSION: `${OMNI_VERSION}\n`,
 };
@@ -1293,6 +1303,7 @@ export async function updateSkillsFile(
     "- skill-maker",
     "- tdd",
     "- diagnose",
+    "- improve-codebase-architecture",
     "- brainstorming",
     "- omni-planning",
     "- omni-execution",

@@ -19,6 +19,7 @@
 - **TDD workflow skill** — added bundled `tdd` guidance for behavior-changing slices, with active-work `TESTS.md` expectations for red-green-refactor planning and verification.
 - **Diagnose workflow skill** — added bundled bug/performance-regression guidance for reproduce, minimize, hypothesize, instrument, fix, and regression-test loops.
 - **Grill-with-docs workflow skill** — added a documentation-aware clarification variant for domain language, durable context, and ADR-worthy decisions.
+- **Architecture improvement command** — added `/improve-codebase-architecture` as a review-only workflow that surfaces deepening opportunities before any refactor begins.
 
 ### Fixes
 
@@ -67,6 +68,7 @@
 - Added tests for `tdd` bundled skill memory and suggestion heuristics.
 - Added tests for `diagnose` bundled skill memory and suggestion heuristics.
 - Added tests for `grill-with-docs` bundled skill memory and suggestion heuristics.
+- Added tests for `improve-codebase-architecture` bundled skill memory, suggestion heuristics, and command registration.
 - Added tests for SKILLS project notes preservation and large repo-map file skipping.
 - Added tests for launcher `--check`/`--version` non-launching behavior.
 - Added tests for Windows-safe plugin shim import specifiers.

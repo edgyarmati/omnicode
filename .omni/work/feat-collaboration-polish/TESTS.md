@@ -29,11 +29,10 @@ Expected outcome: `grill-me` remains default; `grill-with-docs` is available for
 
 ## Slice 4 — Architecture improvement command
 
-- [ ] Add/update tests proving bundled skill listing/reading includes `improve-codebase-architecture`.
-- [ ] Add/update tests proving default generated `.omni/SKILLS.md` includes `improve-codebase-architecture`.
-- [ ] Add/update tests proving command registration includes `improve-codebase-architecture`.
-- [ ] Add/update tests proving suggestions route architecture/deepening/refactor-opportunity wording to the architecture skill.
-- [ ] Run `npm run check`.
-- [ ] Run `npm test`.
+- [x] Add/update tests proving bundled/default skill memory includes `improve-codebase-architecture`.
+- [x] Add/update tests proving command registration includes `improve-codebase-architecture`.
+- [x] Add/update tests proving suggestions route architecture/deepening/refactor-opportunity wording to the architecture skill.
+- [x] Run `npm run check`.
+- [x] Run `npm test`.
 
-Expected outcome: `/improve-codebase-architecture` is review/planning-only by default and produces candidates before any refactor change request begins.
+Expected outcome: `/improve-codebase-architecture` is review/planning-only by default and produces candidates before any refactor change request begins. Observed red first: tests failed before implementation because architecture skill memory, suggestion routing, and command registration were missing. After implementation, `npm run check` passed and `npm test` passed with launcher 10 tests and plugin 63 tests.
