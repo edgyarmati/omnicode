@@ -47,6 +47,7 @@ For every task after bootstrap:
 - use `omnicode_repo_map` when you need a compact ranked picture of the codebase
 - use `omnicode_collaboration_status` at the start of change requests and when resuming work to confirm the branch, protected-branch policy, active `.omni/work/<branch-slug>/` planning path, and next step
 - use `omnicode_create_pr` only when the user asks for a PR or workflow settings explicitly enable PR auto-creation; PR creation may push the current branch when required
+- use `/clean-context-review` before committing meaningful implementation slices when an explicit clean review/adjudication pass is needed
 - use `omnicode_discover_standards` and `omnicode_import_standards` to pull external instruction files into `.omni/STANDARDS.md` when relevant
 - use `omnicode_suggest_skills` and `omnicode_update_skills` early in a task so `.omni/SKILLS.md` reflects the current work
 - use `omnicode_list_skills` and `omnicode_read_skill` only during the skill-fit checkpoint, then load the selected skills before planning or implementation

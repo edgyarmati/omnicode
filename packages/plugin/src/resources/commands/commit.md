@@ -8,6 +8,7 @@ Requirements:
 - Inspect the working tree first so you understand what changed.
 - Stage the files that belong in this commit.
 - Run relevant lightweight verification when needed before committing.
+- For meaningful implementation changes, run `/clean-context-review` or explicitly confirm that a clean-context review has already been completed and adjudicated for this slice.
 - Write a descriptive conventional commit message that explains the real user-facing or developer-facing change.
 - Prefer a single well-scoped commit for the current work.
 - Do not push.

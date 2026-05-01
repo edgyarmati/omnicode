@@ -22,6 +22,7 @@
 - **Architecture improvement command** — added `/improve-codebase-architecture` as a review-only workflow that surfaces deepening opportunities before any refactor begins.
 - **OpenCode runtime target update** — bumped OmniCode's managed OpenCode runtime target from `1.14.25` to `1.14.30`.
 - **Single-writer subagent orchestration** — optional native subagents now emphasize read-only discovery, smart-friend planning critique, clean-context verification review, and primary-agent ownership of active-worktree writes and decisions; `omni-worker` is framed as exceptional one-slice help rather than a parallel writer swarm.
+- **Clean-context review command** — added `/clean-context-review` to standardize blind or contract diff review, finding severity/evidence/confidence reporting, and orchestrator adjudication before commit.
 
 ### Fixes
 
@@ -73,6 +74,7 @@
 - Added tests for `improve-codebase-architecture` bundled skill memory, suggestion heuristics, and command registration.
 - Added a launcher test that pins the expected managed OpenCode runtime target version.
 - Added tests that lock optional subagent prompts and orchestration instructions to the single-writer model.
+- Added tests for `/clean-context-review` command registration and commit workflow guidance.
 - Added tests for SKILLS project notes preservation and large repo-map file skipping.
 - Added tests for launcher `--check`/`--version` non-launching behavior.
 - Added tests for Windows-safe plugin shim import specifiers.

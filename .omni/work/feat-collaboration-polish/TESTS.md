@@ -65,3 +65,14 @@ Expected outcome: current branch includes the subagent workflow commits from mai
 - [x] Run `npm test`.
 
 Expected outcome: policy and workflow resources steer OmniCode toward intelligence subagents plus single-writer execution, with no new runtime enforcement/tools in this slice. Observed: `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 69 tests, `git diff --check` passed, and clean-context review found no blocking issues.
+
+## Slice 8 — Clean-context review command
+
+- [x] Add tests proving `OmniCodePlugin` registers `/clean-context-review` for the `omnicode` agent.
+- [x] Add tests proving the command template includes blind diff review, optional contract review, severity/evidence/confidence/blocking status, and orchestrator adjudication.
+- [x] Add tests proving `/commit` guidance requires running or explicitly accounting for clean-context review before commit.
+- [x] Run `npm run check`.
+- [x] Run `npm test`.
+- [x] Run `git diff --check`.
+
+Expected outcome: clean-context review has an explicit workflow command, while runtime enforcement and branch/worktree worker mode remain deferred. Observed: `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 70 tests, `git diff --check` passed, and clean-context review found only low-severity documentation/test-hardening items that were addressed.

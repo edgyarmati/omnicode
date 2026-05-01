@@ -40,6 +40,7 @@ omnicode
 - **TDD implementation discipline** — behavior-changing slices can be guided by a bundled red-green-refactor workflow, recorded in the active work `TESTS.md` before implementation.
 - **Disciplined diagnosis** — bug and performance-regression work can route through a reproduce → minimize → hypothesize → instrument → fix → regression-test loop before patching.
 - **Architecture review command** — `/improve-codebase-architecture` finds deepening opportunities and asks what to explore before any refactor starts.
+- **Clean-context review command** — `/clean-context-review` reviews the current diff/tests with fresh eyes and requires finding adjudication before commit.
 - **Optional native subagents** — `/omni-agents` can opt into read-only intelligence helpers (`omni-explorer`, `omni-planner`, `omni-verifier`) while preserving OmniCode's single-writer default; `omni-worker` is exceptional and one-slice-only.
 - **Plan before edit** — when Omni mode is on, the agent can't touch your files until `SPEC.md`, `TASKS.md`, and `TESTS.md` have real content.
 - **Repo awareness** — a ranked repo map keeps the agent oriented in large codebases.
@@ -70,6 +71,8 @@ Use `omnicode_migrate_root_plan` to copy an existing non-placeholder root plan i
 Branch-scoped runtime state under `.omni/runtime/<branch-slug-or-root>/STATE.md` is injected into OpenCode's compaction context, so active state survives long sessions without creating a shared root-state bottleneck.
 
 Run `/improve-codebase-architecture` when you want a review-only architecture pass. OmniCode will inspect docs/code and return numbered deepening opportunities, then wait for you to choose a candidate before treating any refactor as an implementation change.
+
+Run `/clean-context-review` before committing meaningful implementation changes when you want the review loop explicit. It inspects the current diff/tests in blind or contract mode, reports findings by severity with evidence and confidence, and requires the primary orchestrator to accept, reject, or escalate each finding before commit.
 
 Run `/omni-agents` to review or update optional native subagent settings. Settings are read from `~/.omnicode/settings.json` plus a gitignored project override at `.omnicode/settings.json`; optional model guidance can live in `model-recommendations.md` in either settings directory. OmniCode treats subagents as intelligence contributors by default: `omni-explorer` returns discovery packets, `omni-planner` critiques plans as a smart friend, and `omni-verifier` runs checks or clean-context review. Writes, commits, PR decisions, and final verification judgments stay with the primary orchestrator unless future branch/worktree-backed worker isolation is explicitly used.
 

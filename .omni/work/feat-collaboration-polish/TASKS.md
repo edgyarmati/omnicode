@@ -30,5 +30,5 @@
 ## Single-Writer Intelligence Orchestration
 
 - [x] Slice 7: policy/docs/tests only — reframe native subagent orchestration around single-writer ownership, read-only discovery/planning/verification, smart-friend guidance, clean-context review before commit, and branch-backed worker mode as later explicit isolation.
-- [ ] Later slice: implement runtime/tooling support for clean-context review loop if needed after policy guidance lands.
-- [ ] Later slice: design and implement explicit branch/worktree-backed worker mode before allowing parallel writer agents.
+- [x] Slice 8: add `/clean-context-review` workflow command, update commit/docs/tests/changelog, verify, clean-review, and commit.
+- [ ] Future research only: branch/worktree-backed worker mode if users need large multi-PR delegation; do not implement now.

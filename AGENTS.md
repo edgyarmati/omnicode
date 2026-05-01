@@ -105,6 +105,7 @@ Under `packages/plugin/src/resources/`:
 - `commands/commit.md`
 - `commands/push.md`
 - `commands/improve-codebase-architecture.md`
+- `commands/clean-context-review.md`
 - workflow skills:
   - `grill-me.md`
   - `grill-with-docs.md`
@@ -163,6 +164,7 @@ Verified in a real OpenCode runtime:
 - bundled `tdd` guidance is available for behavior-changing slices and records expectations in the active work `TESTS.md`
 - bundled `diagnose` guidance is available for bugs/performance regressions before patching
 - `/improve-codebase-architecture` is available as a review-only workflow command for architecture deepening opportunities
+- `/clean-context-review` is available as a review/adjudication-only workflow command for pre-commit diff review
 - optional native subagent guidance preserves a single active writer and adds clean-context review before commits
 - state/session-summary lifecycle tools work in tests and runtime
 - automated tests cover launcher config isolation, standards discovery/import, repo map generation, skill suggestion, lifecycle updates, and planning-artifact readiness

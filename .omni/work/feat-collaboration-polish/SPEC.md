@@ -164,3 +164,33 @@ Start with **policy + workflow enforcement surfaces** only:
 - Docs explain how Repo Prompt-style discovery/curation/handoff and Cognition-style single-writer review loops map to OmniCode.
 - Tests cover the updated orchestration prompt or generated config strings enough to prevent regression to casual parallel writers.
 - `npm run check` and `npm test` pass before commit.
+
+---
+
+## Current Implementation Task — Clean-Context Review Tooling
+
+### Problem
+
+The single-writer orchestration policy now requires clean-context review before committing meaningful implementation slices, but OmniCode only documents the expectation in general workflow guidance. Agents need an explicit command/workflow surface that standardizes how to review a diff with fresh context, adjudicate findings, rerun verification, and decide whether a commit is ready.
+
+### Requested Behavior
+
+- Add a bundled `/clean-context-review` command for the `omnicode` agent.
+- The command must be review/adjudication-only by default: inspect git status/diff and planned tests, review the diff with minimal prior assumptions, report findings by severity, and require the primary orchestrator to accept/reject findings before commit.
+- Update `/commit` guidance so commits run or explicitly account for clean-context review before creating a commit.
+- Update instructions/docs/changelog to surface the command.
+
+### Constraints
+
+- Keep this as workflow tooling/prompt guidance; do not add new runtime enforcement or branch/worktree worker support.
+- Do not let the review command edit files or commit directly.
+- Preserve existing command and tool names.
+
+### Success Criteria
+
+- `/clean-context-review` is registered as a command.
+- Command text includes blind diff review, optional contract review, finding severity/evidence/confidence/blocking status, and orchestrator adjudication.
+- `/commit` reminds agents to run or explicitly account for clean-context review before commit.
+- README/AGENTS/CHANGELOG mention the command.
+- Tests cover command registration and command/commit guidance.
+- `npm run check`, `npm test`, and whitespace checks pass.

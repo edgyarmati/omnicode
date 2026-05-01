@@ -834,6 +834,35 @@ test("OmniCodePlugin registers improve-codebase-architecture command", async () 
   });
 });
 
+test("OmniCodePlugin registers clean-context-review command and commit guidance", async () => {
+  await withTempDir(async (dir) => {
+    const plugin = await OmniCodePlugin({ directory: dir } as never);
+    const config = {} as {
+      command?: Record<string, { agent?: string; description?: string; template?: string }>;
+      agent?: Record<string, unknown>;
+      instructions?: string[];
+    };
+
+    await plugin.config?.(config as never);
+
+    const reviewCommand = config.command?.["clean-context-review"];
+    assert.equal(reviewCommand?.agent, "omnicode");
+    assert.match(reviewCommand?.description ?? "", /clean-context review/i);
+    assert.match(reviewCommand?.template ?? "", /Blind diff review/);
+    assert.match(reviewCommand?.template ?? "", /Contract review/);
+    assert.match(reviewCommand?.template ?? "", /Evidence:/);
+    assert.match(reviewCommand?.template ?? "", /Confidence:/);
+    assert.match(reviewCommand?.template ?? "", /Blocks commit:/);
+    assert.match(reviewCommand?.template ?? "", /adjudicate each finding before commit/);
+    assert.match(reviewCommand?.template ?? "", /do not edit files/i);
+    assert.match(reviewCommand?.template ?? "", /do not edit files or commit/i);
+
+    const commitCommand = config.command?.commit;
+    assert.match(commitCommand?.template ?? "", /clean-context-review/);
+    assert.match(commitCommand?.template ?? "", /completed and adjudicated/);
+  });
+});
+
 test("plugin config registers optional Omni subagents and omni-agents command", async () => {
   await withTempDir(async (dir) => {
     await mkdir(path.join(dir, ".omnicode"), { recursive: true });
