@@ -145,6 +145,7 @@ Current behavior:
 ## Documents to read first
 
 - `README.md`
+- `docs/current-orchestration-model.md`
 - `docs/2026-04-24-omnicode-design.md`
 - `docs/2026-04-30-collaborative-memory-design.md`
 - `docs/implementation-plan.md`

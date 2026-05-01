@@ -23,6 +23,7 @@
 - **OpenCode runtime target update** — bumped OmniCode's managed OpenCode runtime target from `1.14.25` to `1.14.30`.
 - **Single-writer subagent orchestration** — optional native subagents now emphasize read-only discovery, smart-friend planning critique, clean-context verification review, and primary-agent ownership of active-worktree writes and decisions; `omni-worker` is framed as exceptional one-slice help rather than a parallel writer swarm.
 - **Clean-context review command** — added `/clean-context-review` to standardize blind or contract diff review, finding severity/evidence/confidence reporting, and orchestrator adjudication before commit.
+- **Current orchestration model docs** — documented how the primary agent, optional read-only subagents, clean-context review, commit flow, and intentionally unimplemented writer-subagent mode work today.
 
 ### Fixes
 

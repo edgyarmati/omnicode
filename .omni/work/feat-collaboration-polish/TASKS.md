@@ -31,4 +31,5 @@
 
 - [x] Slice 7: policy/docs/tests only — reframe native subagent orchestration around single-writer ownership, read-only discovery/planning/verification, smart-friend guidance, clean-context review before commit, and branch-backed worker mode as later explicit isolation.
 - [x] Slice 8: add `/clean-context-review` workflow command, update commit/docs/tests/changelog, verify, clean-review, and commit.
+- [x] Slice 9: document the current orchestration model for maintainers and future users, verify, clean-review, and commit.
 - [ ] Future research only: branch/worktree-backed worker mode if users need large multi-PR delegation; do not implement now.

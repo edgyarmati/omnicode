@@ -76,3 +76,13 @@ Expected outcome: policy and workflow resources steer OmniCode toward intelligen
 - [x] Run `git diff --check`.
 
 Expected outcome: clean-context review has an explicit workflow command, while runtime enforcement and branch/worktree worker mode remain deferred. Observed: `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 70 tests, `git diff --check` passed, and clean-context review found only low-severity documentation/test-hardening items that were addressed.
+
+## Slice 9 — Current orchestration documentation
+
+- [x] Add or update docs explaining the current single-writer orchestration model.
+- [x] Verify README, AGENTS, and CHANGELOG reference the docs.
+- [x] Run `npm run check`.
+- [x] Run `npm test`.
+- [x] Run `git diff --check`.
+
+Expected outcome: future users understand that the primary `omnicode` agent owns active-worktree writes and decisions, subagents provide intelligence only, `/clean-context-review` supports review/adjudication, and writer subagent mode is intentionally not implemented. Observed: docs were added and linked; clean-context review found wording that implied future writer mode was usable, which was fixed; `npm run check`, `npm test`, and `git diff --check` passed.

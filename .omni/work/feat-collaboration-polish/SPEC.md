@@ -194,3 +194,29 @@ The single-writer orchestration policy now requires clean-context review before 
 - README/AGENTS/CHANGELOG mention the command.
 - Tests cover command registration and command/commit guidance.
 - `npm run check`, `npm test`, and whitespace checks pass.
+
+---
+
+## Current Documentation Task — Current Orchestration Model
+
+### Problem
+
+The implementation now encodes single-writer orchestration and clean-context review, but the current user-facing explanation is spread across README bullets, command text, and agent instructions. Maintainers and future users need one clear document explaining how the system actually works today, including what subagents can and cannot do.
+
+### Requested Behavior
+
+- Add a user-facing docs page that explains the current orchestration model.
+- Cover the primary `omnicode` agent, optional intelligence subagents, `/clean-context-review`, `/omni-agents`, and the reason branch/worktree-backed writer workers are not implemented.
+- Link the page from README and AGENTS.
+- Record the documentation update in CHANGELOG.
+
+### Constraints
+
+- Documentation-only change; do not change runtime behavior.
+- Be explicit that no subagent writer mode should be implemented as part of the current design.
+
+### Success Criteria
+
+- Docs explain current behavior and user commands clearly.
+- Docs state that `omni-worker` is not part of the intended normal workflow and branch/worktree-backed writer mode is intentionally not implemented.
+- README/AGENTS/CHANGELOG reference the documentation.

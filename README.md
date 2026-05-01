@@ -62,7 +62,7 @@ OpenCode still owns the terminal UI, models, providers, auth, sessions, tools, a
 7. **Execute** — work bounded task slices guided by the plan, with the primary `omnicode` agent as the active-worktree writer and decision owner by default.
 8. **Review and verify** — run planned checks, use clean-context review for meaningful implementation diffs, adjudicate findings, then update state/session summaries so the next run picks up where you left off.
 
-For collaborative repositories, see the planned per-branch work-memory model in [`docs/2026-04-30-collaborative-memory-design.md`](docs/2026-04-30-collaborative-memory-design.md).
+For the current subagent/orchestration model, see [`docs/current-orchestration-model.md`](docs/current-orchestration-model.md). For collaborative repositories, see the planned per-branch work-memory model in [`docs/2026-04-30-collaborative-memory-design.md`](docs/2026-04-30-collaborative-memory-design.md).
 OmniCode's collaboration checkpoint reports the current branch, protected-branch policy, active `.omni/work/<branch-slug>/` planning directory, planning readiness, and next recommended action when starting or resuming change work.
 Use `omnicode_start_work` to deliberately create or switch to a feature branch and initialize that branch's work-memory directory; it refuses dirty checkouts by default and suggests committing, stashing, or explicitly allowing dirty work.
 PR behavior is controlled by `workflow.offerPrOnCompletion` and `workflow.autoCreatePrOnCompletion`; by default OmniCode offers to open a PR when work is complete but does not create one unless asked.
@@ -74,7 +74,7 @@ Run `/improve-codebase-architecture` when you want a review-only architecture pa
 
 Run `/clean-context-review` before committing meaningful implementation changes when you want the review loop explicit. It inspects the current diff/tests in blind or contract mode, reports findings by severity with evidence and confidence, and requires the primary orchestrator to accept, reject, or escalate each finding before commit.
 
-Run `/omni-agents` to review or update optional native subagent settings. Settings are read from `~/.omnicode/settings.json` plus a gitignored project override at `.omnicode/settings.json`; optional model guidance can live in `model-recommendations.md` in either settings directory. OmniCode treats subagents as intelligence contributors by default: `omni-explorer` returns discovery packets, `omni-planner` critiques plans as a smart friend, and `omni-verifier` runs checks or clean-context review. Writes, commits, PR decisions, and final verification judgments stay with the primary orchestrator unless future branch/worktree-backed worker isolation is explicitly used.
+Run `/omni-agents` to review or update optional native subagent settings. Settings are read from `~/.omnicode/settings.json` plus a gitignored project override at `.omnicode/settings.json`; optional model guidance can live in `model-recommendations.md` in either settings directory. OmniCode treats subagents as intelligence contributors by default: `omni-explorer` returns discovery packets, `omni-planner` critiques plans as a smart friend, and `omni-verifier` runs checks or clean-context review. Writes, commits, PR decisions, and final verification judgments stay with the primary orchestrator. Branch/worktree-backed writer workers are not implemented.
 
 ## Quick usage
 
