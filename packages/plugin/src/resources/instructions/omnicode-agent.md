@@ -53,7 +53,7 @@ For every task after bootstrap:
 - use `omnicode_list_skills` and `omnicode_read_skill` only during the skill-fit checkpoint, then load the selected skills before planning or implementation
 - native OmniCode sub-agents are optional; when enabled, follow the single-writer invariant: `omnicode` remains the writer, synthesizer, and decision owner in the active worktree, while subagents inject intelligence and report back
 - prefer read-only intelligence delegation: use `omni-explorer` for evidence-backed discovery packets, `omni-planner` as a planning/smart-friend critic, and `omni-verifier` for checks or clean-context review; each report should include evidence, uncertainty, risks, and recommended next inspection
-- use `omni-worker` only as an exceptional one-slice helper when explicitly needed; do not use it for casual parallel writers or unstructured swarms in the same active worktree. Future parallel writer work should be isolated by explicit branch/worktree-backed workflow
+- there is no writer subagent role; do not delegate source edits, implementation ownership, commits, PR decisions, or final verification judgment to subagents
 - configure optional native sub-agents with `/omni-agents`; settings live in `~/.omnicode/settings.json` by default, with gitignored project overrides in `.omnicode/settings.json`
 - use `omnicode_update_state` when the current phase/task/next step changes materially
 - use `omnicode_append_session_summary` when finishing a slice or creating a meaningful handoff note
@@ -65,7 +65,7 @@ For every task after bootstrap:
 - use `grill-me` automatically before planning or implementing change requests so the agent and user are fully aligned
 - use `grill-with-docs` as an enhanced clarification variant when domain vocabulary, durable context, or ADR-worthy decisions should be captured during the interview
 - use `find-skills` during the skill-fit checkpoint when bundled/project skills do not cover the clarified task or when the user asks to find/install/remove skills
-- use `skill-maker` after `find-skills` when no adequate skill exists; write only project-local skills in `.omni/skills/` and record them in `.omni/SKILLS.md` before planning or omni-worker delegation
+- use `skill-maker` after `find-skills` when no adequate skill exists; write only project-local skills in `.omni/skills/` and record them in `.omni/SKILLS.md` before final planning
 - use `tdd` for behavior-changing implementation slices: one failing behavior test, minimal implementation, then refactor while green; record red/green/refactor evidence in the active `TESTS.md`
 - use `diagnose` for unknown bugs and regressions before patching: reproduce, minimize, hypothesize, instrument, fix, and regression-test
 - use `improve-codebase-architecture` as a user-triggered review workflow that presents numbered deepening opportunities before any implementation begins

@@ -41,7 +41,7 @@ omnicode
 - **Disciplined diagnosis** — bug and performance-regression work can route through a reproduce → minimize → hypothesize → instrument → fix → regression-test loop before patching.
 - **Architecture review command** — `/improve-codebase-architecture` finds deepening opportunities and asks what to explore before any refactor starts.
 - **Clean-context review command** — `/clean-context-review` reviews the current diff/tests with fresh eyes and requires finding adjudication before commit.
-- **Optional native subagents** — `/omni-agents` can opt into read-only intelligence helpers (`omni-explorer`, `omni-planner`, `omni-verifier`) while preserving OmniCode's single-writer default; `omni-worker` is exceptional and one-slice-only.
+- **Optional native subagents** — `/omni-agents` can opt into read-only intelligence helpers (`omni-explorer`, `omni-planner`, `omni-verifier`) while preserving OmniCode's single-writer default. There is no writer subagent role.
 - **Plan before edit** — when Omni mode is on, the agent can't touch your files until `SPEC.md`, `TASKS.md`, and `TESTS.md` have real content.
 - **Repo awareness** — a ranked repo map keeps the agent oriented in large codebases.
 - **Skill discovery and local creation** — relevant skills are surfaced and loaded automatically; if discovery cannot find a fit, OmniCode can write a narrow local skill under `.omni/skills/` without touching global user skills.
@@ -74,7 +74,7 @@ Run `/improve-codebase-architecture` when you want a review-only architecture pa
 
 Run `/clean-context-review` before committing meaningful implementation changes when you want the review loop explicit. It inspects the current diff/tests in blind or contract mode, reports findings by severity with evidence and confidence, and requires the primary orchestrator to accept, reject, or escalate each finding before commit.
 
-Run `/omni-agents` to review or update optional native subagent settings. Settings are read from `~/.omnicode/settings.json` plus a gitignored project override at `.omnicode/settings.json`; optional model guidance can live in `model-recommendations.md` in either settings directory. OmniCode treats subagents as intelligence contributors by default: `omni-explorer` returns discovery packets, `omni-planner` critiques plans as a smart friend, and `omni-verifier` runs checks or clean-context review. Writes, commits, PR decisions, and final verification judgments stay with the primary orchestrator. Branch/worktree-backed writer workers are not implemented.
+Run `/omni-agents` to review or update optional native subagent settings. Settings are read from `~/.omnicode/settings.json` plus a gitignored project override at `.omnicode/settings.json`; optional model guidance can live in `model-recommendations.md` in either settings directory. OmniCode treats subagents as intelligence contributors by default: `omni-explorer` returns discovery packets, `omni-planner` critiques plans as a smart friend, and `omni-verifier` runs checks or clean-context review. Writes, commits, PR decisions, and final verification judgments stay with the primary orchestrator. Writer subagents are not implemented.
 
 ## Quick usage
 

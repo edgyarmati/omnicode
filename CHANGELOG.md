@@ -21,7 +21,7 @@
 - **Grill-with-docs workflow skill** — added a documentation-aware clarification variant for domain language, durable context, and ADR-worthy decisions.
 - **Architecture improvement command** — added `/improve-codebase-architecture` as a review-only workflow that surfaces deepening opportunities before any refactor begins.
 - **OpenCode runtime target update** — bumped OmniCode's managed OpenCode runtime target from `1.14.25` to `1.14.30`.
-- **Single-writer subagent orchestration** — optional native subagents now emphasize read-only discovery, smart-friend planning critique, clean-context verification review, and primary-agent ownership of active-worktree writes and decisions; `omni-worker` is framed as exceptional one-slice help rather than a parallel writer swarm.
+- **Single-writer subagent orchestration** — optional native subagents now emphasize read-only discovery, smart-friend planning critique, clean-context verification review, and primary-agent ownership of active-worktree writes and decisions; the legacy writer subagent role was removed.
 - **Clean-context review command** — added `/clean-context-review` to standardize blind or contract diff review, finding severity/evidence/confidence reporting, and orchestrator adjudication before commit.
 - **Current orchestration model docs** — documented how the primary agent, optional read-only subagents, clean-context review, commit flow, and intentionally unimplemented writer-subagent mode work today.
 

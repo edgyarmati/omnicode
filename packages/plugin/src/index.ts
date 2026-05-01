@@ -83,7 +83,7 @@ export type RuntimePaths = {
   sessionSummaryPath: string;
 };
 
-export type OmniSubagentName = "omni-explorer" | "omni-planner" | "omni-verifier" | "omni-worker";
+export type OmniSubagentName = "omni-explorer" | "omni-planner" | "omni-verifier";
 
 export type WorkflowSettings = {
   protectedBranches: string[];
@@ -146,7 +146,6 @@ const OMNI_SUBAGENT_NAMES: OmniSubagentName[] = [
   "omni-explorer",
   "omni-planner",
   "omni-verifier",
-  "omni-worker",
 ];
 
 type OmniAgentConfig = {
@@ -187,16 +186,6 @@ const OMNI_SUBAGENT_DEFAULTS: Record<OmniSubagentName, OmniAgentConfig> = {
       "Do not edit source files, relax tests, commit, or decide scope; report findings back so the orchestrator can adjudicate accepted vs rejected findings.",
     ].join("\n\n"),
     permission: { read: "allow", glob: "allow", grep: "allow", list: "allow", bash: "allow", edit: "deny", task: "deny", todowrite: "deny" },
-  },
-  "omni-worker": {
-    description: "Exceptional implementation helper for one explicitly assigned slice; not for casual parallel writes in the active worktree.",
-    mode: "subagent",
-    prompt: [
-      "You are omni-worker, an implementation subagent for OmniCode.",
-      "Use this role only when the orchestrator explicitly assigns one bounded implementation slice. Do not run as part of an unstructured swarm or parallel writer group in the same active worktree.",
-      "Execute exactly the assigned slice, keep changes narrow, and report changed files, verification performed, and remaining risks. Do not broaden scope, continue to the next slice, commit, or make final verification decisions. Future parallel writer work should be isolated by explicit branch/worktree-backed workflow.",
-    ].join("\n\n"),
-    permission: { read: "allow", glob: "allow", grep: "allow", list: "allow", bash: "allow", edit: "allow", task: "deny", todowrite: "deny" },
   },
 };
 
@@ -361,7 +350,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function taskPermissionForOmniSubagents(): Record<string, "allow" | "deny"> {
-  return { "*": "deny", "omni-explorer": "allow", "omni-planner": "allow", "omni-verifier": "allow", "omni-worker": "allow" };
+  return { "*": "deny", "omni-explorer": "allow", "omni-planner": "allow", "omni-verifier": "allow" };
 }
 
 function modelForSubagent(settings: OmniCodeSettings, agentName: OmniSubagentName): string | undefined {
@@ -380,7 +369,7 @@ function orchestrationPrompt(basePrompt: string): string {
     "Single-writer invariant: the primary omnicode agent is the writer, synthesizer, and decision owner in the active worktree by default. Subagents inject intelligence; they do not own product decisions, commits, PR decisions, or final verification judgments.",
     "Prefer read-only intelligence delegation: use omni-explorer for discovery packets, omni-planner as a planning/smart-friend critic, and omni-verifier for checks or clean-context review. Require concise reports with evidence, uncertainty, risks, and recommended next inspection.",
     "Before committing meaningful implementation slices, run planned checks, request clean-context review of the diff/tests, adjudicate accepted vs rejected findings, fix accepted issues, and rerun verification.",
-    "Use omni-worker only as an exceptional one-slice helper when explicitly needed; do not use it for casual parallel writers in the same active worktree. Future parallel writer work should be isolated by an explicit branch/worktree-backed workflow.",
+    "There is no writer subagent role. Do not delegate source edits or implementation ownership to subagents; the primary omnicode agent remains the only active-worktree writer.",
   ].join("\n\n");
 }
 
@@ -486,10 +475,10 @@ export async function readOmniCodeSettings(
       ...defaultAgentsSettings(),
       ...(globalSettings.agents ?? {}),
       ...(projectSettings.agents ?? {}),
-      models: {
-        ...(globalSettings.agents?.models ?? {}),
-        ...(projectSettings.agents?.models ?? {}),
-      },
+      models: cleanModelPatch({
+        ...(globalSettings.agents?.models as Partial<Record<OmniSubagentName, string>> | undefined ?? {}),
+        ...(projectSettings.agents?.models as Partial<Record<OmniSubagentName, string>> | undefined ?? {}),
+      }),
     },
   };
 }
@@ -549,7 +538,11 @@ export async function updateOmniCodeAgentsSettings(directory: string, patch: Omn
   if (typeof patch.enabled === "boolean") nextAgents.enabled = patch.enabled;
   if (typeof patch.defaultModel === "string" && patch.defaultModel.trim().length > 0) nextAgents.defaultModel = patch.defaultModel.trim();
   const modelPatch = cleanModelPatch(patch.models);
-  if (Object.keys(modelPatch).length > 0) nextAgents.models = { ...(isRecord(rawAgents.models) ? rawAgents.models : {}), ...modelPatch };
+  const cleanedModels = { ...cleanModelPatch(rawAgents.models as Partial<Record<OmniSubagentName, string>> | undefined), ...modelPatch };
+  if (isRecord(rawAgents.models) || Object.keys(modelPatch).length > 0) {
+    if (Object.keys(cleanedModels).length > 0) nextAgents.models = cleanedModels;
+    else delete nextAgents.models;
+  }
   await writeFileAtomic(outputPath, `${JSON.stringify({ ...rawSettings, agents: nextAgents }, null, 2)}\n`);
   if (scope === "project") await ensureOmniCodeProjectGitignore(directory);
   return { scope, outputPath, settings: await readOmniCodeSettings(directory, options) };
@@ -1957,7 +1950,6 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
               "omni-explorer": tool.schema.string().optional(),
               "omni-planner": tool.schema.string().optional(),
               "omni-verifier": tool.schema.string().optional(),
-              "omni-worker": tool.schema.string().optional(),
             })
             .optional()
             .describe("Optional per-subagent model overrides."),

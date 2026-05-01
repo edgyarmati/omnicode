@@ -75,7 +75,7 @@ Expected outcome: policy and workflow resources steer OmniCode toward intelligen
 - [x] Run `npm test`.
 - [x] Run `git diff --check`.
 
-Expected outcome: clean-context review has an explicit workflow command, while runtime enforcement and branch/worktree worker mode remain deferred. Observed: `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 70 tests, `git diff --check` passed, and clean-context review found only low-severity documentation/test-hardening items that were addressed.
+Expected outcome: clean-context review has an explicit workflow command, while writer-subagent mode remains out of scope. Observed: `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 70 tests, `git diff --check` passed, and clean-context review found only low-severity documentation/test-hardening items that were addressed.
 
 ## Slice 9 — Current orchestration documentation
 
@@ -86,3 +86,15 @@ Expected outcome: clean-context review has an explicit workflow command, while r
 - [x] Run `git diff --check`.
 
 Expected outcome: future users understand that the primary `omnicode` agent owns active-worktree writes and decisions, subagents provide intelligence only, `/clean-context-review` supports review/adjudication, and writer subagent mode is intentionally not implemented. Observed: docs were added and linked; clean-context review found wording that implied future writer mode was usable, which was fixed; `npm run check`, `npm test`, and `git diff --check` passed.
+
+## Slice 10 — Remove writer subagent scope
+
+- [x] Remove the legacy writer subagent from source, settings schemas, docs, skills, and tests.
+- [x] Add/update tests proving optional subagents register only explorer/planner/verifier and task permissions exclude worker.
+- [x] Add/update tests proving stale writer-subagent model settings are ignored/cleaned.
+- [x] Run `npm run check`.
+- [x] Run `npm test`.
+- [x] Run `git diff --check`.
+- [x] Search for active references to the removed writer-subagent name.
+
+Expected outcome: OmniCode has no writer-subagent surface; optional native subagents are intelligence-only. Observed: source/settings/docs/tests were cleaned, stale model keys are filtered on read/write, `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 70 tests, `git diff --check` passed, and search for the removed writer-subagent name returned no matches.

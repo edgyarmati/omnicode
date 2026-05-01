@@ -111,7 +111,7 @@ The current `feat/collaboration-polish` branch diverged before main merged the s
 
 ### Problem
 
-OmniCode now has optional native subagents (`omni-explorer`, `omni-planner`, `omni-verifier`, `omni-worker`), but the orchestration guidance still permits implementation delegation as a normal subagent path. Recent practical multi-agent guidance and Repo Prompt's context-engineering workflows point toward a safer model: context gathering and critique can be parallelized, but writes and final decisions should stay single-threaded unless work is explicitly isolated by branch/worktree.
+OmniCode now has optional native subagents (`omni-explorer`, `omni-planner`, `omni-verifier`), and the orchestration guidance must stay aligned with a no-writer-subagent model. Recent practical multi-agent guidance and Repo Prompt's context-engineering workflows point toward a safer model: context gathering and critique can be parallelized, but writes and final decisions should stay single-threaded with the primary `omnicode` agent.
 
 ### Requested Behavior
 
@@ -133,9 +133,9 @@ Reframe OmniCode orchestration around **single-writer intelligence injection**:
    - After implementing and running planned checks, invoke a clean-context review pass before committing meaningful implementation slices.
    - Reviewer should inspect the diff/tests with minimal prior context, report bugs/edge cases/security/test gaps, and let the orchestrator adjudicate accepted vs rejected findings.
 
-5. **Branch-backed worker mode is an explicit later/advanced mode**
-   - `omni-worker` should no longer be framed as the ordinary way to parallelize implementation in the active worktree.
-   - If worker writes are needed, they should be isolated by explicit branch/worktree-backed workflow in a later runtime/tooling slice.
+5. **No writer subagent role**
+   - Optional subagents are intelligence helpers only.
+   - Do not add worker swarms, implementation subagents, or alternate writer modes.
 
 ### First Implementation Scope
 
@@ -143,7 +143,7 @@ Start with **policy + workflow enforcement surfaces** only:
 
 - Update bundled agent instructions and relevant workflow skills/commands.
 - Update README/AGENTS/CHANGELOG to describe the new single-writer orchestration model.
-- Update subagent descriptions/prompts/permissions where needed so default `omni-worker` usage is discouraged or made explicitly single-slice/exceptional.
+- Update subagent descriptions/prompts/permissions so only intelligence-helper subagents are exposed.
 - Add tests around generated agent config/instructions and bundled resources where practical.
 - Do not add new runtime tools, worktree management, or hard plugin enforcement in the first slice.
 
@@ -152,17 +152,17 @@ Start with **policy + workflow enforcement surfaces** only:
 - Keep OpenCode as the host and OmniCode as the workflow layer.
 - Preserve public tool and command names.
 - Keep existing optional subagent settings compatibility.
-- Do not remove `omni-worker`; narrow and reframe it.
+- Remove legacy writer-subagent concepts instead of keeping compatibility placeholders.
 - Keep changes narrow enough to verify with `npm run check` and `npm test`.
 - Update `CHANGELOG.md` for the committed slice.
 
 ### Success Criteria
 
-- Agent instructions state the single-writer invariant and distinguish read-only intelligence subagents from branch-backed writer isolation.
-- Subagent prompts/descriptions make `omni-explorer`, `omni-planner`, and `omni-verifier` advisory/read-only and make `omni-worker` exceptional, single-slice, and non-parallel by default.
+- Agent instructions state the single-writer invariant and distinguish read-only intelligence subagents from writer subagents.
+- Subagent prompts/descriptions make `omni-explorer`, `omni-planner`, and `omni-verifier` advisory/read-only, with no writer subagent role.
 - Verification workflow guidance includes clean-context review/adjudication before commit for implementation slices.
 - Docs explain how Repo Prompt-style discovery/curation/handoff and Cognition-style single-writer review loops map to OmniCode.
-- Tests cover the updated orchestration prompt or generated config strings enough to prevent regression to casual parallel writers.
+- Tests cover the updated orchestration prompt or generated config strings enough to prevent regression to writer subagents.
 - `npm run check` and `npm test` pass before commit.
 
 ---
@@ -182,7 +182,7 @@ The single-writer orchestration policy now requires clean-context review before 
 
 ### Constraints
 
-- Keep this as workflow tooling/prompt guidance; do not add new runtime enforcement or branch/worktree worker support.
+- Keep this as workflow tooling/prompt guidance; do not add new runtime enforcement or writer-subagent support.
 - Do not let the review command edit files or commit directly.
 - Preserve existing command and tool names.
 
@@ -206,7 +206,7 @@ The implementation now encodes single-writer orchestration and clean-context rev
 ### Requested Behavior
 
 - Add a user-facing docs page that explains the current orchestration model.
-- Cover the primary `omnicode` agent, optional intelligence subagents, `/clean-context-review`, `/omni-agents`, and the reason branch/worktree-backed writer workers are not implemented.
+- Cover the primary `omnicode` agent, optional intelligence subagents, `/clean-context-review`, `/omni-agents`, and the reason writer subagents are not implemented.
 - Link the page from README and AGENTS.
 - Record the documentation update in CHANGELOG.
 
@@ -218,5 +218,34 @@ The implementation now encodes single-writer orchestration and clean-context rev
 ### Success Criteria
 
 - Docs explain current behavior and user commands clearly.
-- Docs state that `omni-worker` is not part of the intended normal workflow and branch/worktree-backed writer mode is intentionally not implemented.
+- Docs state that writer subagents are intentionally not implemented.
 - README/AGENTS/CHANGELOG reference the documentation.
+
+---
+
+## Current Implementation Task — Remove Legacy Writer Subagent Scope
+
+### Problem
+
+The current code still exposes a legacy writer subagent even though OmniCode's intended model is single-writer orchestration with intelligence-only subagents. Keeping that compatibility placeholder creates confusion and implies writer subagents remain in scope.
+
+### Requested Behavior
+
+- Remove the legacy writer subagent from subagent types, defaults, task permissions, settings schemas, `/omni-agents` guidance, tests, and docs.
+- Remove writer-worker roadmap references from active docs and planning notes.
+- Keep only `omni-explorer`, `omni-planner`, and `omni-verifier` as optional native subagents.
+- Update `skill-maker` and any durable notes that mention the legacy writer subagent.
+
+### Constraints
+
+- No legacy compatibility required.
+- Do not add a replacement writer-subagent path.
+- Keep the primary `omnicode` agent as the only active-worktree writer.
+
+### Success Criteria
+
+- Searching source/docs for the removed writer-subagent name returns no active references.
+- Optional subagent config registers only explorer, planner, and verifier.
+- Tests cover settings cleanup and task permission removal.
+- README/AGENTS/current orchestration docs clearly describe intelligence-only subagents.
+- `npm run check`, `npm test`, and whitespace checks pass.

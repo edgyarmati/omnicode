@@ -24,13 +24,13 @@ For `setup`:
    - enable native OmniCode sub-agents?
    - write global settings or project override?
    - use the invoking/orchestrator model for sub-agents, or choose a shared default model?
-   - optionally choose per-agent models for `omni-explorer`, `omni-planner`, `omni-verifier`, and `omni-worker`.
-5. Explain the orchestration model before recommending models: OmniCode uses a single-writer invariant. The primary `omnicode` agent remains the active-worktree writer and decision owner; subagents are primarily read-only intelligence contributors. `omni-worker` is exceptional, one-slice-only, and not a casual parallel writer mode.
+   - optionally choose per-agent models for `omni-explorer`, `omni-planner`, and `omni-verifier`.
+5. Explain the orchestration model before recommending models: OmniCode uses a single-writer invariant. The primary `omnicode` agent remains the active-worktree writer and decision owner; subagents are read-only intelligence contributors. There is no writer subagent role.
 6. Recommend sensible models using, in order:
     - project `model-recommendations.md`
     - global `model-recommendations.md`
     - visible `opencode models` output
-    - general heuristics: cheaper/faster for `omni-explorer`, stronger reasoning for `omni-planner` smart-friend critique, reliable/tool-capable for `omni-verifier` clean-context review/checks, and strongest coding model for exceptional `omni-worker` use.
+    - general heuristics: cheaper/faster for `omni-explorer`, stronger reasoning for `omni-planner` smart-friend critique, and reliable/tool-capable for `omni-verifier` clean-context review/checks.
 7. Call `omnicode_update_agents_settings` with only the selected values. Do not write bundled prompt/default agent definitions into settings.
 8. Explain that settings take effect after OpenCode reloads plugin configuration (usually a new OmniCode/OpenCode session).
 

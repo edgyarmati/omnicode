@@ -222,18 +222,19 @@ test("readOmniCodeSettings ignores invalid workflow settings", async () => {
 
 test("readOmniCodeSettings merges agent settings with project override precedence", async () => {
   await withTempDir(async (dir) => {
+    const removedWriterName = ["omni", "worker"].join("-");
     const homeDir = path.join(dir, "home");
     const projectDir = path.join(dir, "project");
     await mkdir(path.join(homeDir, ".omnicode"), { recursive: true });
     await mkdir(path.join(projectDir, ".omnicode"), { recursive: true });
     await writeFile(
       path.join(homeDir, ".omnicode", "settings.json"),
-      JSON.stringify({ agents: { enabled: true, defaultModel: "anthropic/global-default", models: { "omni-explorer": "anthropic/global-explorer", "omni-worker": "anthropic/global-worker" } } }, null, 2),
+        JSON.stringify({ agents: { enabled: true, defaultModel: "anthropic/global-default", models: { "omni-explorer": "anthropic/global-explorer", [removedWriterName]: "anthropic/legacy-writer" } } }, null, 2),
       "utf8",
     );
     await writeFile(
       path.join(projectDir, ".omnicode", "settings.json"),
-      JSON.stringify({ agents: { enabled: false, models: { "omni-worker": "openai/project-worker" } } }, null, 2),
+        JSON.stringify({ agents: { enabled: false, models: { "omni-verifier": "openai/project-verifier", [removedWriterName]: "openai/legacy-writer" } } }, null, 2),
       "utf8",
     );
 
@@ -243,7 +244,7 @@ test("readOmniCodeSettings merges agent settings with project override precedenc
     assert.equal(settings.agents.defaultModel, "anthropic/global-default");
     assert.deepEqual(settings.agents.models, {
       "omni-explorer": "anthropic/global-explorer",
-      "omni-worker": "openai/project-worker",
+      "omni-verifier": "openai/project-verifier",
     });
   });
 });
@@ -263,18 +264,21 @@ test("ensureOmniCodeProjectGitignore adds project .omnicode settings directory",
 
 test("updateOmniCodeAgentsSettings writes scoped settings without copying agent defaults", async () => {
   await withTempDir(async (dir) => {
+    const removedWriterName = ["omni", "worker"].join("-");
     const homeDir = path.join(dir, "home");
     const projectDir = path.join(dir, "project");
+    await mkdir(path.dirname(resolveProjectSettingsPath(projectDir)), { recursive: true });
+    await writeFile(resolveProjectSettingsPath(projectDir), JSON.stringify({ agents: { models: { [removedWriterName]: "openai/legacy-writer" } } }, null, 2), "utf8");
 
     const globalResult = await updateOmniCodeAgentsSettings(projectDir, { scope: "global", enabled: true, defaultModel: "anthropic/subagents" }, { homeDir });
-    const projectResult = await updateOmniCodeAgentsSettings(projectDir, { scope: "project", models: { "omni-worker": "openai/worker" } }, { homeDir });
+    const projectResult = await updateOmniCodeAgentsSettings(projectDir, { scope: "project", models: { "omni-verifier": "openai/verifier" } }, { homeDir });
 
     const globalFile = JSON.parse(await readFile(globalResult.outputPath, "utf8"));
     const projectFile = JSON.parse(await readFile(projectResult.outputPath, "utf8"));
     const gitignore = await readFile(path.join(projectDir, ".gitignore"), "utf8");
 
     assert.deepEqual(globalFile, { agents: { enabled: true, defaultModel: "anthropic/subagents" } });
-    assert.deepEqual(projectFile, { agents: { models: { "omni-worker": "openai/worker" } } });
+    assert.deepEqual(projectFile, { agents: { models: { "omni-verifier": "openai/verifier" } } });
     assert.match(gitignore, /^\.omnicode\/$/m);
   });
 });
@@ -865,36 +869,35 @@ test("OmniCodePlugin registers clean-context-review command and commit guidance"
 
 test("plugin config registers optional Omni subagents and omni-agents command", async () => {
   await withTempDir(async (dir) => {
+    const removedWriterName = ["omni", "worker"].join("-");
     await mkdir(path.join(dir, ".omnicode"), { recursive: true });
     await writeFile(
       path.join(dir, ".omnicode", "settings.json"),
-      JSON.stringify({ agents: { enabled: true, defaultModel: "anthropic/shared-subagent", models: { "omni-worker": "openai/worker-model" } } }, null, 2),
+      JSON.stringify({ agents: { enabled: true, defaultModel: "anthropic/shared-subagent", models: { "omni-verifier": "openai/verifier-model", [removedWriterName]: "openai/legacy-writer-model" } } }, null, 2),
       "utf8",
     );
 
     const config = await buildPluginConfig(dir);
     const agents = config.agent ?? {};
-    for (const agentName of ["omni-explorer", "omni-planner", "omni-verifier", "omni-worker"]) {
+    for (const agentName of ["omni-explorer", "omni-planner", "omni-verifier"]) {
       assert.equal(agents[agentName]?.mode, "subagent");
       assert.equal(typeof agents[agentName]?.description, "string");
       assert.equal(typeof agents[agentName]?.prompt, "string");
     }
     assert.equal(agents["omni-explorer"]?.model, "anthropic/shared-subagent");
-    assert.equal(agents["omni-worker"]?.model, "openai/worker-model");
+    assert.equal(agents["omni-verifier"]?.model, "openai/verifier-model");
+    assert.equal(agents[removedWriterName], undefined);
     assert.match(String(agents.omnicode?.prompt), /Single-writer invariant/);
     assert.match(String(agents.omnicode?.prompt), /clean-context review/);
-    assert.match(String(agents.omnicode?.prompt), /branch\/worktree-backed workflow/);
+    assert.match(String(agents.omnicode?.prompt), /There is no writer subagent role/);
     assert.match(String(agents["omni-explorer"]?.prompt), /discovery packet/);
     assert.match(String(agents["omni-explorer"]?.prompt), /single writer/);
     assert.match(String(agents["omni-planner"]?.prompt), /smart-friend/);
     assert.match(String(agents["omni-planner"]?.prompt), /rather than guessing/);
     assert.match(String(agents["omni-verifier"]?.prompt), /clean-context review/);
     assert.match(String(agents["omni-verifier"]?.prompt), /adjudicate accepted vs rejected/);
-    assert.match(String(agents["omni-worker"]?.description), /Exceptional implementation helper/);
-    assert.match(String(agents["omni-worker"]?.prompt), /unstructured swarm/);
-    assert.match(String(agents["omni-worker"]?.prompt), /branch\/worktree-backed workflow/);
     assert.deepEqual(agents.omnicode?.permission, {
-      task: { "*": "deny", "omni-explorer": "allow", "omni-planner": "allow", "omni-verifier": "allow", "omni-worker": "allow" },
+      task: { "*": "deny", "omni-explorer": "allow", "omni-planner": "allow", "omni-verifier": "allow" },
     });
 
     const command = config.command?.["omni-agents"];
@@ -903,7 +906,7 @@ test("plugin config registers optional Omni subagents and omni-agents command", 
     assert.match(String(command?.template), /opencode models/);
     assert.match(String(command?.template), /omnicode_update_agents_settings/);
     assert.match(String(command?.template), /single-writer invariant/);
-    assert.match(String(command?.template), /not a casual parallel writer mode/);
+    assert.match(String(command?.template), /There is no writer subagent role/);
   });
 });
 
@@ -914,7 +917,7 @@ test("verification and agent instruction resources require clean-context review 
 
   assert.match(agentInstructions, /single-writer invariant/);
   assert.match(agentInstructions, /clean-context review before commit/);
-  assert.match(agentInstructions, /casual parallel writers or unstructured swarms/);
+  assert.match(agentInstructions, /there is no writer subagent role/);
   assert.match(verificationSkill, /clean-context review of the diff\/tests/);
   assert.match(verificationSkill, /adjudicate accepted vs rejected findings/);
 });

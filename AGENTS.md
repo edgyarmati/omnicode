@@ -86,7 +86,7 @@ Current features:
 - adds active `.omni/runtime/<branch-slug-or-root>/STATE.md` into compaction context
 - guards `write` / `edit` when Omni mode is on and planning artifacts are missing
 - placeholder bootstrap planning files are not enough; source edits require real planning content
-- optional native subagents follow a single-writer model: `omni-explorer`, `omni-planner`, and `omni-verifier` are read-only/advisory intelligence helpers by default; `omni-worker` is exceptional and one-slice-only, not a casual parallel writer swarm
+- optional native subagents follow a single-writer model: `omni-explorer`, `omni-planner`, and `omni-verifier` are read-only/advisory intelligence helpers; there is no writer subagent role
 
 Planning artifacts currently required before source editing:
 - `.omni/SPEC.md`

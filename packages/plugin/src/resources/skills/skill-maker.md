@@ -1,6 +1,6 @@
 # skill-maker
 
-Use during the post-grill skill-fit checkpoint after `find-skills` cannot identify an adequate existing skill for the clarified task. Creates narrow project-local skills so the main agent and omni-worker subagents can start with the missing expertise already available.
+Use during the post-grill skill-fit checkpoint after `find-skills` cannot identify an adequate existing skill for the clarified task. Creates narrow project-local skills so the main agent can start with the missing expertise already available.
 
 Purpose:
 - Turn missing task expertise into a reusable local skill before planning or implementation.
@@ -13,7 +13,7 @@ Workflow:
 3. Choose a short kebab-case skill name that describes the missing capability.
 4. Create `.omni/skills/<skill-name>/SKILL.md` with YAML frontmatter and concise instructions.
 5. Record the new skill in `.omni/SKILLS.md` under project notes or current-work suggestions, including when to load it.
-6. Load/use the local skill before final planning and before delegating to omni-worker subagents.
+6. Load/use the local skill before final planning.
 
 Skill shape:
 

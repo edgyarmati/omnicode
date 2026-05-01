@@ -142,7 +142,7 @@ After `grill-me` and before writing final planning artifacts, OmniCode must perf
 
 ### Problem
 
-The skill-fit checkpoint can discover missing skill coverage with `find-skills`, but it has no automatic fallback when no adequate skill exists or when an existing skill should not be installed globally. OmniCode needs a workflow-native way to create narrow, reusable, project-local skills before planning and before any worker subagents start execution.
+The skill-fit checkpoint can discover missing skill coverage with `find-skills`, but it has no automatic fallback when no adequate skill exists or when an existing skill should not be installed globally. OmniCode needs a workflow-native way to create narrow, reusable, project-local skills before planning and implementation.
 
 ### Requested Behavior
 
@@ -152,7 +152,7 @@ After `grill-me` clarification and during the skill-fit checkpoint:
 2. If coverage is insufficient, use `find-skills` to look for existing relevant skills first.
 3. If no adequate existing skill is available, automatically use a new bundled `skill-maker` workflow skill.
 4. `skill-maker` researches the missing expertise, preferably with a research/explore subagent when subagent-driven development is available, otherwise inline in the main agent.
-5. `skill-maker` writes a narrow project-local skill under `.omni/skills/<skill-name>/SKILL.md` and records it in `.omni/SKILLS.md` so the main agent and future omni-worker subagents can load the needed context from the start.
+5. `skill-maker` writes a narrow project-local skill under `.omni/skills/<skill-name>/SKILL.md` and records it in `.omni/SKILLS.md` so the main agent can load the needed context from the start.
 6. Generated project-local skills must not be installed globally or mutate the user's global skill directories.
 
 ### Reference Model

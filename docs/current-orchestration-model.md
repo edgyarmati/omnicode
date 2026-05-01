@@ -21,7 +21,7 @@ The current model is designed to get the practical benefits of multi-agent work 
 
 ## The primary `omnicode` agent
 
-The primary agent is the orchestrator and the only normal active-worktree writer.
+The primary agent is the orchestrator and the active-worktree writer.
 
 It owns:
 
@@ -39,7 +39,7 @@ When in doubt, the primary agent decides what becomes an action.
 
 ## Optional native subagents
 
-Native subagents are optional and configured through `/omni-agents`. This is a configuration surface for intelligence helpers; it does not enable parallel writer mode.
+Native subagents are optional and configured through `/omni-agents`. This is a configuration surface for intelligence helpers; it does not enable any writer role.
 
 Settings live outside durable project memory:
 
@@ -111,14 +111,6 @@ Use it for:
 
 It must not edit source, relax tests, commit, or decide scope. It reports findings so the primary agent can adjudicate them.
 
-### `omni-worker`
-
-`omni-worker` exists for compatibility with the current optional subagent configuration surface, but it is **not** part of the intended normal workflow.
-
-Do not use it as a casual writer subagent. Do not run parallel worker swarms in the active worktree.
-
-The current intended workflow does not require using `omni-worker`. Its presence does not mean branch/worktree-backed writer mode exists or should be implemented. The primary agent remains responsible for all active-worktree writes, verification decisions, and commits.
-
 ## Clean-context review
 
 Use `/clean-context-review` before committing meaningful implementation changes when an explicit review loop is useful.
@@ -159,9 +151,9 @@ The `/commit` command reminds agents to run `/clean-context-review` or explicitl
 
 ## What is intentionally not implemented
 
-OmniCode does **not** implement branch/worktree-backed writer workers.
+OmniCode does **not** implement writer subagents.
 
-That idea would mean spawning a subagent that writes code in its own branch or worktree and then asking the primary agent to synthesize its changes later. It is safer than shared-worktree writer swarms, but it is still a writer-subagent model.
+Any agent that writes code independently is a writer-subagent model, so it is out of scope for the current system.
 
 Current guidance is to avoid implementing it. The practical system is:
 
@@ -171,7 +163,7 @@ Current guidance is to avoid implementing it. The practical system is:
 - optional clean-context verifier/reviewer
 - primary-agent adjudication and commits
 
-If future users ask for large multi-PR delegation, revisit the design explicitly. Until then, do not add writer-subagent orchestration.
+Do not add writer-subagent orchestration unless the product direction is explicitly reopened.
 
 ## User commands
 
@@ -186,6 +178,6 @@ When changing orchestration behavior, preserve these invariants:
 - The primary `omnicode` agent is the active-worktree writer by default.
 - Subagents contribute intelligence and report back.
 - Reviewers do not edit or commit.
-- `omni-worker` is not promoted as a normal path.
+- No writer subagent role exists.
 - No unstructured multi-agent writer swarms.
-- No branch/worktree-backed writer mode unless a future design explicitly reopens that decision.
+- No writer-subagent mode.
