@@ -46,3 +46,12 @@ Expected outcome: `/improve-codebase-architecture` is review/planning-only by de
 - [x] Run `npm test`.
 
 Expected outcome: managed OpenCode runtime target is `1.14.30`, OmniCode package versions remain `0.3.0`, and verification passes. Observed red first: launcher test failed while target was `1.14.25`; after updating, `npm run check` passed and `npm test` passed with launcher 11 tests and plugin 63 tests.
+
+## Slice 6 — Main subagent workflow integration
+
+- [x] Merge `origin/main` into the current branch.
+- [x] Confirm `git log HEAD..origin/main` is empty after merge commit.
+- [x] Run `npm run check`.
+- [x] Run `npm test`.
+
+Expected outcome: current branch includes the subagent workflow commits from main and all checks pass. Observed: merge conflicts were resolved by combining workflow/collaboration features with subagent settings/tools. `npm run check` passed and `npm test` passed with launcher 11 tests and plugin 68 tests. After merge commit `49ddfa9`, `git log HEAD..origin/main` is empty.

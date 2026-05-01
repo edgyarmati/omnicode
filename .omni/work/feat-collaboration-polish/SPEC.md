@@ -78,3 +78,29 @@ OmniCode's launcher pins the managed upstream OpenCode runtime target at `1.14.2
 - Tests that cover release/runtime metadata pass.
 - `CHANGELOG.md` records the OpenCode target update.
 - `npm run check` and `npm test` pass.
+
+---
+
+## Current Integration Task — Main Subagent Workflow Commits
+
+### Problem
+
+The current `feat/collaboration-polish` branch diverged before main merged the subagent workflow PR. The branch lacks the main commits for OmniCode settings primitives, optional omni subagents, and the `/omni-agents` setup command.
+
+### Requested Behavior
+
+- Integrate `origin/main` into `feat/collaboration-polish`.
+- Preserve the collaboration-polish workflow changes and the subagent workflow changes from main.
+- Resolve any conflicts narrowly.
+
+### Constraints
+
+- Do not rewrite history or force-push.
+- Keep the integration as a normal merge commit if needed.
+- Verify with `npm run check` and `npm test` after integration.
+
+### Success Criteria
+
+- The branch contains main commits `d0c2a63`, `18b5e26`, `ff88213`, and merge `7fef2e1` or their merged content.
+- `git log HEAD..origin/main` is empty after integration.
+- Verification passes.

@@ -18,3 +18,9 @@
 ## OpenCode Target Version Update
 
 - [x] Slice 5: update managed OpenCode target to `1.14.30`, adjust tests/docs/changelog if needed, verify, and commit.
+
+---
+
+## Main Subagent Workflow Integration
+
+- [x] Slice 6: merge `origin/main` into `feat/collaboration-polish`, resolve conflicts, verify, and commit merge.

@@ -49,6 +49,8 @@ For every task after bootstrap:
 - use `omnicode_discover_standards` and `omnicode_import_standards` to pull external instruction files into `.omni/STANDARDS.md` when relevant
 - use `omnicode_suggest_skills` and `omnicode_update_skills` early in a task so `.omni/SKILLS.md` reflects the current work
 - use `omnicode_list_skills` and `omnicode_read_skill` only during the skill-fit checkpoint, then load the selected skills before planning or implementation
+- native OmniCode sub-agents are optional; when enabled, treat `omnicode` as the orchestrator and use `omni-explorer`, `omni-planner`, `omni-verifier`, and `omni-worker` only for bounded assignments that report back to you
+- configure optional native sub-agents with `/omni-agents`; settings live in `~/.omnicode/settings.json` by default, with gitignored project overrides in `.omnicode/settings.json`
 - use `omnicode_update_state` when the current phase/task/next step changes materially
 - use `omnicode_append_session_summary` when finishing a slice or creating a meaningful handoff note
 - prefer updating `.omni/` first instead of holding the plan only in transient chat context
