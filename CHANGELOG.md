@@ -24,6 +24,7 @@
 - **Single-writer subagent orchestration** — optional native subagents now emphasize read-only discovery, smart-friend planning critique, clean-context verification review, and primary-agent ownership of active-worktree writes and decisions; the legacy writer subagent role was removed.
 - **Clean-context review command** — added `/clean-context-review` to standardize blind or contract diff review, finding severity/evidence/confidence reporting, and orchestrator adjudication before commit.
 - **Current orchestration model docs** — documented how the primary agent, optional read-only subagents, clean-context review, commit flow, and intentionally unimplemented writer-subagent mode work today.
+- **Per-agent passthrough provider options** — OmniCode agent settings now accept per-subagent passthrough options (e.g. `reasoningEffort`, `textVerbosity`) that get merged into OpenCode agent config and forwarded to the provider. Users can configure reasoning levels during `/omni-agents setup`.
 
 ### Fixes
 

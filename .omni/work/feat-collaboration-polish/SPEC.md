@@ -249,3 +249,37 @@ The current code still exposes a legacy writer subagent even though OmniCode's i
 - Tests cover settings cleanup and task permission removal.
 - README/AGENTS/current orchestration docs clearly describe intelligence-only subagents.
 - `npm run check`, `npm test`, and whitespace checks pass.
+
+---
+
+## Current Implementation Task — Per-Agent Passthrough Provider Options
+
+### Problem
+
+OmniCode's agent settings only support per-agent model IDs. OpenCode supports passthrough provider options like `reasoningEffort` and `textVerbosity` on agent config — any extra keys on the agent config get forwarded to the provider. Users want to configure per-agent reasoning levels (e.g. high thinking for planner, low thinking for verifier) but the current plugin has no surface for this.
+
+### Requested Behavior
+
+- Extend OmniCode's agent settings schema with a per-agent `options` field that accepts arbitrary key-value pairs.
+- Merge per-agent options into the OpenCode agent config during `buildSubagentConfig`.
+- Update `omnicode_update_agents_settings` tool to accept and persist options.
+- Update `omnicode_agents_status` tool to report per-agent options.
+- Preserve existing behavior when no options are set.
+
+### Constraints
+
+- Do not validate provider-specific options — just pass through.
+- Keep the change narrow: settings types, parse/normalize, buildSubagentConfig, and tool schema.
+- Do not change existing public tool names or behavior when options are absent.
+- Update `CHANGELOG.md`.
+- Verify each slice with `npm run check` and `npm test` before committing.
+
+### Success Criteria
+
+- `OmniCodeSettings.agents` includes an `options` field.
+- `buildSubagentConfig` merges per-agent options into the returned agent config.
+- `omnicode_update_agents_settings` accepts an `options` parameter and persists it to settings.
+- `omnicode_agents_status` reports effective per-agent options.
+- Settings merge global and project options with project override precedence.
+- Tests cover option parsing, persistence, merging, and passthrough into agent config.
+- `npm run check` and `npm test` pass.

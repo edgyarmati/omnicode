@@ -98,3 +98,15 @@ Expected outcome: future users understand that the primary `omnicode` agent owns
 - [x] Search for active references to the removed writer-subagent name.
 
 Expected outcome: OmniCode has no writer-subagent surface; optional native subagents are intelligence-only. Observed: source/settings/docs/tests were cleaned, stale model keys are filtered on read/write, `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 70 tests, `git diff --check` passed, and search for the removed writer-subagent name returned no matches.
+
+## Slice 11 — Per-agent passthrough provider options
+
+- [ ] Add tests proving `readOmniCodeSettings` parses and merges per-agent `options` from global and project settings.
+- [ ] Add tests proving `updateOmniCodeAgentsSettings` persists and cleans per-agent options.
+- [ ] Add tests proving `buildSubagentConfig` merges per-agent options into the returned agent config (e.g. `reasoningEffort`).
+- [ ] Add tests proving plugin config passes per-agent options through to OpenCode agent config.
+- [ ] Add tests proving `omnicode_agents_status` reports effective per-agent options.
+- [ ] Run `npm run check`.
+- [ ] Run `npm test`.
+
+Expected outcome: users can set per-agent provider options like `reasoningEffort` and they get merged into the OpenCode agent config as passthrough keys. Settings without options continue to work as before. Observed: `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 74 tests.

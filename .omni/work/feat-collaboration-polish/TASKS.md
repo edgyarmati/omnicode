@@ -33,3 +33,9 @@
 - [x] Slice 8: add `/clean-context-review` workflow command, update commit/docs/tests/changelog, verify, clean-review, and commit.
 - [x] Slice 9: document the current orchestration model for maintainers and future users, verify, clean-review, and commit.
 - [x] Slice 10: remove the legacy writer subagent and all writer-subagent roadmap references from code, docs, settings schema, tests, and skills.
+
+---
+
+## Per-Agent Passthrough Provider Options
+
+- [x] Slice 11: extend settings types with per-agent `options`, update parse/normalize/buildSubagentConfig, update tool schemas and output, add tests, update CHANGELOG, verify, clean-review, and commit.

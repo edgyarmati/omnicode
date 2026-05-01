@@ -99,6 +99,7 @@ export type OmniCodeSettings = {
     enabled: boolean;
     defaultModel?: string;
     models: Partial<Record<OmniSubagentName, string>>;
+    options: Partial<Record<OmniSubagentName, Record<string, unknown>>>;
   };
 };
 
@@ -109,6 +110,7 @@ export type OmniCodeAgentsSettingsPatch = {
   enabled?: boolean;
   defaultModel?: string;
   models?: Partial<Record<OmniSubagentName, string>>;
+  options?: Partial<Record<OmniSubagentName, Record<string, unknown>>>;
 };
 
 export type OmniCodeModelRecommendations = {
@@ -122,6 +124,7 @@ type RawOmniCodeSettings = {
     enabled?: unknown;
     defaultModel?: unknown;
     models?: unknown;
+    options?: unknown;
   };
 };
 
@@ -359,7 +362,12 @@ function modelForSubagent(settings: OmniCodeSettings, agentName: OmniSubagentNam
 
 function buildSubagentConfig(settings: OmniCodeSettings, agentName: OmniSubagentName): OmniAgentConfig {
   const model = modelForSubagent(settings, agentName);
-  return { ...OMNI_SUBAGENT_DEFAULTS[agentName], ...(model ? { model } : {}) };
+  const agentOptions = settings.agents.options[agentName];
+  return {
+    ...OMNI_SUBAGENT_DEFAULTS[agentName],
+    ...(model ? { model } : {}),
+    ...(agentOptions && Object.keys(agentOptions).length > 0 ? agentOptions : {}),
+  };
 }
 
 function orchestrationPrompt(basePrompt: string): string {
@@ -383,8 +391,20 @@ function normalizeAgentModels(value: unknown): Partial<Record<OmniSubagentName, 
   return models;
 }
 
+function normalizeAgentOptions(value: unknown): Partial<Record<OmniSubagentName, Record<string, unknown>>> {
+  if (!isRecord(value)) return {};
+  const options: Partial<Record<OmniSubagentName, Record<string, unknown>>> = {};
+  for (const agentName of OMNI_SUBAGENT_NAMES) {
+    const agentOptions = value[agentName];
+    if (isRecord(agentOptions) && Object.keys(agentOptions).length > 0) {
+      options[agentName] = agentOptions as Record<string, unknown>;
+    }
+  }
+  return options;
+}
+
 function defaultAgentsSettings(): OmniCodeSettings["agents"] {
-  return { enabled: false, models: {} };
+  return { enabled: false, models: {}, options: {} };
 }
 
 function parseAgentsSettings(value: unknown): Partial<OmniCodeSettings["agents"]> {
@@ -393,6 +413,7 @@ function parseAgentsSettings(value: unknown): Partial<OmniCodeSettings["agents"]
   if (typeof value.enabled === "boolean") parsed.enabled = value.enabled;
   if (typeof value.defaultModel === "string" && value.defaultModel.trim().length > 0) parsed.defaultModel = value.defaultModel.trim();
   parsed.models = normalizeAgentModels(value.models);
+  parsed.options = normalizeAgentOptions(value.options);
   return parsed;
 }
 
@@ -479,6 +500,10 @@ export async function readOmniCodeSettings(
         ...(globalSettings.agents?.models as Partial<Record<OmniSubagentName, string>> | undefined ?? {}),
         ...(projectSettings.agents?.models as Partial<Record<OmniSubagentName, string>> | undefined ?? {}),
       }),
+      options: cleanOptionsPatch({
+        ...(globalSettings.agents?.options as Partial<Record<OmniSubagentName, Record<string, unknown>>> | undefined ?? {}),
+        ...(projectSettings.agents?.options as Partial<Record<OmniSubagentName, Record<string, unknown>>> | undefined ?? {}),
+      }),
     },
   };
 }
@@ -518,6 +543,19 @@ function cleanModelPatch(models: Partial<Record<OmniSubagentName, string>> | und
   return cleaned;
 }
 
+function cleanOptionsPatch(
+  agentOptions: Partial<Record<OmniSubagentName, Record<string, unknown>>> | undefined,
+): Partial<Record<OmniSubagentName, Record<string, unknown>>> {
+  const cleaned: Partial<Record<OmniSubagentName, Record<string, unknown>>> = {};
+  for (const agentName of OMNI_SUBAGENT_NAMES) {
+    const opts = agentOptions?.[agentName];
+    if (isRecord(opts) && Object.keys(opts).length > 0) {
+      cleaned[agentName] = opts;
+    }
+  }
+  return cleaned;
+}
+
 export async function ensureOmniCodeProjectGitignore(directory: string): Promise<string> {
   const gitignorePath = path.join(directory, ".gitignore");
   let existing = "";
@@ -542,6 +580,12 @@ export async function updateOmniCodeAgentsSettings(directory: string, patch: Omn
   if (isRecord(rawAgents.models) || Object.keys(modelPatch).length > 0) {
     if (Object.keys(cleanedModels).length > 0) nextAgents.models = cleanedModels;
     else delete nextAgents.models;
+  }
+  const optionsPatch = cleanOptionsPatch(patch.options);
+  const cleanedOptions = { ...cleanOptionsPatch(rawAgents.options as Partial<Record<OmniSubagentName, Record<string, unknown>>> | undefined), ...optionsPatch };
+  if (isRecord(rawAgents.options) || Object.keys(optionsPatch).length > 0) {
+    if (Object.keys(cleanedOptions).length > 0) nextAgents.options = cleanedOptions;
+    else delete nextAgents.options;
   }
   await writeFileAtomic(outputPath, `${JSON.stringify({ ...rawSettings, agents: nextAgents }, null, 2)}\n`);
   if (scope === "project") await ensureOmniCodeProjectGitignore(directory);
@@ -1776,14 +1820,15 @@ function isPotentiallyMutatingBashCommand(command: string): boolean {
   );
 }
 
-export const OmniCodePlugin: Plugin = async ({ directory }) => {
+export const OmniCodePlugin: Plugin = async ({ directory }, options) => {
+  const settingsHomeDir = options?.homeDir as string | undefined;
   const commands = await loadCommands();
   const instructionPrompt = await readInstructionPrompt();
   const rtkAvailable = await checkRtkAvailable();
 
   return {
     async config(config) {
-      const settings = await readOmniCodeSettings(directory);
+      const settings = await readOmniCodeSettings(directory, { homeDir: settingsHomeDir });
       config.agent = config.agent ?? {};
       config.command = config.command ?? {};
       config.instructions = Array.isArray(config.instructions)
@@ -1878,7 +1923,7 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
         throw new Error(planningGuardMessage(planningReadiness));
       }
 
-      const settings = await readOmniCodeSettings(directory);
+      const settings = await readOmniCodeSettings(directory, { homeDir: settingsHomeDir });
       await assertProtectedBranchAllowsMutation(directory, settings);
 
       if (rtkAvailable && input.tool === "bash" && commandKey && typeof args[commandKey] === "string") {
@@ -1926,7 +1971,7 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
         description: "Read effective OmniCode sub-agent settings from global and project settings files.",
         args: {},
         async execute() {
-          const settings = await readOmniCodeSettings(directory);
+          const settings = await readOmniCodeSettings(directory, { homeDir: settingsHomeDir });
           const recommendations = await readOmniCodeModelRecommendations(directory);
           return [
             `Effective agents.enabled: ${settings.agents.enabled}`,
@@ -1934,6 +1979,7 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
             `Project override: ${resolveProjectSettingsPath(directory)}`,
             `Default model: ${settings.agents.defaultModel ?? "inherit invoking model"}`,
             `Per-agent models: ${Object.keys(settings.agents.models).length > 0 ? JSON.stringify(settings.agents.models) : "none"}`,
+            `Per-agent options: ${Object.keys(settings.agents.options).length > 0 ? JSON.stringify(settings.agents.options) : "none"}`,
             `Model recommendations: ${recommendations.sourcePath ?? "none found"}`,
           ].join("\n");
         },
@@ -1953,6 +1999,14 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
             })
             .optional()
             .describe("Optional per-subagent model overrides."),
+          options: tool.schema
+            .object({
+              "omni-explorer": tool.schema.record(tool.schema.string(), tool.schema.unknown()).optional(),
+              "omni-planner": tool.schema.record(tool.schema.string(), tool.schema.unknown()).optional(),
+              "omni-verifier": tool.schema.record(tool.schema.string(), tool.schema.unknown()).optional(),
+            })
+            .optional()
+            .describe("Optional per-subagent passthrough provider options (e.g. reasoningEffort, textVerbosity)."),
         },
         async execute(args) {
           const result = await updateOmniCodeAgentsSettings(directory, {
@@ -1960,12 +2014,14 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
             enabled: args.enabled,
             defaultModel: args.defaultModel,
             models: args.models as Partial<Record<OmniSubagentName, string>> | undefined,
+            options: args.options as Partial<Record<OmniSubagentName, Record<string, unknown>>> | undefined,
           });
           return [
             `Updated ${result.scope} OmniCode agent settings: ${result.outputPath}`,
             `Effective agents.enabled: ${result.settings.agents.enabled}`,
             `Default model: ${result.settings.agents.defaultModel ?? "inherit invoking model"}`,
             `Per-agent models: ${Object.keys(result.settings.agents.models).length > 0 ? JSON.stringify(result.settings.agents.models) : "none"}`,
+            `Per-agent options: ${Object.keys(result.settings.agents.options).length > 0 ? JSON.stringify(result.settings.agents.options) : "none"}`,
           ].join("\n");
         },
       }),
@@ -1992,7 +2048,7 @@ export const OmniCodePlugin: Plugin = async ({ directory }) => {
           await ensureOmniDir(directory);
           const [stateSummary, settings] = await Promise.all([
             readStateSummary(directory),
-            readOmniCodeSettings(directory),
+            readOmniCodeSettings(directory, { homeDir: settingsHomeDir }),
           ]);
           return `${stateSummary.trimEnd()}\n\n${formatWorkflowSettingsStatus(settings)}`;
         },
