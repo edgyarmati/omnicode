@@ -40,7 +40,7 @@ omnicode
 - **TDD implementation discipline** — behavior-changing slices can be guided by a bundled red-green-refactor workflow, recorded in the active work `TESTS.md` before implementation.
 - **Disciplined diagnosis** — bug and performance-regression work can route through a reproduce → minimize → hypothesize → instrument → fix → regression-test loop before patching.
 - **Architecture review command** — `/improve-codebase-architecture` finds deepening opportunities and asks what to explore before any refactor starts.
-- **Optional native subagents** — `/omni-agents` can opt into `omni-explorer`, `omni-planner`, `omni-verifier`, and `omni-worker` for bounded delegation.
+- **Optional native subagents** — `/omni-agents` can opt into read-only intelligence helpers (`omni-explorer`, `omni-planner`, `omni-verifier`) while preserving OmniCode's single-writer default; `omni-worker` is exceptional and one-slice-only.
 - **Plan before edit** — when Omni mode is on, the agent can't touch your files until `SPEC.md`, `TASKS.md`, and `TESTS.md` have real content.
 - **Repo awareness** — a ranked repo map keeps the agent oriented in large codebases.
 - **Skill discovery and local creation** — relevant skills are surfaced and loaded automatically; if discovery cannot find a fit, OmniCode can write a narrow local skill under `.omni/skills/` without touching global user skills.
@@ -58,8 +58,8 @@ OpenCode still owns the terminal UI, models, providers, auth, sessions, tools, a
 4. **Plan** — write real `SPEC.md`, `TASKS.md`, and `TESTS.md` in the active planning directory. Until you do, the edit/write guard is active.
 5. **Test-drive when applicable** — for behavior-changing slices, record the behavior, public seam, expected red failure, focused test command, and verification command in `TESTS.md`.
 6. **Diagnose before patching** — for unknown bugs and regressions, establish a feedback loop and cause before writing the fix.
-7. **Execute** — work bounded task slices guided by the plan.
-8. **Verify** — state and session summaries are updated through OmniCode tools so the next run picks up where you left off.
+7. **Execute** — work bounded task slices guided by the plan, with the primary `omnicode` agent as the active-worktree writer and decision owner by default.
+8. **Review and verify** — run planned checks, use clean-context review for meaningful implementation diffs, adjudicate findings, then update state/session summaries so the next run picks up where you left off.
 
 For collaborative repositories, see the planned per-branch work-memory model in [`docs/2026-04-30-collaborative-memory-design.md`](docs/2026-04-30-collaborative-memory-design.md).
 OmniCode's collaboration checkpoint reports the current branch, protected-branch policy, active `.omni/work/<branch-slug>/` planning directory, planning readiness, and next recommended action when starting or resuming change work.
@@ -71,7 +71,7 @@ Branch-scoped runtime state under `.omni/runtime/<branch-slug-or-root>/STATE.md`
 
 Run `/improve-codebase-architecture` when you want a review-only architecture pass. OmniCode will inspect docs/code and return numbered deepening opportunities, then wait for you to choose a candidate before treating any refactor as an implementation change.
 
-Run `/omni-agents` to review or update optional native subagent settings. Settings are read from `~/.omnicode/settings.json` plus a gitignored project override at `.omnicode/settings.json`; optional model guidance can live in `model-recommendations.md` in either settings directory.
+Run `/omni-agents` to review or update optional native subagent settings. Settings are read from `~/.omnicode/settings.json` plus a gitignored project override at `.omnicode/settings.json`; optional model guidance can live in `model-recommendations.md` in either settings directory. OmniCode treats subagents as intelligence contributors by default: `omni-explorer` returns discovery packets, `omni-planner` critiques plans as a smart friend, and `omni-verifier` runs checks or clean-context review. Writes, commits, PR decisions, and final verification judgments stay with the primary orchestrator unless future branch/worktree-backed worker isolation is explicitly used.
 
 ## Quick usage
 

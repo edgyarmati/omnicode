@@ -852,6 +852,18 @@ test("plugin config registers optional Omni subagents and omni-agents command", 
     }
     assert.equal(agents["omni-explorer"]?.model, "anthropic/shared-subagent");
     assert.equal(agents["omni-worker"]?.model, "openai/worker-model");
+    assert.match(String(agents.omnicode?.prompt), /Single-writer invariant/);
+    assert.match(String(agents.omnicode?.prompt), /clean-context review/);
+    assert.match(String(agents.omnicode?.prompt), /branch\/worktree-backed workflow/);
+    assert.match(String(agents["omni-explorer"]?.prompt), /discovery packet/);
+    assert.match(String(agents["omni-explorer"]?.prompt), /single writer/);
+    assert.match(String(agents["omni-planner"]?.prompt), /smart-friend/);
+    assert.match(String(agents["omni-planner"]?.prompt), /rather than guessing/);
+    assert.match(String(agents["omni-verifier"]?.prompt), /clean-context review/);
+    assert.match(String(agents["omni-verifier"]?.prompt), /adjudicate accepted vs rejected/);
+    assert.match(String(agents["omni-worker"]?.description), /Exceptional implementation helper/);
+    assert.match(String(agents["omni-worker"]?.prompt), /unstructured swarm/);
+    assert.match(String(agents["omni-worker"]?.prompt), /branch\/worktree-backed workflow/);
     assert.deepEqual(agents.omnicode?.permission, {
       task: { "*": "deny", "omni-explorer": "allow", "omni-planner": "allow", "omni-verifier": "allow", "omni-worker": "allow" },
     });
@@ -861,7 +873,21 @@ test("plugin config registers optional Omni subagents and omni-agents command", 
     assert.match(String(command?.template), /omnicode_agents_status/);
     assert.match(String(command?.template), /opencode models/);
     assert.match(String(command?.template), /omnicode_update_agents_settings/);
+    assert.match(String(command?.template), /single-writer invariant/);
+    assert.match(String(command?.template), /not a casual parallel writer mode/);
   });
+});
+
+test("verification and agent instruction resources require clean-context review before commit", async () => {
+  const resourcesDir = path.join(process.cwd(), "src", "resources");
+  const agentInstructions = await readFile(path.join(resourcesDir, "instructions", "omnicode-agent.md"), "utf8");
+  const verificationSkill = await readFile(path.join(resourcesDir, "skills", "omni-verification.md"), "utf8");
+
+  assert.match(agentInstructions, /single-writer invariant/);
+  assert.match(agentInstructions, /clean-context review before commit/);
+  assert.match(agentInstructions, /casual parallel writers or unstructured swarms/);
+  assert.match(verificationSkill, /clean-context review of the diff\/tests/);
+  assert.match(verificationSkill, /adjudicate accepted vs rejected findings/);
 });
 
 test("suggestSkills recommends find-skills for skill discovery and removal requests", async () => {

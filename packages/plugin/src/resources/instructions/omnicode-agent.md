@@ -26,9 +26,10 @@ For every task after bootstrap:
 8. break work into bounded slices in the active `TASKS.md`
 9. for implementation slices where behavior can be tested, use `tdd`: record the behavior, public seam, expected red failure, focused command, and verification command in the active `TESTS.md`; if TDD is not applicable, record why
 10. implement one slice at a time
-11. verify the slice and record progress in `.omni/STATE.md` and `.omni/SESSION-SUMMARY.md`
-12. **commit the slice** — after each slice is verified, commit the changes before moving to the next one
-13. when the work is complete, respect workflow PR settings: offer to open a PR when `offerPrOnCompletion` is enabled, create one automatically only when `autoCreatePrOnCompletion` is explicitly enabled, and otherwise wait for the user to ask
+11. verify the slice, then run a clean-context review before commit for meaningful implementation changes: inspect the diff/tests with minimal prior context, adjudicate accepted vs rejected findings, fix accepted findings, and rerun verification
+12. record progress in `.omni/STATE.md` and `.omni/SESSION-SUMMARY.md`
+13. **commit the slice** — after each slice is verified and review findings are adjudicated, commit the changes before moving to the next one
+14. when the work is complete, respect workflow PR settings: offer to open a PR when `offerPrOnCompletion` is enabled, create one automatically only when `autoCreatePrOnCompletion` is explicitly enabled, and otherwise wait for the user to ask
 
 ## Rules
 
@@ -49,7 +50,9 @@ For every task after bootstrap:
 - use `omnicode_discover_standards` and `omnicode_import_standards` to pull external instruction files into `.omni/STANDARDS.md` when relevant
 - use `omnicode_suggest_skills` and `omnicode_update_skills` early in a task so `.omni/SKILLS.md` reflects the current work
 - use `omnicode_list_skills` and `omnicode_read_skill` only during the skill-fit checkpoint, then load the selected skills before planning or implementation
-- native OmniCode sub-agents are optional; when enabled, treat `omnicode` as the orchestrator and use `omni-explorer`, `omni-planner`, `omni-verifier`, and `omni-worker` only for bounded assignments that report back to you
+- native OmniCode sub-agents are optional; when enabled, follow the single-writer invariant: `omnicode` remains the writer, synthesizer, and decision owner in the active worktree, while subagents inject intelligence and report back
+- prefer read-only intelligence delegation: use `omni-explorer` for evidence-backed discovery packets, `omni-planner` as a planning/smart-friend critic, and `omni-verifier` for checks or clean-context review; each report should include evidence, uncertainty, risks, and recommended next inspection
+- use `omni-worker` only as an exceptional one-slice helper when explicitly needed; do not use it for casual parallel writers or unstructured swarms in the same active worktree. Future parallel writer work should be isolated by explicit branch/worktree-backed workflow
 - configure optional native sub-agents with `/omni-agents`; settings live in `~/.omnicode/settings.json` by default, with gitignored project overrides in `.omnicode/settings.json`
 - use `omnicode_update_state` when the current phase/task/next step changes materially
 - use `omnicode_append_session_summary` when finishing a slice or creating a meaningful handoff note

@@ -55,3 +55,13 @@ Expected outcome: managed OpenCode runtime target is `1.14.30`, OmniCode package
 - [x] Run `npm test`.
 
 Expected outcome: current branch includes the subagent workflow commits from main and all checks pass. Observed: merge conflicts were resolved by combining workflow/collaboration features with subagent settings/tools. `npm run check` passed and `npm test` passed with launcher 11 tests and plugin 68 tests. After merge commit `49ddfa9`, `git log HEAD..origin/main` is empty.
+
+## Slice 7 — Single-writer intelligence orchestration policy
+
+- [x] Update tests proving generated Omni agent instructions/config include the single-writer invariant and do not encourage casual parallel implementation in the active worktree.
+- [x] Update tests proving subagent prompts/descriptions keep explorer/planner/verifier advisory/read-only and make worker usage exceptional/single-slice by default.
+- [x] Verify docs/resources mention clean-context review/adjudication before commit for implementation slices.
+- [x] Run `npm run check`.
+- [x] Run `npm test`.
+
+Expected outcome: policy and workflow resources steer OmniCode toward intelligence subagents plus single-writer execution, with no new runtime enforcement/tools in this slice. Observed: `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 69 tests, `git diff --check` passed, and clean-context review found no blocking issues.

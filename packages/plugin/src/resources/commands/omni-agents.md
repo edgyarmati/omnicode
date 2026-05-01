@@ -25,12 +25,13 @@ For `setup`:
    - write global settings or project override?
    - use the invoking/orchestrator model for sub-agents, or choose a shared default model?
    - optionally choose per-agent models for `omni-explorer`, `omni-planner`, `omni-verifier`, and `omni-worker`.
-5. Recommend sensible models using, in order:
-   - project `model-recommendations.md`
-   - global `model-recommendations.md`
-   - visible `opencode models` output
-   - general heuristics: cheaper/faster for `omni-explorer`, stronger reasoning for `omni-planner`, reliable/tool-capable for `omni-verifier`, and strongest coding model for `omni-worker`.
-6. Call `omnicode_update_agents_settings` with only the selected values. Do not write bundled prompt/default agent definitions into settings.
-7. Explain that settings take effect after OpenCode reloads plugin configuration (usually a new OmniCode/OpenCode session).
+5. Explain the orchestration model before recommending models: OmniCode uses a single-writer invariant. The primary `omnicode` agent remains the active-worktree writer and decision owner; subagents are primarily read-only intelligence contributors. `omni-worker` is exceptional, one-slice-only, and not a casual parallel writer mode.
+6. Recommend sensible models using, in order:
+    - project `model-recommendations.md`
+    - global `model-recommendations.md`
+    - visible `opencode models` output
+    - general heuristics: cheaper/faster for `omni-explorer`, stronger reasoning for `omni-planner` smart-friend critique, reliable/tool-capable for `omni-verifier` clean-context review/checks, and strongest coding model for exceptional `omni-worker` use.
+7. Call `omnicode_update_agents_settings` with only the selected values. Do not write bundled prompt/default agent definitions into settings.
+8. Explain that settings take effect after OpenCode reloads plugin configuration (usually a new OmniCode/OpenCode session).
 
 Keep `.omni/` for workflow memory only. Agent settings live in `~/.omnicode/settings.json` by default, with optional project overrides in `.omnicode/settings.json` that are gitignored.

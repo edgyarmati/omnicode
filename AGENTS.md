@@ -32,6 +32,8 @@ Core idea:
   - architecture deepening review available as an explicit user-triggered command
   - bounded task slices
   - verification after implementation
+  - clean-context review before committing meaningful implementation slices
+  - single-writer orchestration where subagents contribute intelligence while the primary agent owns active-worktree writes and decisions
   - repo map for codebase awareness
   - skill discovery / required-skill guidance
 - launch OpenCode through an `omnicode` command that uses OmniCode-specific config without mutating the user's normal OpenCode setup
@@ -84,6 +86,7 @@ Current features:
 - adds active `.omni/runtime/<branch-slug-or-root>/STATE.md` into compaction context
 - guards `write` / `edit` when Omni mode is on and planning artifacts are missing
 - placeholder bootstrap planning files are not enough; source edits require real planning content
+- optional native subagents follow a single-writer model: `omni-explorer`, `omni-planner`, and `omni-verifier` are read-only/advisory intelligence helpers by default; `omni-worker` is exceptional and one-slice-only, not a casual parallel writer swarm
 
 Planning artifacts currently required before source editing:
 - `.omni/SPEC.md`
@@ -160,6 +163,7 @@ Verified in a real OpenCode runtime:
 - bundled `tdd` guidance is available for behavior-changing slices and records expectations in the active work `TESTS.md`
 - bundled `diagnose` guidance is available for bugs/performance regressions before patching
 - `/improve-codebase-architecture` is available as a review-only workflow command for architecture deepening opportunities
+- optional native subagent guidance preserves a single active writer and adds clean-context review before commits
 - state/session-summary lifecycle tools work in tests and runtime
 - automated tests cover launcher config isolation, standards discovery/import, repo map generation, skill suggestion, lifecycle updates, and planning-artifact readiness
 - collaboration status reports the current branch, protected-branch policy, active `.omni/work/<branch-slug>/` planning path, and planning readiness

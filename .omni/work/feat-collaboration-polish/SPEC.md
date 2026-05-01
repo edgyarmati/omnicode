@@ -104,3 +104,63 @@ The current `feat/collaboration-polish` branch diverged before main merged the s
 - The branch contains main commits `d0c2a63`, `18b5e26`, `ff88213`, and merge `7fef2e1` or their merged content.
 - `git log HEAD..origin/main` is empty after integration.
 - Verification passes.
+
+---
+
+## Current Design Task — Single-Writer Intelligence Orchestration
+
+### Problem
+
+OmniCode now has optional native subagents (`omni-explorer`, `omni-planner`, `omni-verifier`, `omni-worker`), but the orchestration guidance still permits implementation delegation as a normal subagent path. Recent practical multi-agent guidance and Repo Prompt's context-engineering workflows point toward a safer model: context gathering and critique can be parallelized, but writes and final decisions should stay single-threaded unless work is explicitly isolated by branch/worktree.
+
+### Requested Behavior
+
+Reframe OmniCode orchestration around **single-writer intelligence injection**:
+
+1. **Orchestrator owns writes and decisions by default**
+   - The primary `omnicode` agent remains responsible for clarification, planning, source edits, verification decisions, state/session notes, commits, and PR decisions.
+   - Native subagents are context lenses by default, not co-authors.
+
+2. **Read-only scouts produce discovery packets**
+   - `omni-explorer` and `omni-planner` gather files, evidence, patterns, risks, open questions, and candidate plan/test updates.
+   - They should return structured findings with file references and uncertainty, not implementation patches.
+
+3. **Smart-friend consultation is advisory**
+   - Add guidance for consulting a stronger/fresh/specialized subagent or model when the plan is risky, ambiguous, cross-cutting, or stuck.
+   - Smart friend should identify missing context, recommend files/facts to inspect, critique plans, and explicitly say when more investigation is needed rather than guessing.
+
+4. **Clean-context review before commit**
+   - After implementing and running planned checks, invoke a clean-context review pass before committing meaningful implementation slices.
+   - Reviewer should inspect the diff/tests with minimal prior context, report bugs/edge cases/security/test gaps, and let the orchestrator adjudicate accepted vs rejected findings.
+
+5. **Branch-backed worker mode is an explicit later/advanced mode**
+   - `omni-worker` should no longer be framed as the ordinary way to parallelize implementation in the active worktree.
+   - If worker writes are needed, they should be isolated by explicit branch/worktree-backed workflow in a later runtime/tooling slice.
+
+### First Implementation Scope
+
+Start with **policy + workflow enforcement surfaces** only:
+
+- Update bundled agent instructions and relevant workflow skills/commands.
+- Update README/AGENTS/CHANGELOG to describe the new single-writer orchestration model.
+- Update subagent descriptions/prompts/permissions where needed so default `omni-worker` usage is discouraged or made explicitly single-slice/exceptional.
+- Add tests around generated agent config/instructions and bundled resources where practical.
+- Do not add new runtime tools, worktree management, or hard plugin enforcement in the first slice.
+
+### Constraints
+
+- Keep OpenCode as the host and OmniCode as the workflow layer.
+- Preserve public tool and command names.
+- Keep existing optional subagent settings compatibility.
+- Do not remove `omni-worker`; narrow and reframe it.
+- Keep changes narrow enough to verify with `npm run check` and `npm test`.
+- Update `CHANGELOG.md` for the committed slice.
+
+### Success Criteria
+
+- Agent instructions state the single-writer invariant and distinguish read-only intelligence subagents from branch-backed writer isolation.
+- Subagent prompts/descriptions make `omni-explorer`, `omni-planner`, and `omni-verifier` advisory/read-only and make `omni-worker` exceptional, single-slice, and non-parallel by default.
+- Verification workflow guidance includes clean-context review/adjudication before commit for implementation slices.
+- Docs explain how Repo Prompt-style discovery/curation/handoff and Cognition-style single-writer review loops map to OmniCode.
+- Tests cover the updated orchestration prompt or generated config strings enough to prevent regression to casual parallel writers.
+- `npm run check` and `npm test` pass before commit.

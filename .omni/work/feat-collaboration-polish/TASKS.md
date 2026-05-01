@@ -24,3 +24,11 @@
 ## Main Subagent Workflow Integration
 
 - [x] Slice 6: merge `origin/main` into `feat/collaboration-polish`, resolve conflicts, verify, and commit merge.
+
+---
+
+## Single-Writer Intelligence Orchestration
+
+- [x] Slice 7: policy/docs/tests only — reframe native subagent orchestration around single-writer ownership, read-only discovery/planning/verification, smart-friend guidance, clean-context review before commit, and branch-backed worker mode as later explicit isolation.
+- [ ] Later slice: implement runtime/tooling support for clean-context review loop if needed after policy guidance lands.
+- [ ] Later slice: design and implement explicit branch/worktree-backed worker mode before allowing parallel writer agents.

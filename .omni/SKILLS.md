@@ -16,11 +16,9 @@
 
 ## Suggested For Current Work
 
-- tdd: use a red-green-refactor loop for behavior-changing implementation slices
-- diagnose: use a disciplined reproduce-minimize-hypothesize-instrument-fix loop for bugs and regressions
-- grill-with-docs: use the grill-me interview plus durable domain/context/ADR updates when decisions should be documented
-- improve-codebase-architecture: use a review-only workflow to find architecture deepening opportunities before any refactor
+- omni-planning: use before implementation to refine spec, tasks, and tests
 - omni-execution: use when implementing a planned slice
+- omni-verification: use after implementation and before commit review/adjudication
 
 ## Project Notes
 
