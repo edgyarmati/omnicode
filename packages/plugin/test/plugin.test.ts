@@ -246,7 +246,6 @@ test("readOmniCodeSettings merges agent settings with project override precedenc
       "omni-explorer": "anthropic/global-explorer",
       "omni-verifier": "openai/project-verifier",
     });
-    assert.deepEqual(settings.agents.options, {});
   });
 });
 
@@ -1091,7 +1090,7 @@ test("bash commands are prefixed with rtk (skipping already-prefixed commands)",
   assert.equal(rewrite("rtk pytest tests/"), "rtk pytest tests/");
 });
 
-test("readOmniCodeSettings parses and merges per-agent options with project override precedence", async () => {
+test("readOmniCodeSettings parses and merges paired model configs with project override precedence", async () => {
   await withTempDir(async (dir) => {
     const homeDir = path.join(dir, "home");
     const projectDir = path.join(dir, "project");
@@ -1102,9 +1101,9 @@ test("readOmniCodeSettings parses and merges per-agent options with project over
       JSON.stringify({
         agents: {
           enabled: true,
-          options: {
-            "omni-planner": { reasoningEffort: "high" },
-            "omni-explorer": { temperature: 0.5 },
+          models: {
+            "omni-planner": { model: "openai/global-planner", reasoningEffort: "high" },
+            "omni-explorer": "anthropic/global-explorer",
           },
         },
       }, null, 2),
@@ -1114,9 +1113,9 @@ test("readOmniCodeSettings parses and merges per-agent options with project over
       path.join(projectDir, ".omnicode", "settings.json"),
       JSON.stringify({
         agents: {
-          options: {
-            "omni-verifier": { reasoningEffort: "low" },
-            "omni-planner": { reasoningEffort: "medium" },
+          models: {
+            "omni-verifier": { model: "openai/project-verifier", reasoningEffort: "low" },
+            "omni-planner": "anthropic/project-planner",
           },
         },
       }, null, 2),
@@ -1125,59 +1124,58 @@ test("readOmniCodeSettings parses and merges per-agent options with project over
 
     const settings = await readOmniCodeSettings(projectDir, { homeDir });
 
-    assert.deepEqual(settings.agents.options, {
-      "omni-explorer": { temperature: 0.5 },
-      "omni-planner": { reasoningEffort: "medium" },
-      "omni-verifier": { reasoningEffort: "low" },
+    assert.deepEqual(settings.agents.models, {
+      "omni-explorer": "anthropic/global-explorer",
+      "omni-planner": "anthropic/project-planner",
+      "omni-verifier": { model: "openai/project-verifier", reasoningEffort: "low" },
     });
   });
 });
 
-test("updateOmniCodeAgentsSettings persists per-agent options", async () => {
+test("updateOmniCodeAgentsSettings persists paired model configs", async () => {
   await withTempDir(async (dir) => {
     const homeDir = path.join(dir, "home");
 
     const result = await updateOmniCodeAgentsSettings(path.join(dir, "project"), {
       scope: "global",
       enabled: true,
-      options: {
-        "omni-planner": { reasoningEffort: "high", textVerbosity: "low" },
-        "omni-verifier": { reasoningEffort: "low" },
+      models: {
+        "omni-planner": { model: "openai/gpt-5.5", reasoningEffort: "high", textVerbosity: "low" },
+        "omni-verifier": { model: "openai/gpt-5.5", reasoningEffort: "low" },
       },
     }, { homeDir });
 
     assert.equal(result.settings.agents.enabled, true);
-    assert.deepEqual(result.settings.agents.options, {
-      "omni-planner": { reasoningEffort: "high", textVerbosity: "low" },
-      "omni-verifier": { reasoningEffort: "low" },
+    assert.deepEqual(result.settings.agents.models, {
+      "omni-planner": { model: "openai/gpt-5.5", reasoningEffort: "high", textVerbosity: "low" },
+      "omni-verifier": { model: "openai/gpt-5.5", reasoningEffort: "low" },
     });
 
     const fileContent = JSON.parse(await readFile(result.outputPath, "utf8"));
-    assert.deepEqual(fileContent.agents.options["omni-planner"], { reasoningEffort: "high", textVerbosity: "low" });
-    assert.deepEqual(fileContent.agents.options["omni-verifier"], { reasoningEffort: "low" });
+    assert.deepEqual(fileContent.agents.models["omni-planner"], { model: "openai/gpt-5.5", reasoningEffort: "high", textVerbosity: "low" });
   });
 });
 
-test("updateOmniCodeAgentsSettings cleans empty and invalid options", async () => {
+test("updateOmniCodeAgentsSettings cleans invalid model configs", async () => {
   await withTempDir(async (dir) => {
     const homeDir = path.join(dir, "home");
 
     const result = await updateOmniCodeAgentsSettings(path.join(dir, "project"), {
       scope: "global",
       enabled: true,
-      options: {
-        "omni-explorer": {},
-        "omni-planner": { reasoningEffort: "high" },
+      models: {
+        "omni-explorer": "",
+        "omni-planner": { model: "openai/gpt-5.5", reasoningEffort: "high" },
       },
     }, { homeDir });
 
-    assert.deepEqual(result.settings.agents.options, {
-      "omni-planner": { reasoningEffort: "high" },
+    assert.deepEqual(result.settings.agents.models, {
+      "omni-planner": { model: "openai/gpt-5.5", reasoningEffort: "high" },
     });
   });
 });
 
-test("plugin config passes per-agent options through to OpenCode agent config", async () => {
+test("plugin config passes paired model options through to OpenCode agent config", async () => {
   await withTempDir(async (dir) => {
     const homeDir = path.join(dir, "home");
     await mkdir(path.join(homeDir, ".omnicode"), { recursive: true });
@@ -1187,12 +1185,8 @@ test("plugin config passes per-agent options through to OpenCode agent config", 
         agents: {
           enabled: true,
           models: {
-            "omni-planner": "openai/gpt-5.5",
-            "omni-verifier": "openai/gpt-5.5",
-          },
-          options: {
-            "omni-planner": { reasoningEffort: "high" },
-            "omni-verifier": { reasoningEffort: "low" },
+            "omni-planner": { model: "openai/gpt-5.5", reasoningEffort: "high" },
+            "omni-verifier": { model: "openai/gpt-5.5", reasoningEffort: "low" },
           },
         },
       }, null, 2),

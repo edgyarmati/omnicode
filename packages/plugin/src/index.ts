@@ -93,13 +93,14 @@ export type WorkflowSettings = {
   autoCreatePrOnCompletion: boolean;
 };
 
+export type AgentModelConfig = string | { model: string; [key: string]: unknown };
+
 export type OmniCodeSettings = {
   workflow: WorkflowSettings;
   agents: {
     enabled: boolean;
     defaultModel?: string;
-    models: Partial<Record<OmniSubagentName, string>>;
-    options: Partial<Record<OmniSubagentName, Record<string, unknown>>>;
+    models: Partial<Record<OmniSubagentName, AgentModelConfig>>;
   };
 };
 
@@ -109,8 +110,7 @@ export type OmniCodeAgentsSettingsPatch = {
   scope?: OmniCodeSettingsScope;
   enabled?: boolean;
   defaultModel?: string;
-  models?: Partial<Record<OmniSubagentName, string>>;
-  options?: Partial<Record<OmniSubagentName, Record<string, unknown>>>;
+  models?: Partial<Record<OmniSubagentName, AgentModelConfig>>;
 };
 
 export type OmniCodeModelRecommendations = {
@@ -124,7 +124,6 @@ type RawOmniCodeSettings = {
     enabled?: unknown;
     defaultModel?: unknown;
     models?: unknown;
-    options?: unknown;
   };
 };
 
@@ -356,18 +355,26 @@ function taskPermissionForOmniSubagents(): Record<string, "allow" | "deny"> {
   return { "*": "deny", "omni-explorer": "allow", "omni-planner": "allow", "omni-verifier": "allow" };
 }
 
-function modelForSubagent(settings: OmniCodeSettings, agentName: OmniSubagentName): string | undefined {
-  return settings.agents.models[agentName] ?? settings.agents.defaultModel;
+function modelIdFromConfig(config: AgentModelConfig | undefined): string | undefined {
+  if (typeof config === "string") return config;
+  if (isRecord(config) && typeof config.model === "string" && config.model.trim().length > 0) return config.model.trim();
+  return undefined;
 }
 
 function buildSubagentConfig(settings: OmniCodeSettings, agentName: OmniSubagentName): OmniAgentConfig {
-  const model = modelForSubagent(settings, agentName);
-  const agentOptions = settings.agents.options[agentName];
-  return {
-    ...OMNI_SUBAGENT_DEFAULTS[agentName],
-    ...(model ? { model } : {}),
-    ...(agentOptions && Object.keys(agentOptions).length > 0 ? agentOptions : {}),
-  };
+  const agentModelConfig = settings.agents.models[agentName];
+  const fallbackModel = settings.agents.defaultModel;
+  if (typeof agentModelConfig === "string") {
+    const model = agentModelConfig || fallbackModel;
+    return { ...OMNI_SUBAGENT_DEFAULTS[agentName], ...(model ? { model } : {}) };
+  }
+  if (isRecord(agentModelConfig)) {
+    const { model: rawModel, ...passthrough } = agentModelConfig as { model?: string; [key: string]: unknown };
+    const model = (typeof rawModel === "string" && rawModel.trim().length > 0 ? rawModel.trim() : undefined) ?? fallbackModel;
+    const extras = Object.keys(passthrough).length > 0 ? passthrough : {};
+    return { ...OMNI_SUBAGENT_DEFAULTS[agentName], ...(model ? { model } : {}), ...extras };
+  }
+  return { ...OMNI_SUBAGENT_DEFAULTS[agentName], ...(fallbackModel ? { model: fallbackModel } : {}) };
 }
 
 function orchestrationPrompt(basePrompt: string): string {
@@ -381,30 +388,22 @@ function orchestrationPrompt(basePrompt: string): string {
   ].join("\n\n");
 }
 
-function normalizeAgentModels(value: unknown): Partial<Record<OmniSubagentName, string>> {
+function normalizeAgentModels(value: unknown): Partial<Record<OmniSubagentName, AgentModelConfig>> {
   if (!isRecord(value)) return {};
-  const models: Partial<Record<OmniSubagentName, string>> = {};
+  const models: Partial<Record<OmniSubagentName, AgentModelConfig>> = {};
   for (const agentName of OMNI_SUBAGENT_NAMES) {
-    const model = value[agentName];
-    if (typeof model === "string" && model.trim().length > 0) models[agentName] = model.trim();
+    const entry = value[agentName];
+    if (typeof entry === "string" && entry.trim().length > 0) {
+      models[agentName] = entry.trim();
+    } else if (isRecord(entry) && typeof entry.model === "string" && entry.model.trim().length > 0) {
+      models[agentName] = entry as Record<string, unknown> & { model: string };
+    }
   }
   return models;
 }
 
-function normalizeAgentOptions(value: unknown): Partial<Record<OmniSubagentName, Record<string, unknown>>> {
-  if (!isRecord(value)) return {};
-  const options: Partial<Record<OmniSubagentName, Record<string, unknown>>> = {};
-  for (const agentName of OMNI_SUBAGENT_NAMES) {
-    const agentOptions = value[agentName];
-    if (isRecord(agentOptions) && Object.keys(agentOptions).length > 0) {
-      options[agentName] = agentOptions as Record<string, unknown>;
-    }
-  }
-  return options;
-}
-
 function defaultAgentsSettings(): OmniCodeSettings["agents"] {
-  return { enabled: false, models: {}, options: {} };
+  return { enabled: false, models: {} };
 }
 
 function parseAgentsSettings(value: unknown): Partial<OmniCodeSettings["agents"]> {
@@ -413,7 +412,6 @@ function parseAgentsSettings(value: unknown): Partial<OmniCodeSettings["agents"]
   if (typeof value.enabled === "boolean") parsed.enabled = value.enabled;
   if (typeof value.defaultModel === "string" && value.defaultModel.trim().length > 0) parsed.defaultModel = value.defaultModel.trim();
   parsed.models = normalizeAgentModels(value.models);
-  parsed.options = normalizeAgentOptions(value.options);
   return parsed;
 }
 
@@ -497,12 +495,8 @@ export async function readOmniCodeSettings(
       ...(globalSettings.agents ?? {}),
       ...(projectSettings.agents ?? {}),
       models: cleanModelPatch({
-        ...(globalSettings.agents?.models as Partial<Record<OmniSubagentName, string>> | undefined ?? {}),
-        ...(projectSettings.agents?.models as Partial<Record<OmniSubagentName, string>> | undefined ?? {}),
-      }),
-      options: cleanOptionsPatch({
-        ...(globalSettings.agents?.options as Partial<Record<OmniSubagentName, Record<string, unknown>>> | undefined ?? {}),
-        ...(projectSettings.agents?.options as Partial<Record<OmniSubagentName, Record<string, unknown>>> | undefined ?? {}),
+        ...(globalSettings.agents?.models as Partial<Record<OmniSubagentName, AgentModelConfig>> | undefined ?? {}),
+        ...(projectSettings.agents?.models as Partial<Record<OmniSubagentName, AgentModelConfig>> | undefined ?? {}),
       }),
     },
   };
@@ -534,23 +528,14 @@ function settingsPathForScope(directory: string, scope: OmniCodeSettingsScope, h
   return scope === "project" ? resolveProjectSettingsPath(directory) : resolveGlobalSettingsPath(homeDir);
 }
 
-function cleanModelPatch(models: Partial<Record<OmniSubagentName, string>> | undefined): Partial<Record<OmniSubagentName, string>> {
-  const cleaned: Partial<Record<OmniSubagentName, string>> = {};
+function cleanModelPatch(models: Partial<Record<OmniSubagentName, AgentModelConfig>> | undefined): Partial<Record<OmniSubagentName, AgentModelConfig>> {
+  const cleaned: Partial<Record<OmniSubagentName, AgentModelConfig>> = {};
   for (const agentName of OMNI_SUBAGENT_NAMES) {
-    const model = models?.[agentName];
-    if (typeof model === "string" && model.trim().length > 0) cleaned[agentName] = model.trim();
-  }
-  return cleaned;
-}
-
-function cleanOptionsPatch(
-  agentOptions: Partial<Record<OmniSubagentName, Record<string, unknown>>> | undefined,
-): Partial<Record<OmniSubagentName, Record<string, unknown>>> {
-  const cleaned: Partial<Record<OmniSubagentName, Record<string, unknown>>> = {};
-  for (const agentName of OMNI_SUBAGENT_NAMES) {
-    const opts = agentOptions?.[agentName];
-    if (isRecord(opts) && Object.keys(opts).length > 0) {
-      cleaned[agentName] = opts;
+    const entry = models?.[agentName];
+    if (typeof entry === "string" && entry.trim().length > 0) {
+      cleaned[agentName] = entry.trim();
+    } else if (isRecord(entry) && typeof entry.model === "string" && entry.model.trim().length > 0) {
+      cleaned[agentName] = entry as Record<string, unknown> & { model: string };
     }
   }
   return cleaned;
@@ -576,16 +561,10 @@ export async function updateOmniCodeAgentsSettings(directory: string, patch: Omn
   if (typeof patch.enabled === "boolean") nextAgents.enabled = patch.enabled;
   if (typeof patch.defaultModel === "string" && patch.defaultModel.trim().length > 0) nextAgents.defaultModel = patch.defaultModel.trim();
   const modelPatch = cleanModelPatch(patch.models);
-  const cleanedModels = { ...cleanModelPatch(rawAgents.models as Partial<Record<OmniSubagentName, string>> | undefined), ...modelPatch };
+  const cleanedModels = { ...cleanModelPatch(rawAgents.models as Partial<Record<OmniSubagentName, AgentModelConfig>> | undefined), ...modelPatch };
   if (isRecord(rawAgents.models) || Object.keys(modelPatch).length > 0) {
     if (Object.keys(cleanedModels).length > 0) nextAgents.models = cleanedModels;
     else delete nextAgents.models;
-  }
-  const optionsPatch = cleanOptionsPatch(patch.options);
-  const cleanedOptions = { ...cleanOptionsPatch(rawAgents.options as Partial<Record<OmniSubagentName, Record<string, unknown>>> | undefined), ...optionsPatch };
-  if (isRecord(rawAgents.options) || Object.keys(optionsPatch).length > 0) {
-    if (Object.keys(cleanedOptions).length > 0) nextAgents.options = cleanedOptions;
-    else delete nextAgents.options;
   }
   await writeFileAtomic(outputPath, `${JSON.stringify({ ...rawSettings, agents: nextAgents }, null, 2)}\n`);
   if (scope === "project") await ensureOmniCodeProjectGitignore(directory);
@@ -1979,7 +1958,6 @@ export const OmniCodePlugin: Plugin = async ({ directory }, options) => {
             `Project override: ${resolveProjectSettingsPath(directory)}`,
             `Default model: ${settings.agents.defaultModel ?? "inherit invoking model"}`,
             `Per-agent models: ${Object.keys(settings.agents.models).length > 0 ? JSON.stringify(settings.agents.models) : "none"}`,
-            `Per-agent options: ${Object.keys(settings.agents.options).length > 0 ? JSON.stringify(settings.agents.options) : "none"}`,
             `Model recommendations: ${recommendations.sourcePath ?? "none found"}`,
           ].join("\n");
         },
@@ -1993,35 +1971,25 @@ export const OmniCodePlugin: Plugin = async ({ directory }, options) => {
           defaultModel: tool.schema.string().optional().describe("Optional shared model for OmniCode subagents."),
           models: tool.schema
             .object({
-              "omni-explorer": tool.schema.string().optional(),
-              "omni-planner": tool.schema.string().optional(),
-              "omni-verifier": tool.schema.string().optional(),
+              "omni-explorer": tool.schema.unknown().optional(),
+              "omni-planner": tool.schema.unknown().optional(),
+              "omni-verifier": tool.schema.unknown().optional(),
             })
             .optional()
-            .describe("Optional per-subagent model overrides."),
-          options: tool.schema
-            .object({
-              "omni-explorer": tool.schema.record(tool.schema.string(), tool.schema.unknown()).optional(),
-              "omni-planner": tool.schema.record(tool.schema.string(), tool.schema.unknown()).optional(),
-              "omni-verifier": tool.schema.record(tool.schema.string(), tool.schema.unknown()).optional(),
-            })
-            .optional()
-            .describe("Optional per-subagent passthrough provider options (e.g. reasoningEffort, textVerbosity)."),
+            .describe("Per-subagent model config. Each agent accepts a model ID string or an object with 'model' plus provider options (e.g. {\"model\": \"openai/gpt-5.5\", \"reasoningEffort\": \"high\"})."),
         },
         async execute(args) {
           const result = await updateOmniCodeAgentsSettings(directory, {
             scope: args.scope as OmniCodeSettingsScope | undefined,
             enabled: args.enabled,
             defaultModel: args.defaultModel,
-            models: args.models as Partial<Record<OmniSubagentName, string>> | undefined,
-            options: args.options as Partial<Record<OmniSubagentName, Record<string, unknown>>> | undefined,
+            models: args.models as Partial<Record<OmniSubagentName, AgentModelConfig>> | undefined,
           });
           return [
             `Updated ${result.scope} OmniCode agent settings: ${result.outputPath}`,
             `Effective agents.enabled: ${result.settings.agents.enabled}`,
             `Default model: ${result.settings.agents.defaultModel ?? "inherit invoking model"}`,
             `Per-agent models: ${Object.keys(result.settings.agents.models).length > 0 ? JSON.stringify(result.settings.agents.models) : "none"}`,
-            `Per-agent options: ${Object.keys(result.settings.agents.options).length > 0 ? JSON.stringify(result.settings.agents.options) : "none"}`,
           ].join("\n");
         },
       }),
