@@ -51,3 +51,30 @@ Implement bundled OmniCode workflow support for:
 - README/AGENTS/CHANGELOG document the new workflow behavior.
 - Tests cover bundled skill listing/reading, default skill memory, suggestion heuristics, and command registration where applicable.
 - `npm run check` and `npm test` pass after each slice.
+
+---
+
+## Current Implementation Task — OpenCode Target Version Update
+
+### Problem
+
+OmniCode's launcher pins the managed upstream OpenCode runtime target at `1.14.25`, while npm reports the latest `opencode-ai` version as `1.14.30`. New OmniCode-managed installs should use the latest tested OpenCode runtime without changing OmniCode's own package version.
+
+### Requested Behavior
+
+- Update the launcher OpenCode target version from `1.14.25` to `1.14.30`.
+- Keep OmniCode package versions at `0.3.0`.
+- Update tests, docs, and changelog only where they explicitly assert or describe the target version.
+
+### Constraints
+
+- This is a dependency/runtime target bump, not an OmniCode release version bump.
+- Keep the change to one bounded slice.
+- Verify with `npm run check` and `npm test` before committing.
+
+### Success Criteria
+
+- `getRequiredOpenCodeVersion()` returns `1.14.30`.
+- Tests that cover release/runtime metadata pass.
+- `CHANGELOG.md` records the OpenCode target update.
+- `npm run check` and `npm test` pass.

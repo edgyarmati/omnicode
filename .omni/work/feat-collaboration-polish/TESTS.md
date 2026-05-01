@@ -36,3 +36,13 @@ Expected outcome: `grill-me` remains default; `grill-with-docs` is available for
 - [x] Run `npm test`.
 
 Expected outcome: `/improve-codebase-architecture` is review/planning-only by default and produces candidates before any refactor change request begins. Observed red first: tests failed before implementation because architecture skill memory, suggestion routing, and command registration were missing. After implementation, `npm run check` passed and `npm test` passed with launcher 10 tests and plugin 63 tests.
+
+## Slice 5 — OpenCode target version update
+
+- [x] Confirm latest npm `opencode-ai` version is `1.14.30`.
+- [x] Update launcher target version to `1.14.30`.
+- [x] Update tests/docs/changelog that explicitly reference the target version.
+- [x] Run `npm run check`.
+- [x] Run `npm test`.
+
+Expected outcome: managed OpenCode runtime target is `1.14.30`, OmniCode package versions remain `0.3.0`, and verification passes. Observed red first: launcher test failed while target was `1.14.25`; after updating, `npm run check` passed and `npm test` passed with launcher 11 tests and plugin 63 tests.

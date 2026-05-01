@@ -12,3 +12,9 @@
 - Keep each workflow resource concise and OmniCode-native.
 - Do not create hard tool-level TDD/diagnose guards in this pass.
 - `TESTS.md` means the active planning directory's tests artifact, usually `.omni/work/<branch-slug>/TESTS.md`, with root `.omni/TESTS.md` only as migration fallback.
+
+---
+
+## OpenCode Target Version Update
+
+- [x] Slice 5: update managed OpenCode target to `1.14.30`, adjust tests/docs/changelog if needed, verify, and commit.
