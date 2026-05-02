@@ -153,6 +153,19 @@ node "$EntryJs" @args
   Write-Host ''
   Write-Host "==> OmniCode v$Version installed successfully"
   Write-Host ''
+
+  # ── Optional: mention RTK ──────────────────────────────────────────────────
+
+  $rtkCmd = Get-Command rtk -ErrorAction SilentlyContinue
+  if ($rtkCmd) {
+    Write-Host "==> RTK is already installed ($($rtkCmd.Source))"
+  } else {
+    Write-Host '==> RTK (optional bash output compression) is not installed.'
+    Write-Host '    OmniCode works fine without it. If RTK becomes available for Windows,'
+    Write-Host '    install it for 60-90% token savings on bash output.'
+  }
+  Write-Host ''
+
   Write-Host 'Next step:'
   Write-Host '  omnicode'
   Write-Host ''

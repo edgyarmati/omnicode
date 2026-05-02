@@ -133,6 +133,37 @@ fi
 
 info "OmniCode v${VERSION} installed successfully"
 printf '\n'
+
+# ── Optional: offer RTK ──────────────────────────────────────────────────────
+
+if command -v rtk >/dev/null 2>&1; then
+  info "RTK is already installed ($(rtk --version 2>/dev/null || echo 'unknown version'))"
+elif command -v brew >/dev/null 2>&1; then
+  printf 'OmniCode can use RTK for transparent bash output compression (60-90%% token savings).\n'
+  printf 'RTK is optional — OmniCode works fine without it.\n'
+  printf '\n'
+  if [ -z "${OMNICODE_SKIP_RTK:-}" ]; then
+    printf 'Install RTK via Homebrew? [Y/n] '
+    read -r _rtk_answer </dev/tty 2>/dev/null || _rtk_answer="n"
+    case "$_rtk_answer" in
+      n*|N*) info "Skipping RTK. Install later with: brew install rtk" ;;
+      *)
+        info "Installing RTK via Homebrew"
+        if brew install rtk 2>/dev/null; then
+          info "RTK installed successfully"
+        else
+          warn "RTK installation failed. OmniCode will work without it. Install later with: brew install rtk"
+        fi
+        ;;
+    esac
+  else
+    info "Skipping RTK (OMNICODE_SKIP_RTK is set). Install later with: brew install rtk"
+  fi
+else
+  info "RTK (optional bash output compression) is available via Homebrew. Install Homebrew and then: brew install rtk"
+fi
+
+printf '\n'
 printf 'Next step:\n'
 printf '  omnicode\n\n'
 if ! command -v omnicode >/dev/null 2>&1; then
