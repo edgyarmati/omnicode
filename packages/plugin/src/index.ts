@@ -1824,6 +1824,23 @@ async function isInsideProjectOmniDir(directory: string, targetPath: string): Pr
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
+function isOmniCodeXdgOverride(): boolean {
+  const xdg = process.env.XDG_CONFIG_HOME;
+  if (!xdg) return false;
+  // OmniCode launcher sets XDG_CONFIG_HOME to ~/.config/omnicode.
+  // Detect this pattern so we can strip it from child tool shells.
+  return xdg.endsWith(path.join(".config", "omnicode"));
+}
+
+function sanitizeBashEnv(command: string): string {
+  // When OmniCode's launcher overrides XDG_CONFIG_HOME, child bash shells
+  // inherit the isolated path and user CLIs like `gh` lose their normal config.
+  // Prefix with `env -u XDG_CONFIG_HOME` so user tools see the default config.
+  if (!isOmniCodeXdgOverride()) return command;
+  if (command.trimStart().startsWith("env ")) return command;
+  return `env -u XDG_CONFIG_HOME ${command}`;
+}
+
 function isPotentiallyMutatingBashCommand(command: string): boolean {
   const normalized = command.replace(/\\\n/gu, " ");
   return (
@@ -1923,10 +1940,14 @@ export const OmniCodePlugin: Plugin = async ({ directory }, options) => {
       }
 
       if (!fileMutatingTool && !potentiallyMutatingBash) {
-        if (rtkAvailable && input.tool === "bash" && commandKey && typeof args[commandKey] === "string") {
+        if (input.tool === "bash" && commandKey && typeof args[commandKey] === "string") {
           const originalCommand = args[commandKey] as string;
-          if (!originalCommand.trimStart().startsWith("rtk ")) {
-            args[commandKey] = `rtk ${originalCommand}`;
+          let rewritten = sanitizeBashEnv(originalCommand);
+          if (rtkAvailable && !rewritten.trimStart().startsWith("rtk ")) {
+            rewritten = `rtk ${rewritten}`;
+          }
+          if (rewritten !== originalCommand) {
+            args[commandKey] = rewritten;
           }
         }
         return;
@@ -1940,10 +1961,14 @@ export const OmniCodePlugin: Plugin = async ({ directory }, options) => {
       const settings = await readOmniCodeSettings(directory, { homeDir: settingsHomeDir });
       await assertProtectedBranchAllowsMutation(directory, settings);
 
-      if (rtkAvailable && input.tool === "bash" && commandKey && typeof args[commandKey] === "string") {
+      if (input.tool === "bash" && commandKey && typeof args[commandKey] === "string") {
         const originalCommand = args[commandKey] as string;
-        if (!originalCommand.trimStart().startsWith("rtk ")) {
-          args[commandKey] = `rtk ${originalCommand}`;
+        let rewritten = sanitizeBashEnv(originalCommand);
+        if (rtkAvailable && !rewritten.trimStart().startsWith("rtk ")) {
+          rewritten = `rtk ${rewritten}`;
+        }
+        if (rewritten !== originalCommand) {
+          args[commandKey] = rewritten;
         }
       }
     },

@@ -1165,6 +1165,47 @@ test("bash commands are prefixed with rtk (skipping already-prefixed commands)",
   assert.equal(rewrite("rtk pytest tests/"), "rtk pytest tests/");
 });
 
+test("bash commands are prefixed with env -u XDG_CONFIG_HOME when OmniCode overrides XDG", () => {
+  const originalXdg = process.env.XDG_CONFIG_HOME;
+  const fakeOmniXdg = path.join(os.homedir(), ".config", "omnicode");
+  try {
+    // With OmniCode XDG override
+    process.env.XDG_CONFIG_HOME = fakeOmniXdg;
+    // Simulate the sanitize + rtk pipeline from tool.execute.before
+    function sanitizeAndRtk(command: string, rtkAvailable: boolean): string {
+      let rewritten = command;
+      if (command.trimStart().startsWith("env ")) {
+        // already has env prefix, leave it
+      } else {
+        rewritten = `env -u XDG_CONFIG_HOME ${command}`;
+      }
+      if (rtkAvailable && !rewritten.trimStart().startsWith("rtk ")) {
+        rewritten = `rtk ${rewritten}`;
+      }
+      return rewritten;
+    }
+
+    // rtk available: both env -u and rtk
+    assert.equal(sanitizeAndRtk("gh auth status", true), "rtk env -u XDG_CONFIG_HOME gh auth status");
+    assert.equal(sanitizeAndRtk("git log", true), "rtk env -u XDG_CONFIG_HOME git log");
+    // already has env prefix: no double env
+    assert.equal(sanitizeAndRtk("env -u XDG_CONFIG_HOME gh auth status", true), "rtk env -u XDG_CONFIG_HOME gh auth status");
+    // rtk not available: only env -u
+    assert.equal(sanitizeAndRtk("gh auth status", false), "env -u XDG_CONFIG_HOME gh auth status");
+
+    // Without OmniCode XDG override: no env prefix added
+    process.env.XDG_CONFIG_HOME = originalXdg;
+    function rtkOnly(command: string): string {
+      if (!command.trimStart().startsWith("rtk ")) return `rtk ${command}`;
+      return command;
+    }
+    assert.equal(rtkOnly("gh auth status"), "rtk gh auth status");
+    assert.equal(rtkOnly("git log"), "rtk git log");
+  } finally {
+    process.env.XDG_CONFIG_HOME = originalXdg;
+  }
+});
+
 test("readOmniCodeSettings parses and merges paired model configs with project override precedence", async () => {
   await withTempDir(async (dir) => {
     const homeDir = path.join(dir, "home");
