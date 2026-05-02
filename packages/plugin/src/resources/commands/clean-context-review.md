@@ -1,12 +1,12 @@
 ---
 description: Run a clean-context review of current changes before commit
-agent: omnicode
+agent: gedcode
 ---
 Run a clean-context review for the current repository changes. This command is review/adjudication-only by default; do not edit files or commit from inside the review pass unless the user separately asks for fixes after findings are adjudicated.
 
 Purpose:
 - catch issues the implementation context may have missed
-- keep the primary `omnicode` agent as the single writer and decision owner
+- keep the primary `gedcode` agent as the single writer and decision owner
 - make commit readiness explicit
 
 Review flow:

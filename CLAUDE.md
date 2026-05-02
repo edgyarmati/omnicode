@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-OmniCode is an **OpenCode plugin + launcher**. OpenCode owns the UX and runtime; OmniCode owns the **workflow layer** (`.omni/` durable memory, plan-before-edit, bounded slices, post-implementation verification).
+GedCode is an **OpenCode plugin + launcher**. OpenCode owns the UX and runtime; GedCode owns the **workflow layer** (`.ged/` durable memory, plan-before-edit, bounded slices, post-implementation verification).
 
-It is **not** a custom terminal UI, a fork of OpenCode, or a continuation of the old Omni-Pi standalone shell. Do not drift back into building a custom shell. Keep the launcher thin and the plugin thick.
+It is **not** a custom terminal UI, a fork of OpenCode, or a continuation of the old GedPi standalone shell. Do not drift back into building a custom shell. Keep the launcher thin and the plugin thick.
 
 ## Packages (npm workspaces, Node 22+, ESM, TS strict)
 
-- `packages/plugin` → `@omnicode/plugin` — registers the OmniCode agent, commands, and tools; bootstraps `.omni/`; guards `write`/`edit`.
-- `packages/launcher` → `omnicode` — wrapper CLI that installs/manages an isolated OpenCode runtime under `~/.config/omnicode/` and launches it with OmniCode env overrides. Must not mutate the user's normal OpenCode setup.
+- `packages/plugin` → `@gedcode/plugin` — registers the GedCode agent, commands, and tools; bootstraps `.ged/`; guards `write`/`edit`.
+- `packages/launcher` → `gedcode` — wrapper CLI that installs/manages an isolated OpenCode runtime under `~/.config/gedcode/` and launches it with GedCode env overrides. Must not mutate the user's normal OpenCode setup.
 
 ## Build / verify
 
@@ -24,11 +24,11 @@ npm test        # node --test across all workspaces
 
 Contributor bootstrap (one-time): `./scripts/setup`. Release artifacts: `bash ./scripts/release/bundle.sh` (driven by `.github/workflows/release.yml` on `v*` tags).
 
-## Workflow rules (these mirror `packages/plugin/src/resources/instructions/omnicode-agent.md` — follow them when working on this repo)
+## Workflow rules (these mirror `packages/plugin/src/resources/instructions/gedcode-agent.md` — follow them when working on this repo)
 
-- **Plan before editing source.** Before editing any source file, `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md` must contain real planning content (the plugin's write/edit guard enforces this at runtime; placeholder bootstrap content is rejected).
-- **Update `.omni/` first**, not transient chat context. Reflect the current understanding in `.omni/` before implementing.
-- **Bounded slices.** Implement one slice from `.omni/TASKS.md` at a time; verify; record progress in `.omni/STATE.md` and `.omni/SESSION-SUMMARY.md`; commit; then move on.
+- **Plan before editing source.** Before editing any source file, `.ged/SPEC.md`, `.ged/TASKS.md`, and `.ged/TESTS.md` must contain real planning content (the plugin's write/edit guard enforces this at runtime; placeholder bootstrap content is rejected).
+- **Update `.ged/` first**, not transient chat context. Reflect the current understanding in `.ged/` before implementing.
+- **Bounded slices.** Implement one slice from `.ged/TASKS.md` at a time; verify; record progress in `.ged/STATE.md` and `.ged/SESSION-SUMMARY.md`; commit; then move on.
 - **Conventional commits — always.** Every commit message must start with one of: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`, `ci:`, `build:`, `perf:`. The summary must be specific, not generic. A PreToolUse hook in `.claude/settings.json` rejects non-conforming `git commit -m` calls.
 - **Verify before committing.** Run `npm run check && npm test` (or invoke the `/verify` skill) and ensure both pass before any `git commit`.
 - **Use the existing commands** rather than improvising:
@@ -36,7 +36,7 @@ Contributor bootstrap (one-time): `./scripts/setup`. Release artifacts: `bash ./
   - `/push` — push with non-destructive recovery (see `packages/plugin/src/resources/commands/push.md`)
 - **Keep changes narrow and verifiable.** No drive-by refactors.
 
-## `.omni/` memory model (repo hygiene)
+## `.ged/` memory model (repo hygiene)
 
 Durable (committed) — reflect real project intent:
 `PROJECT.md`, `SPEC.md`, `TASKS.md`, `TESTS.md`, `DECISIONS.md`, `STANDARDS.md`, `SKILLS.md`, `CONFIG.md`, `VERSION`, `.gitignore`.
@@ -46,12 +46,12 @@ Runtime/generated (gitignored, do not commit):
 
 ## Gotchas
 
-- **Launcher isolation must be preserved.** The launcher sets `XDG_CONFIG_HOME=~/.config/omnicode` and writes config under `~/.config/omnicode/opencode/`. Do not write to the user's regular OpenCode config dir.
+- **Launcher isolation must be preserved.** The launcher sets `XDG_CONFIG_HOME=~/.config/gedcode` and writes config under `~/.config/gedcode/opencode/`. Do not write to the user's regular OpenCode config dir.
 - **No formatter / linter is configured.** `tsc` strict mode + `node --test` are the quality gates. Do not introduce prettier/eslint/biome without discussion.
 - **RTK** transparently rewrites bash command output for token savings when installed; nothing to do — it works automatically.
 
 ## Read first when in doubt
 
-- `AGENTS.md` (canonical agent brief; `.omni/STANDARDS.md` mirrors it)
-- `packages/plugin/src/resources/instructions/omnicode-agent.md` (full workflow rules)
-- `README.md`, `docs/2026-04-24-omnicode-design.md`, `docs/implementation-plan.md`, `docs/release-checklist.md`
+- `AGENTS.md` (canonical agent brief; `.ged/STANDARDS.md` mirrors it)
+- `packages/plugin/src/resources/instructions/gedcode-agent.md` (full workflow rules)
+- `README.md`, `docs/2026-04-24-gedcode-design.md`, `docs/implementation-plan.md`, `docs/release-checklist.md`

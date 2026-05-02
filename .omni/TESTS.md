@@ -5,7 +5,7 @@
 - [x] `npm run check` after each implementation slice
 - [x] `npm test` after each implementation slice
 - [x] Atomic helper preserves permissions on replacement
-- [x] Representative plugin `.omni` write uses atomic helper successfully
+- [x] Representative plugin `.ged` write uses atomic helper successfully
 - [x] Sanitizers collapse unsafe multi-line markdown/tool text into safe generated output
 - [x] Standards import handles embedded code fences/headings without breaking output structure
 - [x] Launcher semver comparison handles stable vs prerelease and prerelease identifier ordering
@@ -29,7 +29,7 @@
 
 ## Review Finding Fixes Verification
 
-- [x] Slice 1: plugin tests cover bash mutation rejection before planning and resolved `.omni` containment.
+- [x] Slice 1: plugin tests cover bash mutation rejection before planning and resolved `.ged` containment.
 - [x] Slice 1: plugin tests cover SKILLS user notes preservation and large repo-map file truncation/skipping.
 - [x] Slice 2: launcher tests cover `--check`/`--version` non-launching behavior and Windows-safe shim imports.
 - [x] Slice 3: launcher/docs tests cover generic release artifact naming and installer publication/documentation consistency.
@@ -39,7 +39,7 @@
 
 ## Automatic Grill-Me Clarification Verification
 
-- [x] `omnicode_list_skills`/skill listing includes `grill-me`.
+- [x] `gedcode_list_skills`/skill listing includes `grill-me`.
 - [x] `suggestSkills` returns `grill-me` for a representative feature/change/fix request.
 - [x] Agent instruction resource documents the automatic grill-me checkpoint and one-question-at-a-time behavior.
 - [x] `npm run check` passes.
@@ -59,11 +59,11 @@
 
 ## Project-Local Skill Maker Verification
 
-- [x] `omnicode_list_skills`/skill listing includes `skill-maker`.
-- [x] Generated/default `.omni/SKILLS.md` bundled list includes `skill-maker`.
+- [x] `gedcode_list_skills`/skill listing includes `skill-maker`.
+- [x] Generated/default `.ged/SKILLS.md` bundled list includes `skill-maker`.
 - [x] `suggestSkills` returns `skill-maker` for missing/no-relevant-skill and create/write-skill requests.
 - [x] Agent instructions document `find-skills` before automatic project-local `skill-maker` fallback.
-- [x] README documents that generated missing skills are project-local under `.omni/skills/` and not global.
+- [x] README documents that generated missing skills are project-local under `.ged/skills/` and not global.
 - [x] `npm run check` passes.
 - [x] `npm test` passes.
 

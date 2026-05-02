@@ -6,7 +6,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 
 import type { PluginInput } from "@opencode-ai/plugin";
 
-import { OmniCodePlugin, ensureOmniDir, setOmniMode } from "../src/index.ts";
+import { GedCodePlugin, ensureOmniDir, setOmniMode } from "../src/index.ts";
 
 type ToolExecuteBefore = (
   input: { tool: string },
@@ -14,7 +14,7 @@ type ToolExecuteBefore = (
 ) => Promise<void>;
 
 async function withTempDir(run: (dir: string) => Promise<void>) {
-  const dir = await mkdtemp(path.join(os.tmpdir(), "omnicode-hook-test-"));
+  const dir = await mkdtemp(path.join(os.tmpdir(), "gedcode-hook-test-"));
   try {
     await run(dir);
   } finally {
@@ -23,16 +23,16 @@ async function withTempDir(run: (dir: string) => Promise<void>) {
 }
 
 async function buildHook(directory: string): Promise<ToolExecuteBefore> {
-  const hooks = await OmniCodePlugin(
+  const hooks = await GedCodePlugin(
     { directory } as unknown as PluginInput,
   );
   const hook = hooks["tool.execute.before"];
-  if (!hook) throw new Error("OmniCodePlugin did not register tool.execute.before");
+  if (!hook) throw new Error("GedCodePlugin did not register tool.execute.before");
   return hook as unknown as ToolExecuteBefore;
 }
 
 async function writeRealPlanning(directory: string) {
-  const omniDir = path.join(directory, ".omni");
+  const omniDir = path.join(directory, ".ged");
   await writeFile(
     path.join(omniDir, "SPEC.md"),
     [
@@ -40,11 +40,11 @@ async function writeRealPlanning(directory: string) {
       "",
       "## Problem",
       "",
-      "The tool.execute.before hook must reject mutating tool calls when the durable planning artifacts are still placeholder bootstrap content. Writing source files before there is a real spec, task list, and test list defeats OmniCode's plan-before-edit discipline.",
+      "The tool.execute.before hook must reject mutating tool calls when the durable planning artifacts are still placeholder bootstrap content. Writing source files before there is a real spec, task list, and test list defeats GedCode's plan-before-edit discipline.",
       "",
       "## Requested Behavior",
       "",
-      "The hook returns without throwing when SPEC.md, TASKS.md, and TESTS.md all hold concrete project-specific content that differs in both shape and length from the bundled placeholders, and the active tool is write or edit on a path outside .omni/.",
+      "The hook returns without throwing when SPEC.md, TASKS.md, and TESTS.md all hold concrete project-specific content that differs in both shape and length from the bundled placeholders, and the active tool is write or edit on a path outside .ged/.",
       "",
       "## Constraints",
       "",
@@ -52,7 +52,7 @@ async function writeRealPlanning(directory: string) {
       "",
       "## Success Criteria",
       "",
-      "Every code path inside tool.execute.before is exercised: read passthrough, .omni allowlist, placeholder rejection, real-planning acceptance, and Omni-mode-off bypass.",
+      "Every code path inside tool.execute.before is exercised: read passthrough, .ged allowlist, placeholder rejection, real-planning acceptance, and Omni-mode-off bypass.",
       "",
     ].join("\n"),
     "utf8",
@@ -65,7 +65,7 @@ async function writeRealPlanning(directory: string) {
       "## Planned slices",
       "",
       "- [ ] Slice 1: cover the read tool passthrough so non-mutating tools are never blocked",
-      "- [ ] Slice 2: cover the .omni allowlist for both absolute and relative target paths",
+      "- [ ] Slice 2: cover the .ged allowlist for both absolute and relative target paths",
       "- [ ] Slice 3: cover placeholder rejection for write and edit",
       "- [ ] Slice 4: cover real-planning acceptance for write and edit",
       "- [ ] Slice 5: cover the Omni-mode-off bypass",
@@ -87,7 +87,7 @@ async function writeRealPlanning(directory: string) {
       "- [ ] Hook returns without throwing for the read tool even with placeholder planning artifacts",
       "- [ ] Hook rejects write and edit when SPEC, TASKS, or TESTS are still bootstrap content",
       "- [ ] Hook accepts write and edit once SPEC, TASKS, and TESTS contain concrete project content",
-      "- [ ] Hook always allows writes targeting paths inside .omni/",
+      "- [ ] Hook always allows writes targeting paths inside .ged/",
       "- [ ] Hook is a no-op when Omni mode is off, regardless of planning state",
       "",
       "## Expected outcomes",
@@ -128,14 +128,14 @@ test("tool.execute.before rejects write/edit when planning artifacts are placeho
         { tool: "write" },
         { args: { filePath: path.join(dir, "src", "example.ts") } },
       ),
-      /OmniCode guard: before editing source files/,
+      /GedCode guard: before editing source files/,
     );
     await assert.rejects(
       () => hook(
         { tool: "edit" },
         { args: { filePath: path.join(dir, "src", "example.ts") } },
       ),
-      /OmniCode guard: before editing source files/,
+      /GedCode guard: before editing source files/,
     );
   });
 });
@@ -152,7 +152,7 @@ test("tool.execute.before names active work planning path when branch planning i
         { tool: "write" },
         { args: { filePath: path.join(dir, "src", "example.ts") } },
       ),
-      /\.omni\/work\/feature-collab-memory/,
+      /\.ged\/work\/feature-collab-memory/,
     );
   });
 });
@@ -168,14 +168,14 @@ test("tool.execute.before rejects mutating bash commands when planning artifacts
         { tool: "bash" },
         { args: { command: "printf 'changed' > src/example.ts" } },
       ),
-      /OmniCode guard: before editing source files or running mutating shell commands/,
+      /GedCode guard: before editing source files or running mutating shell commands/,
     );
     await assert.rejects(
       () => hook(
         { tool: "bash" },
         { args: { command: "rm src/example.ts" } },
       ),
-      /OmniCode guard: before editing source files or running mutating shell commands/,
+      /GedCode guard: before editing source files or running mutating shell commands/,
     );
   });
 });
@@ -235,9 +235,9 @@ test("tool.execute.before allows protected branch mutation with project settings
     await setOmniMode(dir, "on");
     await writeRealPlanning(dir);
     await writeGitBranch(dir, "main");
-    await mkdir(path.join(dir, ".omnicode"), { recursive: true });
+    await mkdir(path.join(dir, ".gedcode"), { recursive: true });
     await writeFile(
-      path.join(dir, ".omnicode", "settings.json"),
+      path.join(dir, ".gedcode", "settings.json"),
       JSON.stringify({ workflow: { allowProtectedBranchChanges: true } }),
       "utf8",
     );
@@ -250,7 +250,7 @@ test("tool.execute.before allows protected branch mutation with project settings
   });
 });
 
-test("tool.execute.before always allows writes inside .omni/ even with placeholder planning", async () => {
+test("tool.execute.before always allows writes inside .ged/ even with placeholder planning", async () => {
   await withTempDir(async (dir) => {
     await ensureOmniDir(dir);
     await setOmniMode(dir, "on");
@@ -258,16 +258,16 @@ test("tool.execute.before always allows writes inside .omni/ even with placehold
 
     await hook(
       { tool: "write" },
-      { args: { filePath: path.join(dir, ".omni", "SPEC.md") } },
+      { args: { filePath: path.join(dir, ".ged", "SPEC.md") } },
     );
     await hook(
       { tool: "edit" },
-      { args: { filePath: ".omni/TASKS.md" } },
+      { args: { filePath: ".ged/TASKS.md" } },
     );
   });
 });
 
-test("tool.execute.before rejects paths that escape the project .omni directory", async () => {
+test("tool.execute.before rejects paths that escape the project .ged directory", async () => {
   await withTempDir(async (dir) => {
     await ensureOmniDir(dir);
     await setOmniMode(dir, "on");
@@ -276,9 +276,9 @@ test("tool.execute.before rejects paths that escape the project .omni directory"
     await assert.rejects(
       () => hook(
         { tool: "write" },
-        { args: { filePath: path.join(dir, ".omni", "..", "src", "example.ts") } },
+        { args: { filePath: path.join(dir, ".ged", "..", "src", "example.ts") } },
       ),
-      /OmniCode guard: before editing source files/,
+      /GedCode guard: before editing source files/,
     );
   });
 });

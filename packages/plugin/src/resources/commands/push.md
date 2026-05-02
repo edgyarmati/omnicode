@@ -1,6 +1,6 @@
 ---
 description: Push the current branch with automatic recovery if needed
-agent: omnicode
+agent: gedcode
 ---
 Push the current branch. Handle any issues gracefully and non-destructively.
 

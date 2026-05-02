@@ -10,13 +10,13 @@ import { fileURLToPath } from "node:url";
 import {
   MINIMUM_NODE_MAJOR,
   buildLauncherEnv,
-  ensureOmniCodeConfig,
+  ensureGedCodeConfig,
   getManagedOpenCodeBinaryCandidates,
   getManagedOpenCodeInstallArgs,
   getManagedOpenCodeMetadataPath,
   getManagedOpenCodeVersionDir,
   getNativeLauncherReleaseMetadata,
-  getOmniCodeSetupTarget,
+  getGedCodeSetupTarget,
   isSupportedNodeVersion,
   needsManagedOpenCodeUpdate,
 } from "../src/lib.js";
@@ -111,7 +111,7 @@ async function installManagedOpenCodeRuntime(version, homeDir) {
   const npmCommand = isWindows() ? "npm.cmd" : "npm";
   if (!(await existsOnPath(npmCommand))) {
     process.stderr.write(
-      "npm is required to install the managed OpenCode runtime. Install npm and rerun OmniCode.\n",
+      "npm is required to install the managed OpenCode runtime. Install npm and rerun GedCode.\n",
     );
     process.exit(1);
   }
@@ -178,22 +178,22 @@ async function runSetup() {
 
   const npmCommand = isWindows() ? "npm.cmd" : "npm";
   if (!(await existsOnPath(npmCommand))) {
-    process.stderr.write("npm is required for OmniCode setup. Install npm and rerun `npx omnicode@latest setup`.\n");
+    process.stderr.write("npm is required for GedCode setup. Install npm and rerun `npx gedcode@latest setup`.\n");
     process.exit(1);
   }
 
-  const target = getOmniCodeSetupTarget();
-  process.stderr.write(`Installing ${target} globally so the omnicode command is available...\n`);
+  const target = getGedCodeSetupTarget();
+  process.stderr.write(`Installing ${target} globally so the gedcode command is available...\n`);
   const installed = await runCommand(npmCommand, ["install", "-g", target]);
   if (!installed) {
     process.stderr.write(
-      `Failed to install ${target} globally. Try 'npm install -g ${target}' manually and rerun OmniCode.\n`,
+      `Failed to install ${target} globally. Try 'npm install -g ${target}' manually and rerun GedCode.\n`,
     );
     process.exit(1);
   }
 
-  const omnicodePresent = await existsOnPath(isWindows() ? "omnicode.cmd" : "omnicode");
-  if (!omnicodePresent) {
+  const gedcodePresent = await existsOnPath(isWindows() ? "gedcode.cmd" : "gedcode");
+  if (!gedcodePresent) {
     const prefix = await captureCommand(npmCommand, ["prefix", "-g"]);
     const binHint = prefix
       ? isWindows()
@@ -201,12 +201,12 @@ async function runSetup() {
         : `${prefix}/bin`
       : "npm's global bin directory";
     process.stderr.write(
-      `OmniCode was installed, but the 'omnicode' command is not on PATH yet. Restart your shell or add ${binHint} to PATH.\n`,
+      `GedCode was installed, but the 'gedcode' command is not on PATH yet. Restart your shell or add ${binHint} to PATH.\n`,
     );
     process.exit(1);
   }
 
-  process.stderr.write("OmniCode setup complete. Next step: run `omnicode`.\n");
+  process.stderr.write("GedCode setup complete. Next step: run `gedcode`.\n");
 }
 
 async function resolvePluginPath() {
@@ -219,10 +219,10 @@ async function resolvePluginPath() {
 
   // Fall back to npm resolution (dev / npm install -g mode)
   try {
-    return import.meta.resolve("@omnicode/plugin");
+    return import.meta.resolve("@gedcode/plugin");
   } catch {
     process.stderr.write(
-      "Cannot find the OmniCode plugin. Reinstall OmniCode or run 'omnicode setup'.\n",
+      "Cannot find the GedCode plugin. Reinstall GedCode or run 'gedcode setup'.\n",
     );
     process.exit(1);
   }
@@ -237,7 +237,7 @@ async function main() {
 
   if (process.argv[2] === "--check" || process.argv[2] === "check") {
     const pluginPath = await resolvePluginPath();
-    process.stdout.write(`OmniCode launcher OK; plugin resolved at ${pluginPath}\n`);
+    process.stdout.write(`GedCode launcher OK; plugin resolved at ${pluginPath}\n`);
     return;
   }
 
@@ -247,13 +247,13 @@ async function main() {
   }
 
   const homeDir = os.homedir();
-  const explicitBin = process.env.OMNICODE_OPENCODE_BIN;
+  const explicitBin = process.env.GEDCODE_OPENCODE_BIN;
   const release = getNativeLauncherReleaseMetadata();
 
   const opencodeBin = explicitBin || (await ensureManagedOpenCodeRuntime(release.opencodeVersion, homeDir));
 
   const pluginPath = await resolvePluginPath();
-  const { configRoot, configPath } = await ensureOmniCodeConfig({
+  const { configRoot, configPath } = await ensureGedCodeConfig({
     homeDir,
     pluginEntry: pluginPath,
   });

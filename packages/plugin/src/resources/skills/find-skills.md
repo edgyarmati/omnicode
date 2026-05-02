@@ -4,18 +4,18 @@ Use during the post-grill skill-fit checkpoint when the clarified task needs dom
 
 Purpose:
 - Discover relevant external agent skills for specialized domains, tools, frameworks, testing, deployment, design, security, documentation, or workflows.
-- Help decide whether OmniCode already has enough skill coverage for the task.
+- Help decide whether GedCode already has enough skill coverage for the task.
 - Keep project skill memory accurate when the user asks to delete or remove skills.
 
 Workflow:
 1. Identify the task domains and required expertise from the completed `grill-me` clarification.
-2. Inventory available bundled/project skills from `.omni/SKILLS.md` and `omnicode_list_skills`.
+2. Inventory available bundled/project skills from `.ged/SKILLS.md` and `gedcode_list_skills`.
 3. Judge coverage explicitly: `sufficient` or `insufficient`, with a one-sentence reason.
 4. If coverage is sufficient, load only the relevant skills for this task.
 5. If coverage is insufficient, search for external skills with targeted keywords and verify source quality before recommending anything.
-6. If no adequate existing skill is available, hand off to `skill-maker` to research and create a narrow project-local skill under `.omni/skills/<skill-name>/SKILL.md` before planning.
-7. Ask the user before installing anything outside the project; OmniCode's automatic fallback creates only local `.omni/skills/` skills.
-8. If the user asks to remove/delete skills from the project, update `.omni/SKILLS.md` so those skills are no longer recorded or suggested.
+6. If no adequate existing skill is available, hand off to `skill-maker` to research and create a narrow project-local skill under `.ged/skills/<skill-name>/SKILL.md` before planning.
+7. Ask the user before installing anything outside the project; GedCode's automatic fallback creates only local `.ged/skills/` skills.
+8. If the user asks to remove/delete skills from the project, update `.ged/SKILLS.md` so those skills are no longer recorded or suggested.
 
 Search guidance:
 - Prefer specific domain queries such as `react performance`, `playwright e2e`, `convex auth`, `security review`, or `release automation`.

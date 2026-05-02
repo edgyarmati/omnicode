@@ -1,6 +1,6 @@
 ---
 description: Review the codebase for architecture deepening opportunities
-agent: omnicode
+agent: gedcode
 ---
 Run the `improve-codebase-architecture` workflow.
 

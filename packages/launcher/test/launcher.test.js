@@ -7,28 +7,28 @@ import { spawn } from "node:child_process";
 
 import {
   MINIMUM_NODE_MAJOR,
-  OMNICODE_SETUP_TARGET,
+  GEDCODE_SETUP_TARGET,
   buildLauncherEnv,
   compareSemver,
-  ensureOmniCodeConfig,
+  ensureGedCodeConfig,
   getConfigRoot,
   getManagedOpenCodeBinaryPath,
   getManagedOpenCodeInstallArgs,
   getManagedOpenCodeMetadataPath,
   getManagedOpenCodeRoot,
   getNativeLauncherReleaseMetadata,
-  getOmniCodeDataRoot,
-  getOmniCodeSetupTarget,
+  getGedCodeDataRoot,
+  getGedCodeSetupTarget,
   getPluginImportSpecifier,
   getXdgConfigHome,
   isSupportedNodeVersion,
   needsManagedOpenCodeUpdate,
   parseNodeMajorVersion,
 } from "../src/lib.js";
-import { OMNICODE_BINARY_VERSION, getRequiredOpenCodeVersion } from "../src/release.js";
+import { GEDCODE_BINARY_VERSION, getRequiredOpenCodeVersion } from "../src/release.js";
 
 async function withTempHome(run) {
-  const dir = await mkdtemp(path.join(os.tmpdir(), "omnicode-launcher-test-"));
+  const dir = await mkdtemp(path.join(os.tmpdir(), "gedcode-launcher-test-"));
   try {
     await run(dir);
   } finally {
@@ -47,30 +47,30 @@ function runNode(args) {
   });
 }
 
-test("config paths are scoped under ~/.config/omnicode", () => {
+test("config paths are scoped under ~/.config/gedcode", () => {
   const home = "/tmp/example-home";
-  assert.equal(getXdgConfigHome(home), "/tmp/example-home/.config/omnicode");
-  assert.equal(getConfigRoot(home), "/tmp/example-home/.config/omnicode/opencode");
+  assert.equal(getXdgConfigHome(home), "/tmp/example-home/.config/gedcode");
+  assert.equal(getConfigRoot(home), "/tmp/example-home/.config/gedcode/opencode");
 });
 
-test("buildLauncherEnv sets isolated OmniCode env vars", () => {
+test("buildLauncherEnv sets isolated GedCode env vars", () => {
   const env = buildLauncherEnv(
     { PATH: "/bin" },
-    "/tmp/home/.config/omnicode/opencode/opencode.json",
-    "/tmp/home/.config/omnicode/opencode",
+    "/tmp/home/.config/gedcode/opencode/opencode.json",
+    "/tmp/home/.config/gedcode/opencode",
     "/tmp/home",
   );
 
   assert.equal(env.PATH, "/bin");
-  assert.equal(env.XDG_CONFIG_HOME, "/tmp/home/.config/omnicode");
-  assert.equal(env.OPENCODE_CONFIG, "/tmp/home/.config/omnicode/opencode/opencode.json");
-  assert.equal(env.OPENCODE_CONFIG_DIR, "/tmp/home/.config/omnicode/opencode");
-  assert.equal(env.OPENCODE_CLIENT, "omnicode");
+  assert.equal(env.XDG_CONFIG_HOME, "/tmp/home/.config/gedcode");
+  assert.equal(env.OPENCODE_CONFIG, "/tmp/home/.config/gedcode/opencode/opencode.json");
+  assert.equal(env.OPENCODE_CONFIG_DIR, "/tmp/home/.config/gedcode/opencode");
+  assert.equal(env.OPENCODE_CLIENT, "gedcode");
 });
 
-test("ensureOmniCodeConfig writes config and plugin shim", async () => {
+test("ensureGedCodeConfig writes config and plugin shim", async () => {
   await withTempHome(async (home) => {
-    const result = await ensureOmniCodeConfig({
+    const result = await ensureGedCodeConfig({
       homeDir: home,
       pluginEntry: "file:///tmp/fake-plugin.js",
     });
@@ -78,8 +78,8 @@ test("ensureOmniCodeConfig writes config and plugin shim", async () => {
     const config = JSON.parse(await readFile(result.configPath, "utf8"));
     const shim = await readFile(result.pluginShimPath, "utf8");
 
-    assert.equal(result.configRoot, path.join(home, ".config", "omnicode", "opencode"));
-    assert.equal(config.default_agent, "omnicode");
+    assert.equal(result.configRoot, path.join(home, ".config", "gedcode", "opencode"));
+    assert.equal(config.default_agent, "gedcode");
     assert.equal(config.share, "manual");
     assert.match(shim, /file:\/\/\/tmp\/fake-plugin\.js/);
   });
@@ -89,18 +89,18 @@ test("plugin shim import specifiers are ESM-safe for absolute and Windows paths"
   assert.equal(getPluginImportSpecifier("file:///tmp/fake-plugin.js"), "file:///tmp/fake-plugin.js");
   assert.match(getPluginImportSpecifier("/tmp/fake plugin.js", "linux"), /^file:\/\/\/tmp\/fake%20plugin\.js$/u);
   assert.equal(
-    getPluginImportSpecifier("C:\\Users\\me\\OmniCode\\plugin\\index.js", "win32"),
-    "file:///C:/Users/me/OmniCode/plugin/index.js",
+    getPluginImportSpecifier("C:\\Users\\me\\GedCode\\plugin\\index.js", "win32"),
+    "file:///C:/Users/me/GedCode/plugin/index.js",
   );
 });
 
 test("launcher --check and --version do not require managed OpenCode runtime", async () => {
   const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..");
-  const launcherBin = path.join(repoRoot, "packages", "launcher", "bin", "omnicode.js");
+  const launcherBin = path.join(repoRoot, "packages", "launcher", "bin", "gedcode.js");
 
   const check = await runNode([launcherBin, "--check"]);
   assert.equal(check.code, 0, `stderr:\n${check.stderr}\nstdout:\n${check.stdout}`);
-  assert.match(check.stdout, /OmniCode launcher OK; plugin resolved/);
+  assert.match(check.stdout, /GedCode launcher OK; plugin resolved/);
 
   const version = await runNode([launcherBin, "--version"]);
   assert.equal(version.code, 0, `stderr:\n${version.stderr}\nstdout:\n${version.stdout}`);
@@ -113,26 +113,26 @@ test("node version helpers enforce the minimum supported release", () => {
   assert.equal(parseNodeMajorVersion("not-a-version"), null);
   assert.equal(isSupportedNodeVersion(`v${MINIMUM_NODE_MAJOR}.0.0`), true);
   assert.equal(isSupportedNodeVersion(`v${MINIMUM_NODE_MAJOR - 1}.9.9`), false);
-  assert.equal(getOmniCodeSetupTarget(), OMNICODE_SETUP_TARGET);
+  assert.equal(getGedCodeSetupTarget(), GEDCODE_SETUP_TARGET);
 });
 
 test("managed OpenCode runtime helpers resolve user-scoped paths and version checks", () => {
   const linuxHome = "/tmp/example-home";
   const linuxEnv = { XDG_DATA_HOME: "/tmp/example-data" };
-  assert.equal(getOmniCodeDataRoot(linuxHome, "linux", linuxEnv), "/tmp/example-data/omnicode");
-  assert.equal(getManagedOpenCodeRoot(linuxHome, "linux", linuxEnv), "/tmp/example-data/omnicode/runtimes/opencode");
+  assert.equal(getGedCodeDataRoot(linuxHome, "linux", linuxEnv), "/tmp/example-data/gedcode");
+  assert.equal(getManagedOpenCodeRoot(linuxHome, "linux", linuxEnv), "/tmp/example-data/gedcode/runtimes/opencode");
   assert.equal(
     getManagedOpenCodeBinaryPath("1.2.3", linuxHome, "linux", linuxEnv),
-    "/tmp/example-data/omnicode/runtimes/opencode/1.2.3/bin/opencode",
+    "/tmp/example-data/gedcode/runtimes/opencode/1.2.3/bin/opencode",
   );
   assert.equal(
     getManagedOpenCodeMetadataPath(linuxHome, "linux", linuxEnv),
-    "/tmp/example-data/omnicode/runtimes/opencode/current.json",
+    "/tmp/example-data/gedcode/runtimes/opencode/current.json",
   );
 
   const windowsHome = "C:\\Users\\me";
   const windowsEnv = { LOCALAPPDATA: "C:\\Users\\me\\AppData\\Local" };
-  assert.match(getOmniCodeDataRoot(windowsHome, "win32", windowsEnv), /OmniCode$/);
+  assert.match(getGedCodeDataRoot(windowsHome, "win32", windowsEnv), /GedCode$/);
   assert.match(getManagedOpenCodeBinaryPath("1.2.3", windowsHome, "win32", windowsEnv), /opencode\.cmd$/);
 
   assert.deepEqual(
@@ -142,7 +142,7 @@ test("managed OpenCode runtime helpers resolve user-scoped paths and version che
       "-g",
       "opencode-ai@1.2.3",
       "--prefix",
-      "/tmp/example-data/omnicode/runtimes/opencode/1.2.3",
+      "/tmp/example-data/gedcode/runtimes/opencode/1.2.3",
     ],
   );
 
@@ -162,12 +162,12 @@ test("managed OpenCode runtime helpers resolve user-scoped paths and version che
 
 test("release metadata matches the generic JS bundle artifact", () => {
   const metadata = getNativeLauncherReleaseMetadata("darwin", "arm64");
-  const v = OMNICODE_BINARY_VERSION;
+  const v = GEDCODE_BINARY_VERSION;
   const escaped = v.replace(/\./g, "\\.");
   assert.equal(metadata.launcherVersion, v);
   assert.match(metadata.opencodeVersion, /^\d+\.\d+\.\d+$/);
-  assert.equal(metadata.assetName, `omnicode-${v}.tar.gz`);
-  assert.match(metadata.assetUrl, new RegExp(`releases/download/v${escaped}/omnicode-${escaped}\\.tar\\.gz$`));
+  assert.equal(metadata.assetName, `gedcode-${v}.tar.gz`);
+  assert.match(metadata.assetUrl, new RegExp(`releases/download/v${escaped}/gedcode-${escaped}\\.tar\\.gz$`));
 });
 
 test("managed OpenCode target uses the latest tested version", () => {
@@ -183,10 +183,10 @@ test("native installer assets and launcher package metadata are present", async 
   const windowsInstaller = await readFile(path.join(repoRoot, "install.ps1"), "utf8");
   const releaseWorkflow = await readFile(path.join(repoRoot, ".github", "workflows", "release.yml"), "utf8");
   const bundleScript = await readFile(path.join(repoRoot, "scripts", "release", "bundle.sh"), "utf8");
-  const launcherBin = await readFile(path.join(repoRoot, "packages", "launcher", "bin", "omnicode.js"), "utf8");
+  const launcherBin = await readFile(path.join(repoRoot, "packages", "launcher", "bin", "gedcode.js"), "utf8");
 
-  assert.equal(launcherPackage.name, "omnicode");
-  assert.equal(launcherPackage.bin.omnicode, "./bin/omnicode.js");
+  assert.equal(launcherPackage.name, "gedcode");
+  assert.equal(launcherPackage.bin.gedcode, "./bin/gedcode.js");
   assert.deepEqual(launcherPackage.files, ["bin", "src"]);
   assert.match(posixInstaller, /releases\/download/);
   assert.match(windowsInstaller, /releases\/download/);
@@ -196,7 +196,7 @@ test("native installer assets and launcher package metadata are present", async 
   assert.match(releaseWorkflow, /softprops\/action-gh-release/);
   assert.match(releaseWorkflow, /dist\/install\.sh/);
   assert.match(releaseWorkflow, /dist\/install\.ps1/);
-  assert.match(bundleScript, /omnicode-.*\.tar\.gz/);
+  assert.match(bundleScript, /gedcode-.*\.tar\.gz/);
   assert.match(bundleScript, /plugin/);
 
   await access(path.join(repoRoot, "scripts", "setup"));

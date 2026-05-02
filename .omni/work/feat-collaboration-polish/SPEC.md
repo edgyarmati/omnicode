@@ -2,17 +2,17 @@
 
 ## Problem
 
-OmniCode now enforces clarification, skill-fit, branch-scoped planning, verification, and commits, but it does not yet encode several engineering-practice workflows that improve implementation quality inside each slice. Matt Pocock's public skills highlight useful patterns for TDD, disciplined diagnosis, documentation-aware clarification, and architecture review. OmniCode should adapt those concepts into versioned, tested, OmniCode-native workflow resources.
+GedCode now enforces clarification, skill-fit, branch-scoped planning, verification, and commits, but it does not yet encode several engineering-practice workflows that improve implementation quality inside each slice. Matt Pocock's public skills highlight useful patterns for TDD, disciplined diagnosis, documentation-aware clarification, and architecture review. GedCode should adapt those concepts into versioned, tested, GedCode-native workflow resources.
 
 ## Requested Behavior
 
-Implement bundled OmniCode workflow support for:
+Implement bundled GedCode workflow support for:
 
 1. **TDD implementation discipline**
    - Add a bundled `tdd` workflow skill.
    - Route feature work, bug fixes with clear seams, behavior changes, and behavior-preserving refactors toward TDD during skill suggestion/skill-fit.
    - Instruct agents to use TDD as a workflow requirement in planning and verification, not as a brittle tool-level source-edit guard.
-   - Treat the active planning directory's `TESTS.md` as the place to record TDD applicability, behavior under test, public seam/interface, red/green/refactor evidence, and verification commands. Root `.omni/TESTS.md` remains a legacy fallback.
+   - Treat the active planning directory's `TESTS.md` as the place to record TDD applicability, behavior under test, public seam/interface, red/green/refactor evidence, and verification commands. Root `.ged/TESTS.md` remains a legacy fallback.
 
 2. **Diagnose bug workflow**
    - Add a bundled `diagnose` workflow skill for bugs, failing behavior, and performance regressions.
@@ -31,7 +31,7 @@ Implement bundled OmniCode workflow support for:
 
 ## Constraints
 
-- Adapt concepts into bundled OmniCode resources; do not install or depend on external skills at runtime.
+- Adapt concepts into bundled GedCode resources; do not install or depend on external skills at runtime.
 - Keep OpenCode as the host; no custom shell behavior.
 - Preserve existing public tool names and existing workflow guard semantics.
 - Keep TDD/diagnose enforcement instruction- and planning-based rather than trying to infer true red/green cycles at tool level.
@@ -41,7 +41,7 @@ Implement bundled OmniCode workflow support for:
 ## Success Criteria
 
 - Bundled/default skills include `tdd`, `diagnose`, `grill-with-docs`, and `improve-codebase-architecture` as they land.
-- `omnicode_suggest_skills` suggests:
+- `gedcode_suggest_skills` suggests:
   - `tdd` for feature/behavior/refactor/test-first requests,
   - `diagnose` for bugs/failures/performance regressions,
   - `grill-with-docs` for ADR/domain/documentation-aware planning,
@@ -58,17 +58,17 @@ Implement bundled OmniCode workflow support for:
 
 ### Problem
 
-OmniCode's launcher pins the managed upstream OpenCode runtime target at `1.14.25`, while npm reports the latest `opencode-ai` version as `1.14.30`. New OmniCode-managed installs should use the latest tested OpenCode runtime without changing OmniCode's own package version.
+GedCode's launcher pins the managed upstream OpenCode runtime target at `1.14.25`, while npm reports the latest `opencode-ai` version as `1.14.30`. New GedCode-managed installs should use the latest tested OpenCode runtime without changing GedCode's own package version.
 
 ### Requested Behavior
 
 - Update the launcher OpenCode target version from `1.14.25` to `1.14.30`.
-- Keep OmniCode package versions at `0.3.0`.
+- Keep GedCode package versions at `0.3.0`.
 - Update tests, docs, and changelog only where they explicitly assert or describe the target version.
 
 ### Constraints
 
-- This is a dependency/runtime target bump, not an OmniCode release version bump.
+- This is a dependency/runtime target bump, not an GedCode release version bump.
 - Keep the change to one bounded slice.
 - Verify with `npm run check` and `npm test` before committing.
 
@@ -85,7 +85,7 @@ OmniCode's launcher pins the managed upstream OpenCode runtime target at `1.14.2
 
 ### Problem
 
-The current `feat/collaboration-polish` branch diverged before main merged the subagent workflow PR. The branch lacks the main commits for OmniCode settings primitives, optional omni subagents, and the `/omni-agents` setup command.
+The current `feat/collaboration-polish` branch diverged before main merged the subagent workflow PR. The branch lacks the main commits for GedCode settings primitives, optional omni subagents, and the `/ged-agents` setup command.
 
 ### Requested Behavior
 
@@ -111,18 +111,18 @@ The current `feat/collaboration-polish` branch diverged before main merged the s
 
 ### Problem
 
-OmniCode now has optional native subagents (`omni-explorer`, `omni-planner`, `omni-verifier`), and the orchestration guidance must stay aligned with a no-writer-subagent model. Recent practical multi-agent guidance and Repo Prompt's context-engineering workflows point toward a safer model: context gathering and critique can be parallelized, but writes and final decisions should stay single-threaded with the primary `omnicode` agent.
+GedCode now has optional native subagents (`ged-explorer`, `ged-planner`, `ged-verifier`), and the orchestration guidance must stay aligned with a no-writer-subagent model. Recent practical multi-agent guidance and Repo Prompt's context-engineering workflows point toward a safer model: context gathering and critique can be parallelized, but writes and final decisions should stay single-threaded with the primary `gedcode` agent.
 
 ### Requested Behavior
 
-Reframe OmniCode orchestration around **single-writer intelligence injection**:
+Reframe GedCode orchestration around **single-writer intelligence injection**:
 
 1. **Orchestrator owns writes and decisions by default**
-   - The primary `omnicode` agent remains responsible for clarification, planning, source edits, verification decisions, state/session notes, commits, and PR decisions.
+   - The primary `gedcode` agent remains responsible for clarification, planning, source edits, verification decisions, state/session notes, commits, and PR decisions.
    - Native subagents are context lenses by default, not co-authors.
 
 2. **Read-only scouts produce discovery packets**
-   - `omni-explorer` and `omni-planner` gather files, evidence, patterns, risks, open questions, and candidate plan/test updates.
+   - `ged-explorer` and `ged-planner` gather files, evidence, patterns, risks, open questions, and candidate plan/test updates.
    - They should return structured findings with file references and uncertainty, not implementation patches.
 
 3. **Smart-friend consultation is advisory**
@@ -149,7 +149,7 @@ Start with **policy + workflow enforcement surfaces** only:
 
 ### Constraints
 
-- Keep OpenCode as the host and OmniCode as the workflow layer.
+- Keep OpenCode as the host and GedCode as the workflow layer.
 - Preserve public tool and command names.
 - Keep existing optional subagent settings compatibility.
 - Remove legacy writer-subagent concepts instead of keeping compatibility placeholders.
@@ -159,9 +159,9 @@ Start with **policy + workflow enforcement surfaces** only:
 ### Success Criteria
 
 - Agent instructions state the single-writer invariant and distinguish read-only intelligence subagents from writer subagents.
-- Subagent prompts/descriptions make `omni-explorer`, `omni-planner`, and `omni-verifier` advisory/read-only, with no writer subagent role.
+- Subagent prompts/descriptions make `ged-explorer`, `ged-planner`, and `ged-verifier` advisory/read-only, with no writer subagent role.
 - Verification workflow guidance includes clean-context review/adjudication before commit for implementation slices.
-- Docs explain how Repo Prompt-style discovery/curation/handoff and Cognition-style single-writer review loops map to OmniCode.
+- Docs explain how Repo Prompt-style discovery/curation/handoff and Cognition-style single-writer review loops map to GedCode.
 - Tests cover the updated orchestration prompt or generated config strings enough to prevent regression to writer subagents.
 - `npm run check` and `npm test` pass before commit.
 
@@ -171,11 +171,11 @@ Start with **policy + workflow enforcement surfaces** only:
 
 ### Problem
 
-The single-writer orchestration policy now requires clean-context review before committing meaningful implementation slices, but OmniCode only documents the expectation in general workflow guidance. Agents need an explicit command/workflow surface that standardizes how to review a diff with fresh context, adjudicate findings, rerun verification, and decide whether a commit is ready.
+The single-writer orchestration policy now requires clean-context review before committing meaningful implementation slices, but GedCode only documents the expectation in general workflow guidance. Agents need an explicit command/workflow surface that standardizes how to review a diff with fresh context, adjudicate findings, rerun verification, and decide whether a commit is ready.
 
 ### Requested Behavior
 
-- Add a bundled `/clean-context-review` command for the `omnicode` agent.
+- Add a bundled `/clean-context-review` command for the `gedcode` agent.
 - The command must be review/adjudication-only by default: inspect git status/diff and planned tests, review the diff with minimal prior assumptions, report findings by severity, and require the primary orchestrator to accept/reject findings before commit.
 - Update `/commit` guidance so commits run or explicitly account for clean-context review before creating a commit.
 - Update instructions/docs/changelog to surface the command.
@@ -206,7 +206,7 @@ The implementation now encodes single-writer orchestration and clean-context rev
 ### Requested Behavior
 
 - Add a user-facing docs page that explains the current orchestration model.
-- Cover the primary `omnicode` agent, optional intelligence subagents, `/clean-context-review`, `/omni-agents`, and the reason writer subagents are not implemented.
+- Cover the primary `gedcode` agent, optional intelligence subagents, `/clean-context-review`, `/ged-agents`, and the reason writer subagents are not implemented.
 - Link the page from README and AGENTS.
 - Record the documentation update in CHANGELOG.
 
@@ -227,20 +227,20 @@ The implementation now encodes single-writer orchestration and clean-context rev
 
 ### Problem
 
-The current code still exposes a legacy writer subagent even though OmniCode's intended model is single-writer orchestration with intelligence-only subagents. Keeping that compatibility placeholder creates confusion and implies writer subagents remain in scope.
+The current code still exposes a legacy writer subagent even though GedCode's intended model is single-writer orchestration with intelligence-only subagents. Keeping that compatibility placeholder creates confusion and implies writer subagents remain in scope.
 
 ### Requested Behavior
 
-- Remove the legacy writer subagent from subagent types, defaults, task permissions, settings schemas, `/omni-agents` guidance, tests, and docs.
+- Remove the legacy writer subagent from subagent types, defaults, task permissions, settings schemas, `/ged-agents` guidance, tests, and docs.
 - Remove writer-worker roadmap references from active docs and planning notes.
-- Keep only `omni-explorer`, `omni-planner`, and `omni-verifier` as optional native subagents.
+- Keep only `ged-explorer`, `ged-planner`, and `ged-verifier` as optional native subagents.
 - Update `skill-maker` and any durable notes that mention the legacy writer subagent.
 
 ### Constraints
 
 - No legacy compatibility required.
 - Do not add a replacement writer-subagent path.
-- Keep the primary `omnicode` agent as the only active-worktree writer.
+- Keep the primary `gedcode` agent as the only active-worktree writer.
 
 ### Success Criteria
 
@@ -256,14 +256,14 @@ The current code still exposes a legacy writer subagent even though OmniCode's i
 
 ### Problem
 
-OmniCode's agent settings only support per-agent model IDs. OpenCode supports passthrough provider options like `reasoningEffort` and `textVerbosity` on agent config — any extra keys on the agent config get forwarded to the provider. Users want to configure per-agent reasoning levels (e.g. high thinking for planner, low thinking for verifier) but the current plugin has no surface for this.
+GedCode's agent settings only support per-agent model IDs. OpenCode supports passthrough provider options like `reasoningEffort` and `textVerbosity` on agent config — any extra keys on the agent config get forwarded to the provider. Users want to configure per-agent reasoning levels (e.g. high thinking for planner, low thinking for verifier) but the current plugin has no surface for this.
 
 ### Requested Behavior
 
-- Extend OmniCode's agent settings schema with a per-agent `options` field that accepts arbitrary key-value pairs.
+- Extend GedCode's agent settings schema with a per-agent `options` field that accepts arbitrary key-value pairs.
 - Merge per-agent options into the OpenCode agent config during `buildSubagentConfig`.
-- Update `omnicode_update_agents_settings` tool to accept and persist options.
-- Update `omnicode_agents_status` tool to report per-agent options.
+- Update `gedcode_update_agents_settings` tool to accept and persist options.
+- Update `gedcode_agents_status` tool to report per-agent options.
 - Preserve existing behavior when no options are set.
 
 ### Constraints
@@ -276,10 +276,10 @@ OmniCode's agent settings only support per-agent model IDs. OpenCode supports pa
 
 ### Success Criteria
 
-- `OmniCodeSettings.agents` includes an `options` field.
+- `GedCodeSettings.agents` includes an `options` field.
 - `buildSubagentConfig` merges per-agent options into the returned agent config.
-- `omnicode_update_agents_settings` accepts an `options` parameter and persists it to settings.
-- `omnicode_agents_status` reports effective per-agent options.
+- `gedcode_update_agents_settings` accepts an `options` parameter and persists it to settings.
+- `gedcode_agents_status` reports effective per-agent options.
 - Settings merge global and project options with project override precedence.
 - Tests cover option parsing, persistence, merging, and passthrough into agent config.
 - `npm run check` and `npm test` pass.

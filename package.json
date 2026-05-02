@@ -1,15 +1,15 @@
 {
-  "name": "omnicode",
+  "name": "gedcode",
   "private": true,
   "version": "0.3.0",
-  "description": "OmniCode monorepo: OpenCode plugin + launcher for the Omni workflow.",
+  "description": "GedCode monorepo: OpenCode plugin + launcher for the Omni workflow.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/edgyarmati/omnicode"
+    "url": "https://github.com/edgyarmati/gedcode"
   },
-  "homepage": "https://github.com/edgyarmati/omnicode#readme",
+  "homepage": "https://github.com/edgyarmati/gedcode#readme",
   "bugs": {
-    "url": "https://github.com/edgyarmati/omnicode/issues"
+    "url": "https://github.com/edgyarmati/gedcode/issues"
   },
   "type": "module",
   "workspaces": [

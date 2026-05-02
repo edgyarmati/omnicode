@@ -4,22 +4,22 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-printf '==> OmniCode setup: installing workspace dependencies\n'
+printf '==> GedCode setup: installing workspace dependencies\n'
 npm install
 
-printf '\n==> OmniCode setup: building workspaces\n'
+printf '\n==> GedCode setup: building workspaces\n'
 npm run build
 
-printf '\n==> OmniCode setup: linking local omnicode launcher\n'
+printf '\n==> GedCode setup: linking local gedcode launcher\n'
 npm link ./packages/launcher
 
-if ! command -v omnicode >/dev/null 2>&1; then
-  printf 'Warning: setup completed, but the omnicode command was not found on PATH.\n' >&2
+if ! command -v gedcode >/dev/null 2>&1; then
+  printf 'Warning: setup completed, but the gedcode command was not found on PATH.\n' >&2
   printf "You may need to restart your shell or add npm's global bin directory to PATH.\n" >&2
   exit 1
 fi
 
-printf '\n==> OmniCode setup: installing RTK (token optimization proxy)\n'
+printf '\n==> GedCode setup: installing RTK (token optimization proxy)\n'
 if command -v rtk >/dev/null 2>&1; then
   printf 'RTK already installed: %s\n' "$(rtk --version 2>/dev/null || echo 'present')"
 else
@@ -32,12 +32,12 @@ else
   if command -v rtk >/dev/null 2>&1; then
     printf 'RTK installed successfully.\n'
   else
-    printf 'Warning: RTK installation failed. OmniCode works without it, but token savings will be unavailable.\n' >&2
+    printf 'Warning: RTK installation failed. GedCode works without it, but token savings will be unavailable.\n' >&2
     printf 'You can install RTK later: https://github.com/rtk-ai/rtk\n' >&2
   fi
 fi
 
-printf '\n==> OmniCode setup complete\n'
+printf '\n==> GedCode setup complete\n'
 printf 'Next steps:\n'
 printf '  1. Optionally run: npm test\n'
-printf '  2. Start OmniCode: omnicode\n'
+printf '  2. Start GedCode: gedcode\n'

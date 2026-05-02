@@ -20,7 +20,7 @@ Produce architecture review candidates, not automatic refactors. The output shou
 
 ## Review process
 
-1. Read project context first: `.omni/PROJECT.md`, `.omni/STANDARDS.md`, `.omni/DECISIONS.md`, active work planning, docs, ADRs, and the repo map when useful.
+1. Read project context first: `.ged/PROJECT.md`, `.ged/STANDARDS.md`, `.ged/DECISIONS.md`, active work planning, docs, ADRs, and the repo map when useful.
 2. Explore the relevant code without changing source files.
 3. Look for friction:
    - understanding one concept requires bouncing across many tiny modules;

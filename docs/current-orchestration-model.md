@@ -1,16 +1,16 @@
-# Current OmniCode Orchestration Model
+# Current GedCode Orchestration Model
 
-OmniCode uses **single-writer orchestration**.
+GedCode uses **single-writer orchestration**.
 
 The short version:
 
-> The primary `omnicode` agent owns active-worktree writes and decisions. Optional subagents contribute intelligence only. They do not become parallel developers.
+> The primary `gedcode` agent owns active-worktree writes and decisions. Optional subagents contribute intelligence only. They do not become parallel developers.
 
 This document explains how the current system works for users and future maintainers.
 
 ## Why this model exists
 
-Parallel writer agents are tempting, but they fragment implicit decisions: style, edge cases, tests, architecture, and product interpretation. OmniCode instead keeps one coherent writer and injects extra intelligence around that writer.
+Parallel writer agents are tempting, but they fragment implicit decisions: style, edge cases, tests, architecture, and product interpretation. GedCode instead keeps one coherent writer and injects extra intelligence around that writer.
 
 The current model is designed to get the practical benefits of multi-agent work without reintroducing unstructured swarms:
 
@@ -19,7 +19,7 @@ The current model is designed to get the practical benefits of multi-agent work 
 - clean-context review before commit
 - one owner for scope, edits, verification, commits, and PR decisions
 
-## The primary `omnicode` agent
+## The primary `gedcode` agent
 
 The primary agent is the orchestrator and the active-worktree writer.
 
@@ -28,7 +28,7 @@ It owns:
 - user clarification
 - collaboration/branch checkpoint decisions
 - skill-fit decisions
-- `.omni/` planning artifacts
+- `.ged/` planning artifacts
 - implementation slices
 - source edits in the active worktree
 - verification decisions
@@ -39,28 +39,28 @@ When in doubt, the primary agent decides what becomes an action.
 
 ## Optional native subagents
 
-Native subagents are optional and configured through `/omni-agents`. This is a configuration surface for intelligence helpers; it does not enable any writer role.
+Native subagents are optional and configured through `/ged-agents`. This is a configuration surface for intelligence helpers; it does not enable any writer role.
 
 When native subagents are enabled, they are mandatory checkpoints for non-trivial change requests unless the primary agent records a skip reason. Non-trivial means behavior-changing, cross-file, architecture-affecting, migration/release/process-changing, security-sensitive, bug-fix, or any change where tests, edge cases, or scope can reasonably be wrong.
 
 Checkpoint policy:
 
-- use `omni-explorer` for evidence-backed discovery when relevant code context is not already known;
-- use `omni-planner` before finalizing or materially changing `SPEC.md`, `TASKS.md`, or `TESTS.md`;
-- use `omni-verifier` for checks or clean-context review before committing meaningful implementation changes.
+- use `ged-explorer` for evidence-backed discovery when relevant code context is not already known;
+- use `ged-planner` before finalizing or materially changing `SPEC.md`, `TASKS.md`, or `TESTS.md`;
+- use `ged-verifier` for checks or clean-context review before committing meaningful implementation changes.
 
 Allowed skip reasons are: the task is trivial/mechanical, native subagents are disabled, the runtime does not make a subagent available, the subagent call fails, or the user explicitly asks not to delegate. The primary agent should record the skip reason in the response and active planning or verification notes for meaningful work.
 
 Settings live outside durable project memory:
 
-- global: `~/.omnicode/settings.json`
-- project override: `.omnicode/settings.json` — gitignored by default
+- global: `~/.gedcode/settings.json`
+- project override: `.gedcode/settings.json` — gitignored by default
 
 Optional model guidance can live in `model-recommendations.md` next to either settings file.
 
 Subagents report back to the primary agent. They do not commit, make final decisions, or own scope.
 
-### `omni-explorer`
+### `ged-explorer`
 
 Purpose: read-only discovery.
 
@@ -92,7 +92,7 @@ Expected output is a discovery packet:
 
 It must not edit files, run mutating commands, or continue into implementation.
 
-### `omni-planner`
+### `ged-planner`
 
 Purpose: read-only planning and smart-friend critique.
 
@@ -108,7 +108,7 @@ It should say what the primary agent needs to inspect next instead of guessing w
 
 It must not edit files or write planning artifacts directly. The primary agent writes final planning updates.
 
-### `omni-verifier`
+### `ged-verifier`
 
 Purpose: verification and clean-context review.
 
@@ -161,7 +161,7 @@ The `/commit` command reminds agents to run `/clean-context-review` or explicitl
 
 ## What is intentionally not implemented
 
-OmniCode does **not** implement writer subagents.
+GedCode does **not** implement writer subagents.
 
 Any agent that writes code independently is a writer-subagent model, so it is out of scope for the current system.
 
@@ -177,7 +177,7 @@ Do not add writer-subagent orchestration unless the product direction is explici
 
 ## User commands
 
-- `/omni-agents` — inspect or configure optional native subagents.
+- `/ged-agents` — inspect or configure optional native subagents.
 - `/clean-context-review` — run a review/adjudication pass over current changes before commit.
 - `/commit` — verify, account for clean-context review, stage, and commit ready changes.
 
@@ -185,7 +185,7 @@ Do not add writer-subagent orchestration unless the product direction is explici
 
 When changing orchestration behavior, preserve these invariants:
 
-- The primary `omnicode` agent is the active-worktree writer by default.
+- The primary `gedcode` agent is the active-worktree writer by default.
 - Subagents contribute intelligence and report back.
 - Reviewers do not edit or commit.
 - No writer subagent role exists.

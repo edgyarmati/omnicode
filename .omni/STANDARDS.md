@@ -5,16 +5,16 @@
 ```md
 # AGENTS.md
 
-This repository is **OmniCode**.
+This repository is **GedCode**.
 
-## What OmniCode is
+## What GedCode is
 
-OmniCode is an **OpenCode plugin + launcher**.
+GedCode is an **OpenCode plugin + launcher**.
 
 It is **not**:
 - a custom terminal UI
 - a fork of OpenCode
-- a continuation of the old Omni-Pi standalone shell work
+- a continuation of the old GedPi standalone shell work
 
-OpenCode owns the UX and runtime. OmniCode owns the **workflow layer**.
+OpenCode owns the UX and runtime. GedCode owns the **workflow layer**.
 ```

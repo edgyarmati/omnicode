@@ -3,7 +3,7 @@
 ## Slice 1 — TDD workflow
 
 - [x] Add/update tests proving bundled/default skill memory includes `tdd`.
-- [x] Add/update tests proving `omnicode_suggest_skills` suggests `tdd` for feature, behavior-change, refactor, and test-first/TDD wording.
+- [x] Add/update tests proving `gedcode_suggest_skills` suggests `tdd` for feature, behavior-change, refactor, and test-first/TDD wording.
 - [x] Run `npm run check`.
 - [x] Run `npm test`.
 
@@ -12,7 +12,7 @@ Expected outcome: type-check passes and the full test suite passes; TDD behavior
 ## Slice 2 — Diagnose workflow
 
 - [x] Add/update tests proving bundled/default skill memory includes `diagnose`.
-- [x] Add/update tests proving `omnicode_suggest_skills` suggests `diagnose` for bug, failure, debugging, and performance-regression wording.
+- [x] Add/update tests proving `gedcode_suggest_skills` suggests `diagnose` for bug, failure, debugging, and performance-regression wording.
 - [x] Run `npm run check`.
 - [x] Run `npm test`.
 
@@ -21,7 +21,7 @@ Expected outcome: bug/performance workflows route through diagnosis before TDD/r
 ## Slice 3 — Grill with docs workflow
 
 - [x] Add/update tests proving bundled/default skill memory includes `grill-with-docs`.
-- [x] Add/update tests proving `omnicode_suggest_skills` suggests `grill-with-docs` for domain language, ADR, decision-record, and durable-doc planning wording.
+- [x] Add/update tests proving `gedcode_suggest_skills` suggests `grill-with-docs` for domain language, ADR, decision-record, and durable-doc planning wording.
 - [x] Run `npm run check`.
 - [x] Run `npm test`.
 
@@ -45,7 +45,7 @@ Expected outcome: `/improve-codebase-architecture` is review/planning-only by de
 - [x] Run `npm run check`.
 - [x] Run `npm test`.
 
-Expected outcome: managed OpenCode runtime target is `1.14.30`, OmniCode package versions remain `0.3.0`, and verification passes. Observed red first: launcher test failed while target was `1.14.25`; after updating, `npm run check` passed and `npm test` passed with launcher 11 tests and plugin 63 tests.
+Expected outcome: managed OpenCode runtime target is `1.14.30`, GedCode package versions remain `0.3.0`, and verification passes. Observed red first: launcher test failed while target was `1.14.25`; after updating, `npm run check` passed and `npm test` passed with launcher 11 tests and plugin 63 tests.
 
 ## Slice 6 — Main subagent workflow integration
 
@@ -64,11 +64,11 @@ Expected outcome: current branch includes the subagent workflow commits from mai
 - [x] Run `npm run check`.
 - [x] Run `npm test`.
 
-Expected outcome: policy and workflow resources steer OmniCode toward intelligence subagents plus single-writer execution, with no new runtime enforcement/tools in this slice. Observed: `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 69 tests, `git diff --check` passed, and clean-context review found no blocking issues.
+Expected outcome: policy and workflow resources steer GedCode toward intelligence subagents plus single-writer execution, with no new runtime enforcement/tools in this slice. Observed: `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 69 tests, `git diff --check` passed, and clean-context review found no blocking issues.
 
 ## Slice 8 — Clean-context review command
 
-- [x] Add tests proving `OmniCodePlugin` registers `/clean-context-review` for the `omnicode` agent.
+- [x] Add tests proving `GedCodePlugin` registers `/clean-context-review` for the `gedcode` agent.
 - [x] Add tests proving the command template includes blind diff review, optional contract review, severity/evidence/confidence/blocking status, and orchestrator adjudication.
 - [x] Add tests proving `/commit` guidance requires running or explicitly accounting for clean-context review before commit.
 - [x] Run `npm run check`.
@@ -85,7 +85,7 @@ Expected outcome: clean-context review has an explicit workflow command, while w
 - [x] Run `npm test`.
 - [x] Run `git diff --check`.
 
-Expected outcome: future users understand that the primary `omnicode` agent owns active-worktree writes and decisions, subagents provide intelligence only, `/clean-context-review` supports review/adjudication, and writer subagent mode is intentionally not implemented. Observed: docs were added and linked; clean-context review found wording that implied future writer mode was usable, which was fixed; `npm run check`, `npm test`, and `git diff --check` passed.
+Expected outcome: future users understand that the primary `gedcode` agent owns active-worktree writes and decisions, subagents provide intelligence only, `/clean-context-review` supports review/adjudication, and writer subagent mode is intentionally not implemented. Observed: docs were added and linked; clean-context review found wording that implied future writer mode was usable, which was fixed; `npm run check`, `npm test`, and `git diff --check` passed.
 
 ## Slice 10 — Remove writer subagent scope
 
@@ -97,15 +97,15 @@ Expected outcome: future users understand that the primary `omnicode` agent owns
 - [x] Run `git diff --check`.
 - [x] Search for active references to the removed writer-subagent name.
 
-Expected outcome: OmniCode has no writer-subagent surface; optional native subagents are intelligence-only. Observed: source/settings/docs/tests were cleaned, stale model keys are filtered on read/write, `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 70 tests, `git diff --check` passed, and search for the removed writer-subagent name returned no matches.
+Expected outcome: GedCode has no writer-subagent surface; optional native subagents are intelligence-only. Observed: source/settings/docs/tests were cleaned, stale model keys are filtered on read/write, `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 70 tests, `git diff --check` passed, and search for the removed writer-subagent name returned no matches.
 
 ## Slice 11 — Per-agent passthrough provider options
 
-- [ ] Add tests proving `readOmniCodeSettings` parses and merges per-agent `options` from global and project settings.
-- [ ] Add tests proving `updateOmniCodeAgentsSettings` persists and cleans per-agent options.
+- [ ] Add tests proving `readGedCodeSettings` parses and merges per-agent `options` from global and project settings.
+- [ ] Add tests proving `updateGedCodeAgentsSettings` persists and cleans per-agent options.
 - [ ] Add tests proving `buildSubagentConfig` merges per-agent options into the returned agent config (e.g. `reasoningEffort`).
 - [ ] Add tests proving plugin config passes per-agent options through to OpenCode agent config.
-- [ ] Add tests proving `omnicode_agents_status` reports effective per-agent options.
+- [ ] Add tests proving `gedcode_agents_status` reports effective per-agent options.
 - [ ] Run `npm run check`.
 - [ ] Run `npm test`.
 
@@ -115,9 +115,9 @@ Expected outcome: users can set per-agent provider options like `reasoningEffort
 
 - [x] Add tests proving agent status displays object model configs and resolved per-agent options.
 - [x] Add tests proving tool status/update paths use the injected settings home and preserve object configs.
-- [x] Add tests proving primary instructions and `/omni-agents` guidance mention mandatory checkpoints, skip reasons, exact model IDs, and object configs.
+- [x] Add tests proving primary instructions and `/ged-agents` guidance mention mandatory checkpoints, skip reasons, exact model IDs, and object configs.
 - [x] Update docs and prompts so enabled explorer/planner/verifier are mandatory checkpoints for non-trivial changes unless a skip reason is recorded.
 - [x] Run `npm run check`.
 - [x] Run `npm test`.
 
-Expected outcome: enabled subagents are no longer merely “preferred”; non-trivial changes require explorer/planner/verifier checkpoints or a recorded skip reason, and `/omni-agents` does not lose provider options or hide which config path/model is effective. Observed: `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 76 tests.
+Expected outcome: enabled subagents are no longer merely “preferred”; non-trivial changes require explorer/planner/verifier checkpoints or a recorded skip reason, and `/ged-agents` does not lose provider options or hide which config path/model is effective. Observed: `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 76 tests.

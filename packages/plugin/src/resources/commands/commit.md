@@ -1,6 +1,6 @@
 ---
 description: Review local changes and create a descriptive conventional commit
-agent: omnicode
+agent: gedcode
 ---
 Review the current repository changes and commit whatever is ready to be committed.
 
