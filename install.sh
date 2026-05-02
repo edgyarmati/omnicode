@@ -139,8 +139,8 @@ printf '\n'
 if command -v rtk >/dev/null 2>&1; then
   info "RTK is already installed ($(rtk --version 2>/dev/null || echo 'unknown version'))"
 elif command -v brew >/dev/null 2>&1; then
-  printf 'OmniCode can use RTK for transparent bash output compression (60-90%% token savings).\n'
-  printf 'RTK is optional — OmniCode works fine without it.\n'
+  printf 'OmniCode can optionally use RTK, a CLI proxy that compresses bash output\n'
+  printf '(git, ls, test runners, etc.) for 60-90%% token savings. It is not required.\n'
   printf '\n'
   if [ -z "${OMNICODE_SKIP_RTK:-}" ]; then
     printf 'Install RTK via Homebrew? [Y/n] '
@@ -160,7 +160,8 @@ elif command -v brew >/dev/null 2>&1; then
     info "Skipping RTK (OMNICODE_SKIP_RTK is set). Install later with: brew install rtk"
   fi
 else
-  info "RTK (optional bash output compression) is available via Homebrew. Install Homebrew and then: brew install rtk"
+  info "RTK (optional CLI output compression for 60-90% token savings) is available via Homebrew."
+  info "Install Homebrew (brew.sh) and then: brew install rtk"
 fi
 
 printf '\n'
