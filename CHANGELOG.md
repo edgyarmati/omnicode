@@ -25,6 +25,7 @@
 - **Clean-context review command** — added `/clean-context-review` to standardize blind or contract diff review, finding severity/evidence/confidence reporting, and orchestrator adjudication before commit.
 - **Current orchestration model docs** — documented how the primary agent, optional read-only subagents, clean-context review, commit flow, and intentionally unimplemented writer-subagent mode work today.
 - **Per-agent passthrough provider options** — OmniCode agent settings now accept per-subagent passthrough options (e.g. `reasoningEffort`, `textVerbosity`) paired directly with the model in the `models` field. Each agent accepts either a model ID string or an object with `model` plus provider options (e.g. `{"model": "openai/gpt-5.5", "reasoningEffort": "high"}`), so options travel with the model they apply to.
+- **Mandatory enabled-subagent checkpoints** — when native subagents are enabled, non-trivial change requests now require explorer/planner/verifier checkpoints unless the agent records a skip reason, and `/omni-agents` setup/status guidance is clearer about exact model IDs and object configs.
 
 ### Fixes
 

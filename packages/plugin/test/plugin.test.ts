@@ -23,6 +23,7 @@ import {
   ensureOmniCodeProjectGitignore,
   ensureOmniDir,
   formatWorkflowSettingsStatus,
+  formatAgentsSettingsStatus,
   importStandards,
   migrateRootPlanToActiveWork,
   planningArtifactsReady,
@@ -315,6 +316,30 @@ test("formatWorkflowSettingsStatus exposes effective workflow policy", async () 
   assert.match(status, /Allow Protected Branch Changes: yes/);
   assert.match(status, /Offer PR On Completion: yes/);
   assert.match(status, /Auto Create PR On Completion: no/);
+});
+
+test("formatAgentsSettingsStatus exposes object model configs and checkpoint policy", () => {
+  const status = formatAgentsSettingsStatus({
+    workflow: DEFAULT_WORKFLOW_SETTINGS,
+    agents: {
+      enabled: true,
+      models: {
+        "omni-explorer": { model: "opencode/minimax-m2.5-free", reasoningEffort: "high" },
+        "omni-planner": { model: "openai/gpt-5.5", reasoningEffort: "high", textVerbosity: "low" },
+        "omni-verifier": "openai/gpt-5.5",
+      },
+    },
+  }, {
+    globalPath: "/home/test/.omnicode/settings.json",
+    projectPath: "/repo/.omnicode/settings.json",
+    recommendationsPath: null,
+  });
+
+  assert.match(status, /opencode\/minimax-m2\.5-free/);
+  assert.match(status, /omni-planner: model=openai\/gpt-5\.5, reasoningEffort=high, textVerbosity=low/);
+  assert.match(status, /omni-verifier: model=openai\/gpt-5\.5/);
+  assert.match(status, /Checkpoint policy: active for non-trivial change requests/);
+  assert.match(status, /skip only with a recorded reason/);
 });
 
 test("summarizePullRequestPrerequisites reports missing PR requirements", () => {
@@ -895,6 +920,8 @@ test("plugin config registers optional Omni subagents and omni-agents command", 
     assert.equal(agents["omni-verifier"]?.model, "openai/verifier-model");
     assert.equal(agents[removedWriterName], undefined);
     assert.match(String(agents.omnicode?.prompt), /Single-writer invariant/);
+    assert.match(String(agents.omnicode?.prompt), /mandatory intelligence checkpoints/);
+    assert.match(String(agents.omnicode?.prompt), /record a concise skip reason/);
     assert.match(String(agents.omnicode?.prompt), /clean-context review/);
     assert.match(String(agents.omnicode?.prompt), /There is no writer subagent role/);
     assert.match(String(agents["omni-explorer"]?.prompt), /discovery packet/);
@@ -913,6 +940,9 @@ test("plugin config registers optional Omni subagents and omni-agents command", 
     assert.match(String(command?.template), /opencode models/);
     assert.match(String(command?.template), /omnicode_update_agents_settings/);
     assert.match(String(command?.template), /single-writer invariant/);
+    assert.match(String(command?.template), /mandatory checkpoints/);
+    assert.match(String(command?.template), /reasoningEffort/);
+    assert.match(String(command?.template), /Do not invent model IDs/);
     assert.match(String(command?.template), /There is no writer subagent role/);
   });
 });
@@ -923,6 +953,8 @@ test("verification and agent instruction resources require clean-context review 
   const verificationSkill = await readFile(path.join(resourcesDir, "skills", "omni-verification.md"), "utf8");
 
   assert.match(agentInstructions, /single-writer invariant/);
+  assert.match(agentInstructions, /mandatory checkpoints for non-trivial change requests/);
+  assert.match(agentInstructions, /skip reason/);
   assert.match(agentInstructions, /clean-context review before commit/);
   assert.match(agentInstructions, /there is no writer subagent role/);
   assert.match(verificationSkill, /clean-context review of the diff\/tests/);
@@ -1201,5 +1233,44 @@ test("plugin config passes paired model options through to OpenCode agent config
     assert.equal(agents["omni-verifier"]?.model, "openai/gpt-5.5");
     assert.equal((agents["omni-verifier"] as Record<string, unknown>)?.reasoningEffort, "low");
     assert.equal((agents["omni-explorer"] as Record<string, unknown>)?.reasoningEffort, undefined);
+  });
+});
+
+test("omnicode agent tools use injected settings home for status and updates", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    await mkdir(path.join(homeDir, ".omnicode"), { recursive: true });
+    await writeFile(
+      path.join(homeDir, ".omnicode", "settings.json"),
+      JSON.stringify({
+        agents: {
+          enabled: true,
+          models: {
+            "omni-explorer": { model: "opencode/minimax-m2.5-free", reasoningEffort: "high" },
+          },
+        },
+      }, null, 2),
+      "utf8",
+    );
+
+    const plugin = await OmniCodePlugin({ directory: dir } as never, { homeDir });
+    const tools = plugin.tool as unknown as Record<string, { execute(args: Record<string, unknown>): Promise<string> }>;
+
+    const status = await tools.omnicode_agents_status.execute({});
+    assert.match(status, new RegExp(homeDir.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")));
+    assert.match(status, /opencode\/minimax-m2\.5-free/);
+    assert.match(status, /reasoningEffort=high/);
+
+    const update = await tools.omnicode_update_agents_settings.execute({
+      scope: "global",
+      models: { "omni-planner": { model: "openai/gpt-5.5", reasoningEffort: "high" } },
+    });
+    assert.match(update, /openai\/gpt-5\.5/);
+
+    const written = JSON.parse(await readFile(path.join(homeDir, ".omnicode", "settings.json"), "utf8"));
+    assert.deepEqual(written.agents.models["omni-planner"], { model: "openai/gpt-5.5", reasoningEffort: "high" });
+
+    const recommendations = await tools.omnicode_read_model_recommendations.execute({});
+    assert.match(recommendations, new RegExp(homeDir.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")));
   });
 });

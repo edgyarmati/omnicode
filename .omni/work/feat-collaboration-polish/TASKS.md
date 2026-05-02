@@ -39,3 +39,4 @@
 ## Per-Agent Passthrough Provider Options
 
 - [x] Slice 11: extend settings types with per-agent `options`, update parse/normalize/buildSubagentConfig, update tool schemas and output, add tests, update CHANGELOG, verify, clean-review, and commit.
+- [x] Slice 12: tighten enabled-subagent checkpoint guidance, make `/omni-agents` setup preserve exact model IDs/object configs, improve status output, add tests, verify, clean-review, and commit.

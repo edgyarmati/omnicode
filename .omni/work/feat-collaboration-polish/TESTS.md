@@ -110,3 +110,14 @@ Expected outcome: OmniCode has no writer-subagent surface; optional native subag
 - [ ] Run `npm test`.
 
 Expected outcome: users can set per-agent provider options like `reasoningEffort` and they get merged into the OpenCode agent config as passthrough keys. Settings without options continue to work as before. Observed: `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 74 tests.
+
+## Slice 12 — Mandatory enabled-subagent checkpoints and setup/status polish
+
+- [x] Add tests proving agent status displays object model configs and resolved per-agent options.
+- [x] Add tests proving tool status/update paths use the injected settings home and preserve object configs.
+- [x] Add tests proving primary instructions and `/omni-agents` guidance mention mandatory checkpoints, skip reasons, exact model IDs, and object configs.
+- [x] Update docs and prompts so enabled explorer/planner/verifier are mandatory checkpoints for non-trivial changes unless a skip reason is recorded.
+- [x] Run `npm run check`.
+- [x] Run `npm test`.
+
+Expected outcome: enabled subagents are no longer merely “preferred”; non-trivial changes require explorer/planner/verifier checkpoints or a recorded skip reason, and `/omni-agents` does not lose provider options or hide which config path/model is effective. Observed: `npm run check` passed, `npm test` passed with launcher 11 tests and plugin 76 tests.

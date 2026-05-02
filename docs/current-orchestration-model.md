@@ -41,6 +41,16 @@ When in doubt, the primary agent decides what becomes an action.
 
 Native subagents are optional and configured through `/omni-agents`. This is a configuration surface for intelligence helpers; it does not enable any writer role.
 
+When native subagents are enabled, they are mandatory checkpoints for non-trivial change requests unless the primary agent records a skip reason. Non-trivial means behavior-changing, cross-file, architecture-affecting, migration/release/process-changing, security-sensitive, bug-fix, or any change where tests, edge cases, or scope can reasonably be wrong.
+
+Checkpoint policy:
+
+- use `omni-explorer` for evidence-backed discovery when relevant code context is not already known;
+- use `omni-planner` before finalizing or materially changing `SPEC.md`, `TASKS.md`, or `TESTS.md`;
+- use `omni-verifier` for checks or clean-context review before committing meaningful implementation changes.
+
+Allowed skip reasons are: the task is trivial/mechanical, native subagents are disabled, the runtime does not make a subagent available, the subagent call fails, or the user explicitly asks not to delegate. The primary agent should record the skip reason in the response and active planning or verification notes for meaningful work.
+
 Settings live outside durable project memory:
 
 - global: `~/.omnicode/settings.json`

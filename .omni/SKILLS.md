@@ -16,9 +16,7 @@
 
 ## Suggested For Current Work
 
-- omni-planning: use before implementation to refine spec, tasks, and tests
-- omni-execution: use when implementing a planned slice
-- omni-verification: use after implementation and before commit review/adjudication
+- None inferred from the current task yet.
 
 ## Project Notes
 

@@ -51,8 +51,9 @@ For every task after bootstrap:
 - use `omnicode_discover_standards` and `omnicode_import_standards` to pull external instruction files into `.omni/STANDARDS.md` when relevant
 - use `omnicode_suggest_skills` and `omnicode_update_skills` early in a task so `.omni/SKILLS.md` reflects the current work
 - use `omnicode_list_skills` and `omnicode_read_skill` only during the skill-fit checkpoint, then load the selected skills before planning or implementation
-- native OmniCode sub-agents are optional; when enabled, follow the single-writer invariant: `omnicode` remains the writer, synthesizer, and decision owner in the active worktree, while subagents inject intelligence and report back
-- prefer read-only intelligence delegation: use `omni-explorer` for evidence-backed discovery packets, `omni-planner` as a planning/smart-friend critic, and `omni-verifier` for checks or clean-context review; each report should include evidence, uncertainty, risks, and recommended next inspection
+- native OmniCode sub-agents are optional to enable; when enabled, follow the single-writer invariant: `omnicode` remains the writer, synthesizer, and decision owner in the active worktree, while subagents inject intelligence and report back
+- when native subagents are enabled, use mandatory checkpoints for non-trivial change requests: `omni-explorer` for evidence-backed discovery when relevant code context is not already known, `omni-planner` before finalizing or materially changing the active SPEC/TASKS/TESTS plan, and `omni-verifier` for checks or clean-context review before committing meaningful implementation changes
+- if an enabled-subagent checkpoint is skipped because the task is trivial, subagents are unavailable, subagents are disabled, or the user asked not to delegate, record the skip reason in the response and active planning or verification notes
 - there is no writer subagent role; do not delegate source edits, implementation ownership, commits, PR decisions, or final verification judgment to subagents
 - configure optional native sub-agents with `/omni-agents`; settings live in `~/.omnicode/settings.json` by default, with gitignored project overrides in `.omnicode/settings.json`
 - use `omnicode_update_state` when the current phase/task/next step changes materially

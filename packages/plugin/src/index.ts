@@ -377,12 +377,42 @@ function buildSubagentConfig(settings: OmniCodeSettings, agentName: OmniSubagent
   return { ...OMNI_SUBAGENT_DEFAULTS[agentName], ...(fallbackModel ? { model: fallbackModel } : {}) };
 }
 
+function formatAgentModelConfig(config: AgentModelConfig | undefined, fallbackModel: string | undefined): string {
+  if (typeof config === "string") return `model=${config}`;
+  if (isRecord(config)) {
+    const model = typeof config.model === "string" && config.model.trim().length > 0 ? config.model.trim() : fallbackModel;
+    const extras = Object.entries(config)
+      .filter(([key]) => key !== "model")
+      .map(([key, value]) => `${key}=${typeof value === "string" ? value : JSON.stringify(value)}`);
+    return [`model=${model ?? "inherit invoking model"}`, ...extras].join(", ");
+  }
+  return fallbackModel ? `model=${fallbackModel} (shared default)` : "model=inherit invoking model";
+}
+
+export function formatAgentsSettingsStatus(settings: OmniCodeSettings, paths: { globalPath: string; projectPath: string; recommendationsPath?: string | null }): string {
+  const checkpointState = settings.agents.enabled
+    ? "active for non-trivial change requests; skip only with a recorded reason when trivial, unavailable, or user-disabled"
+    : "inactive because native subagents are disabled";
+  return [
+    `Effective agents.enabled: ${settings.agents.enabled}`,
+    `Global settings: ${paths.globalPath}`,
+    `Project override: ${paths.projectPath}`,
+    `Default model: ${settings.agents.defaultModel ?? "inherit invoking model"}`,
+    `Per-agent models: ${Object.keys(settings.agents.models).length > 0 ? JSON.stringify(settings.agents.models) : "none"}`,
+    "Resolved subagent configs:",
+    ...OMNI_SUBAGENT_NAMES.map((agentName) => `- ${agentName}: ${formatAgentModelConfig(settings.agents.models[agentName], settings.agents.defaultModel)}`),
+    `Checkpoint policy: ${checkpointState}`,
+    `Model recommendations: ${paths.recommendationsPath ?? "none found"}`,
+  ].join("\n");
+}
+
 function orchestrationPrompt(basePrompt: string): string {
   return [
     basePrompt,
     "## Optional native sub-agent orchestration",
     "Single-writer invariant: the primary omnicode agent is the writer, synthesizer, and decision owner in the active worktree by default. Subagents inject intelligence; they do not own product decisions, commits, PR decisions, or final verification judgments.",
-    "Prefer read-only intelligence delegation: use omni-explorer for discovery packets, omni-planner as a planning/smart-friend critic, and omni-verifier for checks or clean-context review. Require concise reports with evidence, uncertainty, risks, and recommended next inspection.",
+    "When native subagents are enabled, use mandatory intelligence checkpoints for non-trivial change requests: omni-explorer for codebase discovery when relevant context is not already known, omni-planner before finalizing or materially changing SPEC/TASKS/TESTS, and omni-verifier for checks or clean-context review before committing meaningful implementation changes.",
+    "If a checkpoint is skipped because the task is trivial, subagents are disabled or unavailable, or the user asked not to delegate, record a concise skip reason in the response and active planning or verification notes. Require subagent reports with evidence, uncertainty, risks, and recommended next inspection.",
     "Before committing meaningful implementation slices, run planned checks, request clean-context review of the diff/tests, adjudicate accepted vs rejected findings, fix accepted issues, and rerun verification.",
     "There is no writer subagent role. Do not delegate source edits or implementation ownership to subagents; the primary omnicode agent remains the only active-worktree writer.",
   ].join("\n\n");
@@ -1951,15 +1981,12 @@ export const OmniCodePlugin: Plugin = async ({ directory }, options) => {
         args: {},
         async execute() {
           const settings = await readOmniCodeSettings(directory, { homeDir: settingsHomeDir });
-          const recommendations = await readOmniCodeModelRecommendations(directory);
-          return [
-            `Effective agents.enabled: ${settings.agents.enabled}`,
-            `Global settings: ${resolveGlobalSettingsPath()}`,
-            `Project override: ${resolveProjectSettingsPath(directory)}`,
-            `Default model: ${settings.agents.defaultModel ?? "inherit invoking model"}`,
-            `Per-agent models: ${Object.keys(settings.agents.models).length > 0 ? JSON.stringify(settings.agents.models) : "none"}`,
-            `Model recommendations: ${recommendations.sourcePath ?? "none found"}`,
-          ].join("\n");
+          const recommendations = await readOmniCodeModelRecommendations(directory, { homeDir: settingsHomeDir });
+          return formatAgentsSettingsStatus(settings, {
+            globalPath: resolveGlobalSettingsPath(settingsHomeDir),
+            projectPath: resolveProjectSettingsPath(directory),
+            recommendationsPath: recommendations.sourcePath,
+          });
         },
       }),
 
@@ -1984,12 +2011,15 @@ export const OmniCodePlugin: Plugin = async ({ directory }, options) => {
             enabled: args.enabled,
             defaultModel: args.defaultModel,
             models: args.models as Partial<Record<OmniSubagentName, AgentModelConfig>> | undefined,
-          });
+          }, { homeDir: settingsHomeDir });
+          const recommendations = await readOmniCodeModelRecommendations(directory, { homeDir: settingsHomeDir });
           return [
             `Updated ${result.scope} OmniCode agent settings: ${result.outputPath}`,
-            `Effective agents.enabled: ${result.settings.agents.enabled}`,
-            `Default model: ${result.settings.agents.defaultModel ?? "inherit invoking model"}`,
-            `Per-agent models: ${Object.keys(result.settings.agents.models).length > 0 ? JSON.stringify(result.settings.agents.models) : "none"}`,
+            formatAgentsSettingsStatus(result.settings, {
+              globalPath: resolveGlobalSettingsPath(settingsHomeDir),
+              projectPath: resolveProjectSettingsPath(directory),
+              recommendationsPath: recommendations.sourcePath,
+            }),
           ].join("\n");
         },
       }),
@@ -1998,11 +2028,11 @@ export const OmniCodePlugin: Plugin = async ({ directory }, options) => {
         description: "Read optional OmniCode model recommendation markdown for guided sub-agent setup.",
         args: {},
         async execute() {
-          const recommendations = await readOmniCodeModelRecommendations(directory);
+          const recommendations = await readOmniCodeModelRecommendations(directory, { homeDir: settingsHomeDir });
           if (!recommendations.sourcePath) {
             return [
               "No OmniCode model recommendation markdown found.",
-              `Create ${globalOmniCodeModelRecommendationsPath()} for global guidance or ${projectOmniCodeModelRecommendationsPath(directory)} for this project.`,
+              `Create ${globalOmniCodeModelRecommendationsPath(settingsHomeDir)} for global guidance or ${projectOmniCodeModelRecommendationsPath(directory)} for this project.`,
             ].join("\n");
           }
           return [`Source: ${recommendations.sourcePath}`, "", recommendations.content].join("\n");
