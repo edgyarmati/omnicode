@@ -54,9 +54,37 @@
 
 ---
 
-## Optional Native Sub-Agents
+## Project-Local Skill Maker
 
-- [x] Slice 1: add `.omnicode` settings primitives, project gitignore handling, and tests for global/project precedence.
-- [x] Slice 2: register bundled native OpenCode subagents when enabled, including orchestrator task permissions and model overrides.
-- [x] Slice 3: add `/omni-agents` command/setup guidance, model recommendation helpers, docs, and tests.
-- [x] Verify each slice with `npm run check` and `npm test`, then commit before moving to the next slice.
+- [x] Slice 1: add bundled `skill-maker`, update skill-fit instructions/docs/default skill memory/suggestion heuristics, add tests, verify, and commit.
+
+---
+
+## Changelog Update Discipline
+
+- [x] Slice 1: document the changelog-update requirement in `AGENTS.md`, update `CHANGELOG.md`, verify, and commit.
+
+---
+
+## Collaborative Omni Memory Design
+
+- [x] Slice 1: document collaboration-safe memory design, update README/AGENTS/CHANGELOG, verify, and commit.
+
+---
+
+## Collaborative Workflow Implementation
+
+- [x] Slice 1: add workflow settings primitives and status visibility, verify, and commit.
+- [x] Slice 2: add branch detection plus protected-branch mutating-tool guard, verify, and commit.
+- [x] Slice 3: add active `.omni/work/<branch-slug>/` planning directory selection helpers, verify, and commit.
+- [x] Slice 4: update planning-artifact guard to accept active work planning with root fallback, verify, and commit.
+- [x] Slice 5: add collaboration checkpoint UX/docs, verify, and commit.
+
+---
+
+## Collaboration Polish Follow-Ups
+
+- [x] Slice 1: add explicit `omnicode_start_work` branch workflow tool, dirty checkout guidance, tests, docs, verify, and commit.
+- [x] Slice 2: add PR offer/auto settings and explicit PR creation support, tests, docs, verify, and commit.
+- [x] Slice 3: add root planning migration tool, tests, docs, verify, and commit.
+- [x] Slice 4: move runtime state/session summaries to branch-scoped `.omni/runtime/<id>/`, tests, docs, verify, and commit.

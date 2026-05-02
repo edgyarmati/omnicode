@@ -25,7 +25,7 @@ import {
   needsManagedOpenCodeUpdate,
   parseNodeMajorVersion,
 } from "../src/lib.js";
-import { OMNICODE_BINARY_VERSION } from "../src/release.js";
+import { OMNICODE_BINARY_VERSION, getRequiredOpenCodeVersion } from "../src/release.js";
 
 async function withTempHome(run) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "omnicode-launcher-test-"));
@@ -168,6 +168,10 @@ test("release metadata matches the generic JS bundle artifact", () => {
   assert.match(metadata.opencodeVersion, /^\d+\.\d+\.\d+$/);
   assert.equal(metadata.assetName, `omnicode-${v}.tar.gz`);
   assert.match(metadata.assetUrl, new RegExp(`releases/download/v${escaped}/omnicode-${escaped}\\.tar\\.gz$`));
+});
+
+test("managed OpenCode target uses the latest tested version", () => {
+  assert.equal(getRequiredOpenCodeVersion(), "1.14.30");
 });
 
 test("native installer assets and launcher package metadata are present", async () => {

@@ -17,30 +17,44 @@ If this is a new project (`.omni/` was just created with placeholder content):
 For every task after bootstrap:
 
 1. classify whether the request is a change request (new feature, bug fix, refactor, migration, behavior update, docs/release/process change, or anything that edits the project)
-2. for change requests, automatically use `grill-me`: ask one question at a time, include a recommended answer, inspect the codebase instead of asking when the answer is discoverable, and continue until behavior, constraints, non-goals, edge cases, tests, and success criteria are concrete
-3. run the skill-fit checkpoint: inventory bundled/project skills, judge whether they cover the clarified task, load only the relevant skills if coverage is sufficient, and use `find-skills` before planning if coverage is insufficient
-4. if the user asks to delete/remove skills from the project, update `.omni/SKILLS.md` during the skill-fit checkpoint so those skills are no longer recorded or suggested
-5. make sure `.omni/` reflects the current understanding
-6. write or refine the spec in `.omni/SPEC.md`
-7. break work into bounded slices in `.omni/TASKS.md`
-8. implement one slice at a time
-9. verify the slice and record progress in `.omni/STATE.md` and `.omni/SESSION-SUMMARY.md`
-10. **commit the slice** — after each slice is verified, commit the changes before moving to the next one
+2. for change requests, run the collaboration checkpoint with `omnicode_collaboration_status` so branch, protected-branch policy, active work memory, and planning readiness are explicit
+3. for change requests, automatically use `grill-me`: ask one question at a time, include a recommended answer, inspect the codebase instead of asking when the answer is discoverable, and continue until behavior, constraints, non-goals, edge cases, tests, and success criteria are concrete
+4. run the skill-fit checkpoint: inventory bundled/project skills, judge whether they cover the clarified task, load only the relevant skills if coverage is sufficient, use `find-skills` before planning if coverage is insufficient, and if no adequate skill exists then automatically use `skill-maker` to create a project-local skill under `.omni/skills/`
+5. if the user asks to delete/remove skills from the project, update `.omni/SKILLS.md` during the skill-fit checkpoint so those skills are no longer recorded or suggested
+6. make sure `.omni/` reflects the current understanding
+7. write or refine the spec in the active planning directory (`.omni/work/<branch-slug>/SPEC.md` when branch-backed, with root `.omni/SPEC.md` as legacy fallback)
+8. break work into bounded slices in the active `TASKS.md`
+9. for implementation slices where behavior can be tested, use `tdd`: record the behavior, public seam, expected red failure, focused command, and verification command in the active `TESTS.md`; if TDD is not applicable, record why
+10. implement one slice at a time
+11. verify the slice, then run a clean-context review before commit for meaningful implementation changes: inspect the diff/tests with minimal prior context, adjudicate accepted vs rejected findings, fix accepted findings, and rerun verification
+12. record progress in `.omni/STATE.md` and `.omni/SESSION-SUMMARY.md`
+13. **commit the slice** — after each slice is verified and review findings are adjudicated, commit the changes before moving to the next one
+14. when the work is complete, respect workflow PR settings: offer to open a PR when `offerPrOnCompletion` is enabled, create one automatically only when `autoCreatePrOnCompletion` is explicitly enabled, and otherwise wait for the user to ask
 
 ## Rules
 
-- before editing source files, make sure planning artifacts exist in `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md`
+- before editing source files, make sure planning artifacts exist in the active planning directory, usually `.omni/work/<branch-slug>/SPEC.md`, `TASKS.md`, and `TESTS.md`; legacy root `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md` can still satisfy the guard during migration
 - do not skip `grill-me` for change requests unless the user explicitly says not to ask clarification questions or the request is already fully specified
+- use `grill-with-docs` instead of plain `grill-me` only when clarification should also update durable domain language, project context, or ADR-worthy decisions; otherwise keep `grill-me` lightweight
+- use `tdd` for feature work, behavior changes, bug fixes with clear seams, and behavior-preserving refactors; enforce it through planning and verification notes rather than brittle tool-level guards
+- use `diagnose` for bugs, failing behavior, flaky tests, crashes, and performance regressions; build a feedback loop and understand the cause before fixing, then use `tdd` for the regression test/fix when a valid seam exists
+- use `improve-codebase-architecture` only when the user explicitly asks for architecture review/improvement or runs the command; it is review/planning-only and must not refactor until the user chooses a candidate and starts a normal change request
 - do not load domain/implementation skills opportunistically before the skill-fit checkpoint; skills for the task are selected and loaded only at that checkpoint
-- at the skill-fit checkpoint, explicitly decide whether current skills are sufficient; use `find-skills` when relevant skills are missing or the user asks for skill discovery
+- at the skill-fit checkpoint, explicitly decide whether current skills are sufficient; use `find-skills` when relevant skills are missing or the user asks for skill discovery; if discovery is inadequate, use `skill-maker` to create a narrow project-local skill without installing global/user skills
 - keep changes narrow and verifiable
 - RTK is installed and transparently compresses bash command output (git, ls, test runners, etc.) for 60-90% token savings — you do not need to do anything special; it rewrites commands automatically
 - **always use conventional commit style** for every commit: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`, `ci:`, `build:`, `perf:` — summary lines must be specific and useful, not generic
 - use `omnicode_repo_map` when you need a compact ranked picture of the codebase
+- use `omnicode_collaboration_status` at the start of change requests and when resuming work to confirm the branch, protected-branch policy, active `.omni/work/<branch-slug>/` planning path, and next step
+- use `omnicode_create_pr` only when the user asks for a PR or workflow settings explicitly enable PR auto-creation; PR creation may push the current branch when required
+- use `/clean-context-review` before committing meaningful implementation slices when an explicit clean review/adjudication pass is needed
 - use `omnicode_discover_standards` and `omnicode_import_standards` to pull external instruction files into `.omni/STANDARDS.md` when relevant
 - use `omnicode_suggest_skills` and `omnicode_update_skills` early in a task so `.omni/SKILLS.md` reflects the current work
 - use `omnicode_list_skills` and `omnicode_read_skill` only during the skill-fit checkpoint, then load the selected skills before planning or implementation
-- native OmniCode sub-agents are optional; when enabled, treat `omnicode` as the orchestrator and use `omni-explorer`, `omni-planner`, `omni-verifier`, and `omni-worker` only for bounded assignments that report back to you
+- native OmniCode sub-agents are optional to enable; when enabled, follow the single-writer invariant: `omnicode` remains the writer, synthesizer, and decision owner in the active worktree, while subagents inject intelligence and report back
+- when native subagents are enabled, use mandatory checkpoints for non-trivial change requests: `omni-explorer` for evidence-backed discovery when relevant code context is not already known, `omni-planner` before finalizing or materially changing the active SPEC/TASKS/TESTS plan, and `omni-verifier` for checks or clean-context review before committing meaningful implementation changes
+- if an enabled-subagent checkpoint is skipped because the task is trivial, subagents are unavailable, subagents are disabled, or the user asked not to delegate, record the skip reason in the response and active planning or verification notes
+- there is no writer subagent role; do not delegate source edits, implementation ownership, commits, PR decisions, or final verification judgment to subagents
 - configure optional native sub-agents with `/omni-agents`; settings live in `~/.omnicode/settings.json` by default, with gitignored project overrides in `.omnicode/settings.json`
 - use `omnicode_update_state` when the current phase/task/next step changes materially
 - use `omnicode_append_session_summary` when finishing a slice or creating a meaningful handoff note
@@ -50,7 +64,12 @@ For every task after bootstrap:
 ## Bundled-skill policy
 
 - use `grill-me` automatically before planning or implementing change requests so the agent and user are fully aligned
+- use `grill-with-docs` as an enhanced clarification variant when domain vocabulary, durable context, or ADR-worthy decisions should be captured during the interview
 - use `find-skills` during the skill-fit checkpoint when bundled/project skills do not cover the clarified task or when the user asks to find/install/remove skills
+- use `skill-maker` after `find-skills` when no adequate skill exists; write only project-local skills in `.omni/skills/` and record them in `.omni/SKILLS.md` before final planning
+- use `tdd` for behavior-changing implementation slices: one failing behavior test, minimal implementation, then refactor while green; record red/green/refactor evidence in the active `TESTS.md`
+- use `diagnose` for unknown bugs and regressions before patching: reproduce, minimize, hypothesize, instrument, fix, and regression-test
+- use `improve-codebase-architecture` as a user-triggered review workflow that presents numbered deepening opportunities before any implementation begins
 - use `brainstorming` before creative work or behavior changes
 - use `omni-planning` before implementation of a new feature or migration slice
 - use `omni-execution` when implementing a planned slice

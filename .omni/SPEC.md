@@ -138,51 +138,158 @@ After `grill-me` and before writing final planning artifacts, OmniCode must perf
 
 ---
 
-## Current Implementation Task — Optional Native Sub-Agents
+## Current Implementation Task — Project-Local Skill Maker
 
 ### Problem
 
-OmniCode currently runs as a single OpenCode primary agent. OpenCode now has native primary/subagent support, including plugin-registered agents, hidden subagents, and task permissions. OmniCode should be able to opt into an orchestrator-and-workers workflow without inventing a custom subagent runtime or making the behavior an ironclad default.
+The skill-fit checkpoint can discover missing skill coverage with `find-skills`, but it has no automatic fallback when no adequate skill exists or when an existing skill should not be installed globally. OmniCode needs a workflow-native way to create narrow, reusable, project-local skills before planning and implementation.
 
 ### Requested Behavior
 
-Implement optional configurable native OpenCode subagents for OmniCode:
+After `grill-me` clarification and during the skill-fit checkpoint:
 
-1. Keep `omnicode` as the default primary orchestrator agent.
-2. Register bundled native subagents only when the feature is effectively enabled:
-   - `omni-explorer`: read-only codebase discovery and context retrieval.
-   - `omni-planner`: read-only planning/spec/test support.
-   - `omni-verifier`: verification and review; may run checks but should not edit source by default.
-   - `omni-worker`: bounded implementation worker with edit/bash ability, still subject to OmniCode planning guards.
-3. Persist enablement and model choices outside `.omni/`:
-   - global default: `~/.omnicode/settings.json`
-   - project override: `<project>/.omnicode/settings.json`
-   - project override wins over global settings.
-4. Keep `.omni/` for workflow memory only. Project `.omnicode/` is local settings and should be gitignored.
-5. Add an `/omni-agents` command with:
-   - `on` / `off`: write the global setting by default.
-   - `on --project` / `off --project`: write the project override.
-   - `status`: report global, project, and effective values.
-   - `setup`: guide the user through enabling agents and choosing shared/per-agent models using OpenCode-visible model inventory plus optional recommendation markdown.
-6. Model recommendation docs may be read from:
-   - `~/.omnicode/model-recommendations.md`
-   - `<project>/.omnicode/model-recommendations.md`
-   with project guidance taking precedence.
+1. Inventory bundled/project skills and judge coverage.
+2. If coverage is insufficient, use `find-skills` to look for existing relevant skills first.
+3. If no adequate existing skill is available, automatically use a new bundled `skill-maker` workflow skill.
+4. `skill-maker` researches the missing expertise, preferably with a research/explore subagent when subagent-driven development is available, otherwise inline in the main agent.
+5. `skill-maker` writes a narrow project-local skill under `.omni/skills/<skill-name>/SKILL.md` and records it in `.omni/SKILLS.md` so the main agent can load the needed context from the start.
+6. Generated project-local skills must not be installed globally or mutate the user's global skill directories.
+
+### Reference Model
+
+Use Matt Pocock's `write-a-skill` skill as the primary style reference: concise SKILL.md, strong description triggers, progressive disclosure, optional scripts only for deterministic repeated work, and a lightweight review checklist. Borrow only lightweight research/testing ideas from Anthropic's `skill-creator`; do not require browser/eval-viewer loops for this automatic workflow.
 
 ### Constraints
 
-- Use OpenCode-native `config.agent` and `permission.task`; do not build a separate subagent runner.
-- Built-in subagent defaults must remain bundled/updateable by plugin releases; settings should store only enablement and user-selected overrides such as models.
-- Preserve launcher isolation and normal OpenCode config behavior.
-- Keep public existing tools/commands compatible.
-- Keep slices bounded and commit each verified slice with a conventional commit.
+- Keep the existing `find-skills` first; `skill-maker` is the fallback after discovery is inadequate.
+- Do not ask for another approval before creating the local skill once the user has already approved automatic behavior.
+- Keep generated skills project-local in `.omni/skills/`.
+- Keep bundled workflow resources simple markdown files for now; no new public tool names are required for this slice.
+- Preserve existing skill listing and suggestion tool compatibility.
 
 ### Success Criteria
 
-- Subagents are not registered when the effective setting is disabled or absent.
-- When enabled, the plugin registers the four bundled subagents with native `mode: "subagent"` configs and gives the orchestrator task permission for them.
-- Global and project settings merge with project override precedence.
-- `/omni-agents` command exists and documents on/off/status/setup behavior.
-- Setup guidance can inspect available OpenCode models and optional recommendation markdown without making defaults immutable.
-- Tests cover settings resolution, gitignore handling for project `.omnicode/`, agent registration enabled/disabled behavior, and command/resource presence.
-- `npm run check` and `npm test` pass after each slice.
+- Bundled skills/default skill memory include `skill-maker`.
+- Agent instructions document the post-find-skills automatic local-skill creation fallback.
+- `find-skills` documents handing off to `skill-maker` when discovery is inadequate.
+- `omnicode_suggest_skills` suggests `skill-maker` for missing/no relevant skill and skill-creation wording.
+- README describes the local skill creation fallback.
+- Tests cover bundled/default `skill-maker` inclusion and suggestion behavior.
+- `npm run check` and `npm test` pass.
+
+---
+
+## Current Implementation Task — Changelog Update Discipline
+
+### Problem
+
+Committed changes can be easy to miss during release prep if the changelog is updated only at the end. OmniCode needs a repository instruction that every committed change also updates `CHANGELOG.md` for the upcoming release.
+
+### Requested Behavior
+
+- Update `AGENTS.md` to state that every change intended to be committed must include an appropriate `CHANGELOG.md` entry for the next release.
+- Apply the rule to this change by updating `CHANGELOG.md` in the same slice.
+
+### Constraints
+
+- Keep the instruction concise and located with repo hygiene / agent workflow guidance.
+- Do not change release versioning in this slice.
+
+### Success Criteria
+
+- `AGENTS.md` clearly requires changelog updates for committed changes.
+- `CHANGELOG.md` includes this documentation/process change for the next release.
+- Verification passes before commit.
+
+---
+
+## Current Implementation Task — Collaborative Omni Memory Design
+
+### Problem
+
+The current root `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md` model works well for solo sessions, but collaborative projects can have multiple contributors, branches, issues, and non-Omni workflows in flight at the same time. A single shared active plan can become stale or conflict-prone.
+
+### Requested Behavior
+
+- Produce a design document for collaboration-safe Omni memory before implementation.
+- Split future memory responsibilities into stable shared project knowledge, per-work-item plans, and untracked runtime/session state.
+- Default per-work-item IDs to the current git branch slug.
+- Design protected-branch behavior: change requests should not implement directly on `main`/`master` by default.
+- Store protected-branch behavior in effective OmniCode settings JSON, with global defaults and optional project-local overrides; both scopes may explicitly allow protected-branch changes.
+- Preserve backward compatibility with current root planning files for solo/existing projects until migration is implemented.
+
+### Constraints
+
+- This slice is design/docs only; do not implement branch detection or guard enforcement yet.
+- Do not introduce committed repo policy JSON for branch overrides; settings belong to the OmniCode settings JSON layer discussed for subagents/global/project overrides.
+- Update `CHANGELOG.md` as part of the slice.
+
+### Success Criteria
+
+- A design doc describes `.omni/work/<branch-slug>/` planning, branch protection defaults, settings overrides, non-Omni contributor rehydration, and staged implementation slices.
+- README/AGENTS point to the collaboration design or summarize the direction.
+- CHANGELOG records the design/process update for the next release.
+- Verification passes before commit.
+
+---
+
+## Current Implementation Task — Collaborative Workflow Implementation
+
+### Problem
+
+The collaboration design is documented, but OmniCode still uses root planning artifacts only and does not expose or enforce feature-branch workflow policy. Implement the design in bounded slices so collaboration-safe memory works incrementally without regressing solo projects.
+
+### Requested Behavior
+
+Implement these slices independently, verifying and committing each one:
+
+1. Add workflow settings primitives for protected branches, feature-branch requirement, and override visibility.
+2. Add branch detection and protected-branch guard enforcement for mutating tools.
+3. Add active `.omni/work/<branch-slug>/` planning directory selection helpers.
+4. Update planning-artifact readiness/guard behavior to use the active work directory with root fallback.
+5. Add collaboration checkpoint UX/docs so users can see branch, policy, and active work-memory status.
+
+### Constraints
+
+- Preserve existing root `SPEC.md`, `TASKS.md`, and `TESTS.md` compatibility until work-specific planning is ready.
+- Keep settings in the OmniCode settings JSON layer: global settings plus project-local override, not committed `.omni/CONFIG.md` policy.
+- Allow both global and project-local settings to explicitly permit protected-branch changes.
+- Keep each slice narrow and commit after verification.
+- Update `CHANGELOG.md` for each committed slice.
+
+### Success Criteria
+
+- Tests cover settings merge/defaults/status, branch guard blocking and overrides, branch slug/work-directory selection, planning readiness with active work and root fallback, and collaboration checkpoint output.
+- README/AGENTS/docs describe the implemented behavior as it lands.
+- `npm run check` and `npm test` pass for each slice before commit.
+
+---
+
+## Current Implementation Task — Collaboration Polish Follow-Ups
+
+### Problem
+
+Core collaboration support is implemented, but the workflow still lacks the polish needed to make branch-based collaboration smooth end-to-end: starting work from protected branches, offering/creating PRs, migrating legacy root plans, and isolating runtime state by branch.
+
+### Requested Behavior
+
+Implement these follow-up slices independently, verifying and committing each one:
+
+1. Add an explicit `omnicode_start_work` tool that creates or switches to a feature branch and initializes the active `.omni/work/<branch-slug>/` planning directory. It must refuse dirty working trees by default, show the dirty status, and propose solutions; `allowDirty` is an explicit advanced override.
+2. Add workflow PR settings: `offerPrOnCompletion` default `true` and `autoCreatePrOnCompletion` default `false`. Add explicit PR creation support that can push the branch when needed and create a PR only when requested or when the auto setting is enabled by user/project settings.
+3. Add a root-plan migration tool that copies non-placeholder root `.omni/SPEC.md`, `TASKS.md`, and `TESTS.md` into the active work directory, refuses overwrites unless requested, and writes migration notes.
+4. Move runtime state/session summaries to branch-scoped `.omni/runtime/<branch-slug-or-root>/` paths instead of root singleton runtime files.
+
+### Constraints
+
+- Do not silently branch from a guard hook; branch changes happen only through explicit workflow/tooling.
+- Do not auto-create PRs by default; offer PRs unless disabled by settings.
+- Auto-create PR implies auto-push only when `autoCreatePrOnCompletion` is explicitly enabled.
+- Do not treat `CHANGELOG.md` as an OmniCode-wide rule; it remains this repository's release-note requirement.
+- Keep each slice narrow and commit after verification.
+
+### Success Criteria
+
+- Tests cover start-work branch behavior, dirty checkout refusal/proposed fixes, PR settings and PR prerequisite helpers, root plan migration copy/overwrite behavior, and branch-scoped runtime state paths.
+- README/AGENTS/design docs/CHANGELOG describe the implemented behavior as it lands.
+- `npm run check` and `npm test` pass for each slice before commit.

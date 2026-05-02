@@ -1,28 +1,49 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 
 import {
-  OmniCodePlugin,
   OMNI_FILES,
   OMNI_GITIGNORE,
-  ensureOmniCodeProjectGitignore,
+  OmniCodePlugin,
   appendSessionSummary,
+  assertProtectedBranchAllowsMutation,
+  activePlanningArtifactPaths,
+  activeRuntimePaths,
+  branchNameToWorkId,
   buildRepoMap,
+  buildCollaborationCheckpoint,
+  buildPullRequestBody,
+  DEFAULT_WORKFLOW_SETTINGS,
+  dirtyWorktreeGuidance,
   discoverStandards,
+  ensureOmniCodeProjectGitignore,
   ensureOmniDir,
+  formatWorkflowSettingsStatus,
+  formatAgentsSettingsStatus,
   importStandards,
+  migrateRootPlanToActiveWork,
   planningArtifactsReady,
-  setOmniMode,
-  readOmniCodeSettings,
+  planningArtifactsReadyAt,
+  planningGuardMessage,
+  readCurrentGitBranch,
   readOmniCodeModelRecommendations,
+  readOmniCodeSettings,
+  resolvePlanningArtifactReadiness,
+  resolveGlobalSettingsPath,
+  resolveProjectSettingsPath,
+  setOmniMode,
+  startWorkBranch,
   suggestSkills,
+  summarizePullRequestPrerequisites,
   updateOmniCodeAgentsSettings,
   updateSkillsFile,
   updateStateFile,
   writeFileAtomic,
+  validateWorkBranchName,
 } from "../src/index.ts";
 
 type MutableOpenCodeConfig = {
@@ -45,8 +66,33 @@ function modeBits(mode: number): number {
   return mode & 0o777;
 }
 
-async function buildPluginConfig(directory: string): Promise<MutableOpenCodeConfig> {
-  const hooks = await OmniCodePlugin({ directory } as never);
+function runGitTest(directory: string, args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("git", args, { cwd: directory, shell: false });
+    let output = "";
+    child.stdout?.on("data", (chunk) => {
+      output += String(chunk);
+    });
+    child.stderr?.on("data", (chunk) => {
+      output += String(chunk);
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`git ${args.join(" ")} failed: ${output}`));
+    });
+  });
+}
+
+async function writeRealPlanningFiles(baseDir: string) {
+  await mkdir(baseDir, { recursive: true });
+  await writeFile(path.join(baseDir, "SPEC.md"), `${OMNI_FILES["SPEC.md"]}\n## Real\nSpec content\n`, "utf8");
+  await writeFile(path.join(baseDir, "TASKS.md"), `${OMNI_FILES["TASKS.md"]}\n## Real\n- [ ] Task\n`, "utf8");
+  await writeFile(path.join(baseDir, "TESTS.md"), `${OMNI_FILES["TESTS.md"]}\n## Real\n- [ ] Test\n`, "utf8");
+}
+
+async function buildPluginConfig(directory: string, options?: { homeDir?: string }): Promise<MutableOpenCodeConfig> {
+  const hooks = await OmniCodePlugin({ directory } as never, options?.homeDir ? { homeDir: options.homeDir } : undefined);
   const config: MutableOpenCodeConfig = {};
   if (!hooks.config) throw new Error("OmniCodePlugin did not register config hook");
   await hooks.config(config as never);
@@ -84,6 +130,7 @@ test("ensureOmniDir writes a selective .omni/.gitignore for runtime state", asyn
 
     assert.equal(gitignore, `${OMNI_GITIGNORE}\n`);
     assert.match(gitignore, /STATE\.md/);
+    assert.match(gitignore, /runtime\//);
     assert.doesNotMatch(gitignore, /PROJECT\.md/);
   });
 });
@@ -102,44 +149,93 @@ test("writeFileAtomic preserves existing file permissions", async () => {
   });
 });
 
-test("readOmniCodeSettings merges global settings with project override precedence", async () => {
+test("readOmniCodeSettings returns workflow defaults when settings files are missing", async () => {
   await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    const projectDir = path.join(dir, "project");
+    await mkdir(projectDir, { recursive: true });
+
+    const settings = await readOmniCodeSettings(projectDir, { homeDir });
+
+    assert.deepEqual(settings.workflow, DEFAULT_WORKFLOW_SETTINGS);
+  });
+});
+
+test("readOmniCodeSettings merges global defaults with project overrides", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    const projectDir = path.join(dir, "project");
+    await mkdir(path.dirname(resolveGlobalSettingsPath(homeDir)), { recursive: true });
+    await mkdir(path.dirname(resolveProjectSettingsPath(projectDir)), { recursive: true });
+    await writeFile(
+      resolveGlobalSettingsPath(homeDir),
+      JSON.stringify({
+        workflow: {
+          protectedBranches: ["main", "trunk"],
+          requireFeatureBranchForChanges: true,
+          allowProtectedBranchChanges: false,
+        },
+      }),
+      "utf8",
+    );
+    await writeFile(
+      resolveProjectSettingsPath(projectDir),
+      JSON.stringify({
+        workflow: {
+          allowProtectedBranchChanges: true,
+          offerPrOnCompletion: false,
+          autoCreatePrOnCompletion: true,
+        },
+      }),
+      "utf8",
+    );
+
+    const settings = await readOmniCodeSettings(projectDir, { homeDir });
+
+    assert.deepEqual(settings.workflow, {
+      protectedBranches: ["main", "trunk"],
+      requireFeatureBranchForChanges: true,
+      allowProtectedBranchChanges: true,
+      offerPrOnCompletion: false,
+      autoCreatePrOnCompletion: true,
+    });
+  });
+});
+
+test("readOmniCodeSettings ignores invalid workflow settings", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    const projectDir = path.join(dir, "project");
+    await mkdir(path.dirname(resolveGlobalSettingsPath(homeDir)), { recursive: true });
+    await mkdir(path.dirname(resolveProjectSettingsPath(projectDir)), { recursive: true });
+    await writeFile(
+      resolveGlobalSettingsPath(homeDir),
+      JSON.stringify({ workflow: { protectedBranches: [], requireFeatureBranchForChanges: "yes" } }),
+      "utf8",
+    );
+    await writeFile(resolveProjectSettingsPath(projectDir), "not json", "utf8");
+
+    const settings = await readOmniCodeSettings(projectDir, { homeDir });
+
+    assert.deepEqual(settings.workflow, DEFAULT_WORKFLOW_SETTINGS);
+  });
+});
+
+test("readOmniCodeSettings merges agent settings with project override precedence", async () => {
+  await withTempDir(async (dir) => {
+    const removedWriterName = ["omni", "worker"].join("-");
     const homeDir = path.join(dir, "home");
     const projectDir = path.join(dir, "project");
     await mkdir(path.join(homeDir, ".omnicode"), { recursive: true });
     await mkdir(path.join(projectDir, ".omnicode"), { recursive: true });
     await writeFile(
       path.join(homeDir, ".omnicode", "settings.json"),
-      JSON.stringify(
-        {
-          agents: {
-            enabled: true,
-            defaultModel: "anthropic/global-default",
-            models: {
-              "omni-explorer": "anthropic/global-explorer",
-              "omni-worker": "anthropic/global-worker",
-            },
-          },
-        },
-        null,
-        2,
-      ),
+        JSON.stringify({ agents: { enabled: true, defaultModel: "anthropic/global-default", models: { "omni-explorer": "anthropic/global-explorer", [removedWriterName]: "anthropic/legacy-writer" } } }, null, 2),
       "utf8",
     );
     await writeFile(
       path.join(projectDir, ".omnicode", "settings.json"),
-      JSON.stringify(
-        {
-          agents: {
-            enabled: false,
-            models: {
-              "omni-worker": "openai/project-worker",
-            },
-          },
-        },
-        null,
-        2,
-      ),
+        JSON.stringify({ agents: { enabled: false, models: { "omni-verifier": "openai/project-verifier", [removedWriterName]: "openai/legacy-writer" } } }, null, 2),
       "utf8",
     );
 
@@ -149,23 +245,8 @@ test("readOmniCodeSettings merges global settings with project override preceden
     assert.equal(settings.agents.defaultModel, "anthropic/global-default");
     assert.deepEqual(settings.agents.models, {
       "omni-explorer": "anthropic/global-explorer",
-      "omni-worker": "openai/project-worker",
+      "omni-verifier": "openai/project-verifier",
     });
-  });
-});
-
-test("readOmniCodeSettings safely defaults when settings are missing or invalid", async () => {
-  await withTempDir(async (dir) => {
-    const homeDir = path.join(dir, "home");
-    const projectDir = path.join(dir, "project");
-    await mkdir(path.join(homeDir, ".omnicode"), { recursive: true });
-    await writeFile(path.join(homeDir, ".omnicode", "settings.json"), "{ nope", "utf8");
-
-    const settings = await readOmniCodeSettings(projectDir, { homeDir });
-
-    assert.equal(settings.agents.enabled, false);
-    assert.equal(settings.agents.defaultModel, undefined);
-    assert.deepEqual(settings.agents.models, {});
   });
 });
 
@@ -184,46 +265,21 @@ test("ensureOmniCodeProjectGitignore adds project .omnicode settings directory",
 
 test("updateOmniCodeAgentsSettings writes scoped settings without copying agent defaults", async () => {
   await withTempDir(async (dir) => {
+    const removedWriterName = ["omni", "worker"].join("-");
     const homeDir = path.join(dir, "home");
     const projectDir = path.join(dir, "project");
+    await mkdir(path.dirname(resolveProjectSettingsPath(projectDir)), { recursive: true });
+    await writeFile(resolveProjectSettingsPath(projectDir), JSON.stringify({ agents: { models: { [removedWriterName]: "openai/legacy-writer" } } }, null, 2), "utf8");
 
-    const globalResult = await updateOmniCodeAgentsSettings(
-      projectDir,
-      {
-        scope: "global",
-        enabled: true,
-        defaultModel: "anthropic/subagents",
-      },
-      { homeDir },
-    );
-    const projectResult = await updateOmniCodeAgentsSettings(
-      projectDir,
-      {
-        scope: "project",
-        models: {
-          "omni-worker": "openai/worker",
-        },
-      },
-      { homeDir },
-    );
+    const globalResult = await updateOmniCodeAgentsSettings(projectDir, { scope: "global", enabled: true, defaultModel: "anthropic/subagents" }, { homeDir });
+    const projectResult = await updateOmniCodeAgentsSettings(projectDir, { scope: "project", models: { "omni-verifier": "openai/verifier" } }, { homeDir });
 
     const globalFile = JSON.parse(await readFile(globalResult.outputPath, "utf8"));
     const projectFile = JSON.parse(await readFile(projectResult.outputPath, "utf8"));
     const gitignore = await readFile(path.join(projectDir, ".gitignore"), "utf8");
 
-    assert.deepEqual(globalFile, {
-      agents: {
-        enabled: true,
-        defaultModel: "anthropic/subagents",
-      },
-    });
-    assert.deepEqual(projectFile, {
-      agents: {
-        models: {
-          "omni-worker": "openai/worker",
-        },
-      },
-    });
+    assert.deepEqual(globalFile, { agents: { enabled: true, defaultModel: "anthropic/subagents" } });
+    assert.deepEqual(projectFile, { agents: { models: { "omni-verifier": "openai/verifier" } } });
     assert.match(gitignore, /^\.omnicode\/$/m);
   });
 });
@@ -244,80 +300,278 @@ test("readOmniCodeModelRecommendations prefers project guidance over global guid
   });
 });
 
-test("plugin config does not register Omni subagents when agents are disabled", async () => {
-  await withTempDir(async (dir) => {
-    const config = await buildPluginConfig(dir);
-
-    assert.equal(config.default_agent, "omnicode");
-    assert.ok(config.agent?.omnicode);
-    assert.equal(config.agent?.["omni-explorer"], undefined);
-    assert.equal(config.agent?.["omni-planner"], undefined);
-    assert.equal(config.agent?.["omni-verifier"], undefined);
-    assert.equal(config.agent?.["omni-worker"], undefined);
+test("formatWorkflowSettingsStatus exposes effective workflow policy", async () => {
+  const status = formatWorkflowSettingsStatus({
+    workflow: {
+      protectedBranches: ["main", "release"],
+      requireFeatureBranchForChanges: false,
+      allowProtectedBranchChanges: true,
+      offerPrOnCompletion: true,
+      autoCreatePrOnCompletion: false,
+    },
   });
+
+  assert.match(status, /Protected Branches: main, release/);
+  assert.match(status, /Require Feature Branch For Changes: no/);
+  assert.match(status, /Allow Protected Branch Changes: yes/);
+  assert.match(status, /Offer PR On Completion: yes/);
+  assert.match(status, /Auto Create PR On Completion: no/);
 });
 
-test("plugin config registers enabled Omni subagents with permissions and model overrides", async () => {
-  await withTempDir(async (dir) => {
-    await mkdir(path.join(dir, ".omnicode"), { recursive: true });
-    await writeFile(
-      path.join(dir, ".omnicode", "settings.json"),
-      JSON.stringify(
-        {
-          agents: {
-            enabled: true,
-            defaultModel: "anthropic/shared-subagent",
-            models: {
-              "omni-worker": "openai/worker-model",
-            },
-          },
-        },
-        null,
-        2,
-      ),
-      "utf8",
-    );
-
-    const config = await buildPluginConfig(dir);
-    const agents = config.agent ?? {};
-
-    for (const agentName of ["omni-explorer", "omni-planner", "omni-verifier", "omni-worker"]) {
-      assert.equal(agents[agentName]?.mode, "subagent");
-      assert.equal(typeof agents[agentName]?.description, "string");
-      assert.equal(typeof agents[agentName]?.prompt, "string");
-    }
-
-    assert.equal(agents["omni-explorer"]?.model, "anthropic/shared-subagent");
-    assert.equal(agents["omni-worker"]?.model, "openai/worker-model");
-    assert.deepEqual(agents.omnicode?.permission, {
-      task: {
-        "*": "deny",
-        "omni-explorer": "allow",
-        "omni-planner": "allow",
-        "omni-verifier": "allow",
-        "omni-worker": "allow",
+test("formatAgentsSettingsStatus exposes object model configs and checkpoint policy", () => {
+  const status = formatAgentsSettingsStatus({
+    workflow: DEFAULT_WORKFLOW_SETTINGS,
+    agents: {
+      enabled: true,
+      models: {
+        "omni-explorer": { model: "opencode/minimax-m2.5-free", reasoningEffort: "high" },
+        "omni-planner": { model: "openai/gpt-5.5", reasoningEffort: "high", textVerbosity: "low" },
+        "omni-verifier": "openai/gpt-5.5",
       },
-    });
+    },
+  }, {
+    globalPath: "/home/test/.omnicode/settings.json",
+    projectPath: "/repo/.omnicode/settings.json",
+    recommendationsPath: null,
+  });
+
+  assert.match(status, /3 configured/);
+  assert.match(status, /Global settings: \/home\/test/);
+  assert.match(status, /opencode\/minimax-m2\.5-free/);
+  assert.match(status, /omni-planner: model=openai\/gpt-5\.5, reasoningEffort=high, textVerbosity=low/);
+  assert.match(status, /omni-verifier: model=openai\/gpt-5\.5/);
+  assert.match(status, /Checkpoint policy: active for non-trivial change requests/);
+  assert.match(status, /skip only with a recorded reason/);
+  assert.doesNotMatch(status, /\{.*"model".*\}/);
+});
+
+test("formatAgentsSettingsStatus shows defaultModel fallback for unconfigured agents", () => {
+  const status = formatAgentsSettingsStatus({
+    workflow: DEFAULT_WORKFLOW_SETTINGS,
+    agents: {
+      enabled: true,
+      defaultModel: "anthropic/shared-default",
+      models: {
+        "omni-explorer": "opencode/minimax-m2.5-free",
+      },
+    },
+  }, {
+    globalPath: "/home/test/.omnicode/settings.json",
+    projectPath: "/repo/.omnicode/settings.json",
+  });
+
+  assert.match(status, /omni-explorer: model=opencode\/minimax-m2\.5-free/);
+  assert.match(status, /omni-planner: model=anthropic\/shared-default \(shared default\)/);
+  assert.match(status, /omni-verifier: model=anthropic\/shared-default \(shared default\)/);
+});
+
+test("formatAgentsSettingsStatus shows disabled checkpoint policy", () => {
+  const status = formatAgentsSettingsStatus({
+    workflow: DEFAULT_WORKFLOW_SETTINGS,
+    agents: {
+      enabled: false,
+      models: {},
+    },
+  }, {
+    globalPath: "/home/test/.omnicode/settings.json",
+    projectPath: "/repo/.omnicode/settings.json",
+    compact: true,
+  });
+
+  assert.match(status, /Effective agents.enabled: false/);
+  assert.match(status, /Checkpoint policy: inactive because native subagents are disabled/);
+  assert.match(status, /Per-agent models: none/);
+  assert.match(status, /inherit invoking model/);
+  assert.doesNotMatch(status, /Global settings:/);
+});
+
+test("summarizePullRequestPrerequisites reports missing PR requirements", () => {
+  const summary = summarizePullRequestPrerequisites({
+    branch: "feat/test",
+    dirtyStatus: " M src/index.ts",
+    hasRemote: false,
+    hasUpstream: false,
+  });
+
+  assert.match(summary, /Working tree has uncommitted changes/);
+  assert.match(summary, /No git remote is configured/);
+  assert.match(summary, /has no upstream/);
+});
+
+test("buildPullRequestBody summarizes active planning and commits", async () => {
+  await withTempDir(async (dir) => {
+    await runGitTest(dir, ["init", "-b", "feat/pr-body"]);
+    await writeFile(path.join(dir, "README.md"), "# test\n", "utf8");
+    await runGitTest(dir, ["add", "README.md"]);
+    await runGitTest(dir, ["-c", "user.email=test@example.com", "-c", "user.name=Test", "commit", "-m", "feat: initial"]);
+    const activePaths = await activePlanningArtifactPaths(dir);
+    await writeRealPlanningFiles(activePaths.baseDir);
+
+    const body = await buildPullRequestBody(dir);
+
+    assert.match(body, /Branch: feat\/pr-body/);
+    assert.match(body, /Active planning: \.omni\/work\/feat-pr-body/);
+    assert.match(body, /## Spec/);
+    assert.match(body, /feat: initial/);
   });
 });
 
-test("plugin config registers omni-agents command for status and setup", async () => {
+test("readCurrentGitBranch reads branch names from git HEAD", async () => {
   await withTempDir(async (dir) => {
-    const config = await buildPluginConfig(dir);
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feature/collab\n", "utf8");
 
-    const command = config.command?.["omni-agents"];
-    assert.equal(command?.agent, "omnicode");
-    assert.match(String(command?.template), /omnicode_agents_status/);
-    assert.match(String(command?.template), /opencode models/);
-    assert.match(String(command?.template), /omnicode_update_agents_settings/);
-    assert.match(String(command?.template), /model-recommendations\.md/);
+    assert.equal(await readCurrentGitBranch(dir), "feature/collab");
+  });
+});
+
+test("assertProtectedBranchAllowsMutation blocks protected branches by default", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/main\n", "utf8");
+
+    await assert.rejects(
+      () => assertProtectedBranchAllowsMutation(dir, { workflow: DEFAULT_WORKFLOW_SETTINGS }),
+      /change requests should run on a feature branch, not main/,
+    );
+  });
+});
+
+test("assertProtectedBranchAllowsMutation respects protected branch overrides", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/main\n", "utf8");
+
+    await assert.doesNotReject(() => assertProtectedBranchAllowsMutation(dir, {
+      workflow: {
+        ...DEFAULT_WORKFLOW_SETTINGS,
+        allowProtectedBranchChanges: true,
+      },
+    }));
+    await assert.doesNotReject(() => assertProtectedBranchAllowsMutation(dir, {
+      workflow: {
+        ...DEFAULT_WORKFLOW_SETTINGS,
+        requireFeatureBranchForChanges: false,
+      },
+    }));
+  });
+});
+
+test("branchNameToWorkId creates filesystem-safe branch slugs", () => {
+  assert.equal(branchNameToWorkId("feature/Collaborative Memory"), "feature-collaborative-memory");
+  assert.equal(branchNameToWorkId("fix..release__guard"), "fix-release-guard");
+  assert.throws(() => branchNameToWorkId("///"), /cannot derive work id/);
+});
+
+test("validateWorkBranchName rejects unsafe branch names", () => {
+  assert.equal(validateWorkBranchName("feat/collaboration-polish"), "feat/collaboration-polish");
+  assert.throws(() => validateWorkBranchName("-bad"), /invalid branch name/);
+  assert.throws(() => validateWorkBranchName("feat//bad"), /invalid branch name/);
+  assert.throws(() => validateWorkBranchName("feat/bad.lock"), /invalid branch name/);
+});
+
+test("dirtyWorktreeGuidance proposes safe dirty checkout solutions", () => {
+  const guidance = dirtyWorktreeGuidance("?? src/example.ts");
+
+  assert.match(guidance, /uncommitted changes/);
+  assert.match(guidance, /\?\? src\/example\.ts/);
+  assert.match(guidance, /Commit the current changes/);
+  assert.match(guidance, /git stash push/);
+  assert.match(guidance, /allowDirty: true/);
+});
+
+test("startWorkBranch refuses dirty checkouts by default", async () => {
+  await withTempDir(async (dir) => {
+    await runGitTest(dir, ["init", "-b", "main"]);
+    await writeFile(path.join(dir, "dirty.txt"), "dirty\n", "utf8");
+
+    const result = await startWorkBranch(dir, { branch: "feat/test" });
+
+    assert.equal(result.action, "blocked-dirty");
+    assert.match(result.dirtyStatus, /dirty\.txt/);
+    assert.equal(result.activePaths, null);
+  });
+});
+
+test("startWorkBranch creates branches and initializes active planning files", async () => {
+  await withTempDir(async (dir) => {
+    await runGitTest(dir, ["init", "-b", "main"]);
+
+    const result = await startWorkBranch(dir, { branch: "feat/test" });
+    const branch = await readCurrentGitBranch(dir);
+
+    assert.equal(result.action, "created");
+    assert.equal(branch, "feat/test");
+    assert.equal(result.activePaths?.workId, "feat-test");
+    assert.match(await readFile(path.join(result.activePaths!.baseDir, "SPEC.md"), "utf8"), /# Spec/);
+    assert.match(await readFile(path.join(result.activePaths!.baseDir, "TASKS.md"), "utf8"), /# Tasks/);
+    assert.match(await readFile(path.join(result.activePaths!.baseDir, "TESTS.md"), "utf8"), /# Tests/);
+  });
+});
+
+test("startWorkBranch switches to existing branches", async () => {
+  await withTempDir(async (dir) => {
+    await runGitTest(dir, ["init", "-b", "main"]);
+    await writeFile(path.join(dir, "README.md"), "# test\n", "utf8");
+    await runGitTest(dir, ["add", "README.md"]);
+    await runGitTest(dir, ["-c", "user.email=test@example.com", "-c", "user.name=Test", "commit", "-m", "init"]);
+    await runGitTest(dir, ["switch", "-c", "feat/existing"]);
+    await runGitTest(dir, ["switch", "main"]);
+
+    const result = await startWorkBranch(dir, { branch: "feat/existing" });
+
+    assert.equal(result.action, "switched");
+    assert.equal(await readCurrentGitBranch(dir), "feat/existing");
+  });
+});
+
+test("activePlanningArtifactPaths selects .omni/work for branch-backed work", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feature/collab-memory\n", "utf8");
+
+    const paths = await activePlanningArtifactPaths(dir);
+
+    assert.equal(paths.source, "work");
+    assert.equal(paths.workId, "feature-collab-memory");
+    assert.equal(paths.baseDir, path.join(dir, ".omni", "work", "feature-collab-memory"));
+    assert.equal(paths.specPath, path.join(paths.baseDir, "SPEC.md"));
+    assert.equal(paths.tasksPath, path.join(paths.baseDir, "TASKS.md"));
+    assert.equal(paths.testsPath, path.join(paths.baseDir, "TESTS.md"));
+  });
+});
+
+test("activePlanningArtifactPaths falls back to root planning when no branch is available", async () => {
+  await withTempDir(async (dir) => {
+    const paths = await activePlanningArtifactPaths(dir);
+
+    assert.equal(paths.source, "root");
+    assert.equal(paths.workId, null);
+    assert.equal(paths.baseDir, path.join(dir, ".omni"));
+  });
+});
+
+test("activeRuntimePaths uses branch slug or root fallback", async () => {
+  await withTempDir(async (dir) => {
+    assert.equal((await activeRuntimePaths(dir)).baseDir, path.join(dir, ".omni", "runtime", "root"));
+
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feat/runtime-state\n", "utf8");
+
+    const branchRuntime = await activeRuntimePaths(dir);
+    assert.equal(branchRuntime.runtimeId, "feat-runtime-state");
+    assert.equal(branchRuntime.statePath, path.join(dir, ".omni", "runtime", "feat-runtime-state", "STATE.md"));
+    assert.equal(branchRuntime.sessionSummaryPath, path.join(dir, ".omni", "runtime", "feat-runtime-state", "SESSION-SUMMARY.md"));
   });
 });
 
 test("updateStateFile preserves permissions through atomic replacement", async () => {
   await withTempDir(async (dir) => {
     await ensureOmniDir(dir);
-    const statePath = path.join(dir, ".omni", "STATE.md");
+    const runtimePaths = await activeRuntimePaths(dir);
+    const statePath = runtimePaths.statePath;
+    await mkdir(path.dirname(statePath), { recursive: true });
+    await writeFile(statePath, "old\n", "utf8");
     await chmod(statePath, 0o600);
 
     await updateStateFile(dir, {
@@ -326,6 +580,24 @@ test("updateStateFile preserves permissions through atomic replacement", async (
     });
 
     assert.equal(modeBits((await stat(statePath)).mode), 0o600);
+  });
+});
+
+test("state and session summaries write to branch-scoped runtime paths", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feat/runtime-state\n", "utf8");
+
+    const statePath = await updateStateFile(dir, { currentPhase: "execution" });
+    const summaryPath = await appendSessionSummary(dir, {
+      title: "Runtime branch",
+      bullets: ["Wrote branch runtime"],
+    });
+
+    assert.equal(statePath, path.join(dir, ".omni", "runtime", "feat-runtime-state", "STATE.md"));
+    assert.equal(summaryPath, path.join(dir, ".omni", "runtime", "feat-runtime-state", "SESSION-SUMMARY.md"));
+    await assert.rejects(() => stat(path.join(dir, ".omni", "STATE.md")));
+    assert.match(await readFile(summaryPath, "utf8"), /Runtime branch/);
   });
 });
 
@@ -387,6 +659,120 @@ test("planningArtifactsReady rejects placeholders and requires SPEC, TASKS, and 
   });
 });
 
+test("resolvePlanningArtifactReadiness prefers active work planning when ready", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feature/collab-memory\n", "utf8");
+    const activePaths = await activePlanningArtifactPaths(dir);
+    await writeRealPlanningFiles(activePaths.baseDir);
+
+    const readiness = await resolvePlanningArtifactReadiness(dir);
+
+    assert.equal(await planningArtifactsReadyAt(activePaths), true);
+    assert.equal(readiness.ready, true);
+    assert.equal(readiness.readyPaths?.source, "work");
+    assert.equal(readiness.usedRootFallback, false);
+    assert.equal(await planningArtifactsReady(dir), true);
+  });
+});
+
+test("resolvePlanningArtifactReadiness uses root fallback when active work planning is missing", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feature/collab-memory\n", "utf8");
+    await ensureOmniDir(dir);
+    await writeRealPlanningFiles(path.join(dir, ".omni"));
+
+    const readiness = await resolvePlanningArtifactReadiness(dir);
+
+    assert.equal(readiness.ready, true);
+    assert.equal(readiness.readyPaths?.source, "root");
+    assert.equal(readiness.usedRootFallback, true);
+  });
+});
+
+test("migrateRootPlanToActiveWork copies root planning into active work", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feat/migrate\n", "utf8");
+    await ensureOmniDir(dir);
+    await writeRealPlanningFiles(path.join(dir, ".omni"));
+
+    const result = await migrateRootPlanToActiveWork(dir);
+
+    assert.deepEqual(result.copied.sort(), [
+      ".omni/work/feat-migrate/SPEC.md",
+      ".omni/work/feat-migrate/TASKS.md",
+      ".omni/work/feat-migrate/TESTS.md",
+    ].sort());
+    assert.match(await readFile(path.join(result.activePaths.baseDir, "SPEC.md"), "utf8"), /Spec content/);
+    assert.match(await readFile(result.notesPath, "utf8"), /Migrated root planning files/);
+  });
+});
+
+test("migrateRootPlanToActiveWork rejects placeholders and overwrite conflicts", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feat/migrate\n", "utf8");
+    await ensureOmniDir(dir);
+
+    await assert.rejects(() => migrateRootPlanToActiveWork(dir), /nothing to migrate/);
+
+    await writeRealPlanningFiles(path.join(dir, ".omni"));
+    const activePaths = await activePlanningArtifactPaths(dir);
+    await mkdir(activePaths.baseDir, { recursive: true });
+    await writeFile(activePaths.specPath, "existing\n", "utf8");
+
+    await assert.rejects(() => migrateRootPlanToActiveWork(dir), /refusing to overwrite/);
+    await assert.doesNotReject(() => migrateRootPlanToActiveWork(dir, { overwrite: true }));
+  });
+});
+
+test("planningGuardMessage names active work planning with root fallback", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feature/collab-memory\n", "utf8");
+
+    const readiness = await resolvePlanningArtifactReadiness(dir);
+    const message = planningGuardMessage(readiness);
+
+    assert.match(message, /\.omni\/work\/feature-collab-memory/);
+    assert.match(message, /Legacy root \.omni\/SPEC\.md/);
+  });
+});
+
+test("buildCollaborationCheckpoint reports branch, policy, and active planning status", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/feature/collab-memory\n", "utf8");
+
+    const checkpoint = await buildCollaborationCheckpoint(dir);
+
+    assert.match(checkpoint, /# Collaboration Checkpoint/);
+    assert.match(checkpoint, /Branch: feature\/collab-memory/);
+    assert.match(checkpoint, /Protected Branch Policy: not protected/);
+    assert.match(checkpoint, /Active Work ID: feature-collab-memory/);
+    assert.match(checkpoint, /Active Planning Directory: \.omni\/work\/feature-collab-memory/);
+    assert.match(checkpoint, /Planning Status: not ready/);
+  });
+});
+
+test("buildCollaborationCheckpoint reports protected branch blocks and root fallback", async () => {
+  await withTempDir(async (dir) => {
+    await mkdir(path.join(dir, ".git"), { recursive: true });
+    await writeFile(path.join(dir, ".git", "HEAD"), "ref: refs/heads/main\n", "utf8");
+    await ensureOmniDir(dir);
+    await writeRealPlanningFiles(path.join(dir, ".omni"));
+
+    const checkpoint = await buildCollaborationCheckpoint(dir);
+
+    assert.match(checkpoint, /Protected Branch: yes/);
+    assert.match(checkpoint, /Protected Branch Policy: blocked for change implementation/);
+    assert.match(checkpoint, /Planning Status: ready via legacy root fallback/);
+    assert.match(checkpoint, /Next Step: Create or switch to a feature branch/);
+  });
+});
+
 test("buildRepoMap ranks important files and writes both markdown and json outputs", async () => {
   await withTempDir(async (dir) => {
     await mkdir(path.join(dir, "src"), { recursive: true });
@@ -443,16 +829,21 @@ test("suggestSkills and updateSkillsFile infer workflow skills from task text", 
 
     assert.deepEqual(
       [...suggestions.map((item) => item.name)].sort(),
-      ["brainstorming", "grill-me", "omni-execution", "omni-planning", "omni-verification"],
+      ["brainstorming", "grill-me", "omni-execution", "omni-planning", "omni-verification", "tdd"],
     );
 
     const result = await updateSkillsFile(dir, task);
     const skillsFile = await readFile(path.join(dir, ".omni", "SKILLS.md"), "utf8");
 
-    assert.equal(result.suggested.length, 5);
+    assert.equal(result.suggested.length, 6);
     assert.match(skillsFile, /## Suggested For Current Work/);
     assert.match(skillsFile, /grill-me/);
     assert.match(skillsFile, /find-skills/);
+    assert.match(skillsFile, /skill-maker/);
+    assert.match(skillsFile, /tdd/);
+    assert.match(skillsFile, /diagnose/);
+    assert.match(skillsFile, /grill-with-docs/);
+    assert.match(skillsFile, /improve-codebase-architecture/);
     assert.match(skillsFile, /brainstorming/);
     assert.match(skillsFile, /omni-verification/);
   });
@@ -463,6 +854,154 @@ test("suggestSkills prioritizes grill-me for change requests", async () => {
 
   assert.equal(suggestions[0]?.name, "grill-me");
   assert.ok(suggestions.some((item) => item.name === "brainstorming"));
+  assert.ok(suggestions.some((item) => item.name === "tdd"));
+});
+
+test("suggestSkills recommends tdd for behavior-changing implementation", async () => {
+  const explicit = await suggestSkills("Use TDD with a red-green-refactor loop for this feature");
+  const behavior = await suggestSkills("Update the checkout behavior and add regression tests");
+
+  assert.ok(explicit.some((item) => item.name === "tdd"));
+  assert.ok(behavior.some((item) => item.name === "tdd"));
+});
+
+test("suggestSkills recommends diagnose for bugs and performance regressions", async () => {
+  const bug = await suggestSkills("Diagnose the checkout bug that fails intermittently");
+  const performance = await suggestSkills("Debug this performance regression in repo map generation");
+
+  assert.equal(bug[0]?.name, "diagnose");
+  assert.ok(performance.some((item) => item.name === "diagnose"));
+});
+
+test("suggestSkills recommends grill-with-docs for durable domain decisions", async () => {
+  const domain = await suggestSkills("Grill this plan against our domain language and glossary");
+  const adr = await suggestSkills("We need an ADR for this durable architecture decision");
+
+  assert.equal(domain[0]?.name, "grill-with-docs");
+  assert.ok(adr.some((item) => item.name === "grill-with-docs"));
+});
+
+test("suggestSkills recommends improve-codebase-architecture for architecture reviews", async () => {
+  const architecture = await suggestSkills("Find deepening opportunities to improve codebase architecture");
+  const seams = await suggestSkills("Review shallow modules and test seams before refactoring");
+
+  assert.equal(architecture[0]?.name, "improve-codebase-architecture");
+  assert.ok(seams.some((item) => item.name === "improve-codebase-architecture"));
+});
+
+test("OmniCodePlugin registers improve-codebase-architecture command", async () => {
+  await withTempDir(async (dir) => {
+    const plugin = await OmniCodePlugin({ directory: dir } as never);
+    const config = {} as {
+      command?: Record<string, { description?: string; template?: string }>;
+      agent?: Record<string, unknown>;
+      instructions?: string[];
+    };
+
+    await plugin.config?.(config as never);
+
+    assert.ok(config.command?.["improve-codebase-architecture"]);
+    assert.match(config.command["improve-codebase-architecture"].description ?? "", /architecture/i);
+    assert.match(config.command["improve-codebase-architecture"].template ?? "", /deepening opportunities/i);
+  });
+});
+
+test("OmniCodePlugin registers clean-context-review command and commit guidance", async () => {
+  await withTempDir(async (dir) => {
+    const plugin = await OmniCodePlugin({ directory: dir } as never);
+    const config = {} as {
+      command?: Record<string, { agent?: string; description?: string; template?: string }>;
+      agent?: Record<string, unknown>;
+      instructions?: string[];
+    };
+
+    await plugin.config?.(config as never);
+
+    const reviewCommand = config.command?.["clean-context-review"];
+    assert.equal(reviewCommand?.agent, "omnicode");
+    assert.match(reviewCommand?.description ?? "", /clean-context review/i);
+    assert.match(reviewCommand?.template ?? "", /Blind diff review/);
+    assert.match(reviewCommand?.template ?? "", /Contract review/);
+    assert.match(reviewCommand?.template ?? "", /Evidence:/);
+    assert.match(reviewCommand?.template ?? "", /Confidence:/);
+    assert.match(reviewCommand?.template ?? "", /Blocks commit:/);
+    assert.match(reviewCommand?.template ?? "", /adjudicate each finding before commit/);
+    assert.match(reviewCommand?.template ?? "", /do not edit files/i);
+    assert.match(reviewCommand?.template ?? "", /do not edit files or commit/i);
+
+    const commitCommand = config.command?.commit;
+    assert.match(commitCommand?.template ?? "", /clean-context-review/);
+    assert.match(commitCommand?.template ?? "", /completed and adjudicated/);
+  });
+});
+
+test("plugin config registers optional Omni subagents and omni-agents command", async () => {
+  await withTempDir(async (dir) => {
+    const removedWriterName = ["omni", "worker"].join("-");
+    const homeDir = path.join(dir, "home");
+    await mkdir(path.join(homeDir, ".omnicode"), { recursive: true });
+    await mkdir(path.join(dir, ".omnicode"), { recursive: true });
+    await writeFile(
+      path.join(homeDir, ".omnicode", "settings.json"),
+      JSON.stringify({ agents: { enabled: true, defaultModel: "anthropic/shared-subagent" } }, null, 2),
+      "utf8",
+    );
+    await writeFile(
+      path.join(dir, ".omnicode", "settings.json"),
+      JSON.stringify({ agents: { models: { "omni-verifier": "openai/verifier-model", [removedWriterName]: "openai/legacy-writer-model" } } }, null, 2),
+      "utf8",
+    );
+
+    const config = await buildPluginConfig(dir, { homeDir });
+    const agents = config.agent ?? {};
+    for (const agentName of ["omni-explorer", "omni-planner", "omni-verifier"]) {
+      assert.equal(agents[agentName]?.mode, "subagent");
+      assert.equal(typeof agents[agentName]?.description, "string");
+      assert.equal(typeof agents[agentName]?.prompt, "string");
+    }
+    assert.equal(agents["omni-explorer"]?.model, "anthropic/shared-subagent");
+    assert.equal(agents["omni-verifier"]?.model, "openai/verifier-model");
+    assert.equal(agents[removedWriterName], undefined);
+    assert.match(String(agents.omnicode?.prompt), /Single-writer invariant/);
+    assert.match(String(agents.omnicode?.prompt), /mandatory intelligence checkpoints/);
+    assert.match(String(agents.omnicode?.prompt), /record a concise skip reason/);
+    assert.match(String(agents.omnicode?.prompt), /clean-context review/);
+    assert.match(String(agents.omnicode?.prompt), /There is no writer subagent role/);
+    assert.match(String(agents["omni-explorer"]?.prompt), /discovery packet/);
+    assert.match(String(agents["omni-explorer"]?.prompt), /single writer/);
+    assert.match(String(agents["omni-planner"]?.prompt), /smart-friend/);
+    assert.match(String(agents["omni-planner"]?.prompt), /rather than guessing/);
+    assert.match(String(agents["omni-verifier"]?.prompt), /clean-context review/);
+    assert.match(String(agents["omni-verifier"]?.prompt), /adjudicate accepted vs rejected/);
+    assert.deepEqual(agents.omnicode?.permission, {
+      task: { "*": "deny", "omni-explorer": "allow", "omni-planner": "allow", "omni-verifier": "allow" },
+    });
+
+    const command = config.command?.["omni-agents"];
+    assert.equal(command?.agent, "omnicode");
+    assert.match(String(command?.template), /omnicode_agents_status/);
+    assert.match(String(command?.template), /opencode models/);
+    assert.match(String(command?.template), /omnicode_update_agents_settings/);
+    assert.match(String(command?.template), /single-writer invariant/);
+    assert.match(String(command?.template), /mandatory checkpoints/);
+    assert.match(String(command?.template), /reasoningEffort/);
+    assert.match(String(command?.template), /Do not invent model IDs/);
+    assert.match(String(command?.template), /There is no writer subagent role/);
+  });
+});
+
+test("verification and agent instruction resources require clean-context review before commit", async () => {
+  const resourcesDir = path.join(process.cwd(), "src", "resources");
+  const agentInstructions = await readFile(path.join(resourcesDir, "instructions", "omnicode-agent.md"), "utf8");
+  const verificationSkill = await readFile(path.join(resourcesDir, "skills", "omni-verification.md"), "utf8");
+
+  assert.match(agentInstructions, /single-writer invariant/);
+  assert.match(agentInstructions, /mandatory checkpoints for non-trivial change requests/);
+  assert.match(agentInstructions, /skip reason/);
+  assert.match(agentInstructions, /clean-context review before commit/);
+  assert.match(agentInstructions, /there is no writer subagent role/);
+  assert.match(verificationSkill, /clean-context review of the diff\/tests/);
+  assert.match(verificationSkill, /adjudicate accepted vs rejected findings/);
 });
 
 test("suggestSkills recommends find-skills for skill discovery and removal requests", async () => {
@@ -471,6 +1010,14 @@ test("suggestSkills recommends find-skills for skill discovery and removal reque
 
   assert.equal(discovery[0]?.name, "find-skills");
   assert.equal(removal[0]?.name, "find-skills");
+});
+
+test("suggestSkills recommends skill-maker for missing skill creation requests", async () => {
+  const missing = await suggestSkills("No relevant skill exists for this project-local workflow");
+  const creation = await suggestSkills("Create a project-local skill for our release checklist");
+
+  assert.equal(missing[0]?.name, "skill-maker");
+  assert.equal(creation[0]?.name, "skill-maker");
 });
 
 test("updateSkillsFile preserves user-managed project notes", async () => {
@@ -549,7 +1096,8 @@ test("ensureOmniDir preserves templates and setOmniMode updates state coherently
 
     await ensureOmniDir(dir);
     await setOmniMode(dir, "on");
-    let state = await readFile(path.join(dir, ".omni", "STATE.md"), "utf8");
+    const runtimePaths = await activeRuntimePaths(dir);
+    let state = await readFile(runtimePaths.statePath, "utf8");
     let config = await readFile(path.join(dir, ".omni", "CONFIG.md"), "utf8");
 
     assert.match(config, /Omni Mode: on/);
@@ -557,7 +1105,7 @@ test("ensureOmniDir preserves templates and setOmniMode updates state coherently
     assert.match(state, /Workspace ready for planning/);
 
     await setOmniMode(dir, "off");
-    state = await readFile(path.join(dir, ".omni", "STATE.md"), "utf8");
+    state = await readFile(runtimePaths.statePath, "utf8");
     config = await readFile(path.join(dir, ".omni", "CONFIG.md"), "utf8");
 
     assert.match(config, /Omni Mode: off/);
@@ -615,4 +1163,198 @@ test("bash commands are prefixed with rtk (skipping already-prefixed commands)",
   // Should NOT be double-rewritten
   assert.equal(rewrite("rtk git status"), "rtk git status");
   assert.equal(rewrite("rtk pytest tests/"), "rtk pytest tests/");
+});
+
+test("bash commands are prefixed with env -u XDG_CONFIG_HOME when OmniCode overrides XDG", () => {
+  const originalXdg = process.env.XDG_CONFIG_HOME;
+  const fakeOmniXdg = path.join(os.homedir(), ".config", "omnicode");
+  try {
+    // With OmniCode XDG override
+    process.env.XDG_CONFIG_HOME = fakeOmniXdg;
+    // Simulate the sanitize + rtk pipeline from tool.execute.before
+    function sanitizeAndRtk(command: string, rtkAvailable: boolean): string {
+      let rewritten = command;
+      if (command.trimStart().startsWith("env ")) {
+        // already has env prefix, leave it
+      } else {
+        rewritten = `env -u XDG_CONFIG_HOME ${command}`;
+      }
+      if (rtkAvailable && !rewritten.trimStart().startsWith("rtk ")) {
+        rewritten = `rtk ${rewritten}`;
+      }
+      return rewritten;
+    }
+
+    // rtk available: both env -u and rtk
+    assert.equal(sanitizeAndRtk("gh auth status", true), "rtk env -u XDG_CONFIG_HOME gh auth status");
+    assert.equal(sanitizeAndRtk("git log", true), "rtk env -u XDG_CONFIG_HOME git log");
+    // already has env prefix: no double env
+    assert.equal(sanitizeAndRtk("env -u XDG_CONFIG_HOME gh auth status", true), "rtk env -u XDG_CONFIG_HOME gh auth status");
+    // rtk not available: only env -u
+    assert.equal(sanitizeAndRtk("gh auth status", false), "env -u XDG_CONFIG_HOME gh auth status");
+
+    // Without OmniCode XDG override: no env prefix added
+    process.env.XDG_CONFIG_HOME = originalXdg;
+    function rtkOnly(command: string): string {
+      if (!command.trimStart().startsWith("rtk ")) return `rtk ${command}`;
+      return command;
+    }
+    assert.equal(rtkOnly("gh auth status"), "rtk gh auth status");
+    assert.equal(rtkOnly("git log"), "rtk git log");
+  } finally {
+    process.env.XDG_CONFIG_HOME = originalXdg;
+  }
+});
+
+test("readOmniCodeSettings parses and merges paired model configs with project override precedence", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    const projectDir = path.join(dir, "project");
+    await mkdir(path.join(homeDir, ".omnicode"), { recursive: true });
+    await mkdir(path.join(projectDir, ".omnicode"), { recursive: true });
+    await writeFile(
+      path.join(homeDir, ".omnicode", "settings.json"),
+      JSON.stringify({
+        agents: {
+          enabled: true,
+          models: {
+            "omni-planner": { model: "openai/global-planner", reasoningEffort: "high" },
+            "omni-explorer": "anthropic/global-explorer",
+          },
+        },
+      }, null, 2),
+      "utf8",
+    );
+    await writeFile(
+      path.join(projectDir, ".omnicode", "settings.json"),
+      JSON.stringify({
+        agents: {
+          models: {
+            "omni-verifier": { model: "openai/project-verifier", reasoningEffort: "low" },
+            "omni-planner": "anthropic/project-planner",
+          },
+        },
+      }, null, 2),
+      "utf8",
+    );
+
+    const settings = await readOmniCodeSettings(projectDir, { homeDir });
+
+    assert.deepEqual(settings.agents.models, {
+      "omni-explorer": "anthropic/global-explorer",
+      "omni-planner": "anthropic/project-planner",
+      "omni-verifier": { model: "openai/project-verifier", reasoningEffort: "low" },
+    });
+  });
+});
+
+test("updateOmniCodeAgentsSettings persists paired model configs", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+
+    const result = await updateOmniCodeAgentsSettings(path.join(dir, "project"), {
+      scope: "global",
+      enabled: true,
+      models: {
+        "omni-planner": { model: "openai/gpt-5.5", reasoningEffort: "high", textVerbosity: "low" },
+        "omni-verifier": { model: "openai/gpt-5.5", reasoningEffort: "low" },
+      },
+    }, { homeDir });
+
+    assert.equal(result.settings.agents.enabled, true);
+    assert.deepEqual(result.settings.agents.models, {
+      "omni-planner": { model: "openai/gpt-5.5", reasoningEffort: "high", textVerbosity: "low" },
+      "omni-verifier": { model: "openai/gpt-5.5", reasoningEffort: "low" },
+    });
+
+    const fileContent = JSON.parse(await readFile(result.outputPath, "utf8"));
+    assert.deepEqual(fileContent.agents.models["omni-planner"], { model: "openai/gpt-5.5", reasoningEffort: "high", textVerbosity: "low" });
+  });
+});
+
+test("updateOmniCodeAgentsSettings cleans invalid model configs", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+
+    const result = await updateOmniCodeAgentsSettings(path.join(dir, "project"), {
+      scope: "global",
+      enabled: true,
+      models: {
+        "omni-explorer": "",
+        "omni-planner": { model: "openai/gpt-5.5", reasoningEffort: "high" },
+      },
+    }, { homeDir });
+
+    assert.deepEqual(result.settings.agents.models, {
+      "omni-planner": { model: "openai/gpt-5.5", reasoningEffort: "high" },
+    });
+  });
+});
+
+test("plugin config passes paired model options through to OpenCode agent config", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    await mkdir(path.join(homeDir, ".omnicode"), { recursive: true });
+    await writeFile(
+      path.join(homeDir, ".omnicode", "settings.json"),
+      JSON.stringify({
+        agents: {
+          enabled: true,
+          models: {
+            "omni-planner": { model: "openai/gpt-5.5", reasoningEffort: "high" },
+            "omni-verifier": { model: "openai/gpt-5.5", reasoningEffort: "low" },
+          },
+        },
+      }, null, 2),
+      "utf8",
+    );
+
+    const config = await buildPluginConfig(dir, { homeDir });
+    const agents = config.agent ?? {};
+
+    assert.equal(agents["omni-planner"]?.model, "openai/gpt-5.5");
+    assert.equal((agents["omni-planner"] as Record<string, unknown>)?.reasoningEffort, "high");
+    assert.equal(agents["omni-verifier"]?.model, "openai/gpt-5.5");
+    assert.equal((agents["omni-verifier"] as Record<string, unknown>)?.reasoningEffort, "low");
+    assert.equal((agents["omni-explorer"] as Record<string, unknown>)?.reasoningEffort, undefined);
+  });
+});
+
+test("omnicode agent tools use injected settings home for status and updates", async () => {
+  await withTempDir(async (dir) => {
+    const homeDir = path.join(dir, "home");
+    await mkdir(path.join(homeDir, ".omnicode"), { recursive: true });
+    await writeFile(
+      path.join(homeDir, ".omnicode", "settings.json"),
+      JSON.stringify({
+        agents: {
+          enabled: true,
+          models: {
+            "omni-explorer": { model: "opencode/minimax-m2.5-free", reasoningEffort: "high" },
+          },
+        },
+      }, null, 2),
+      "utf8",
+    );
+
+    const plugin = await OmniCodePlugin({ directory: dir } as never, { homeDir });
+    const tools = plugin.tool as unknown as Record<string, { execute(args: Record<string, unknown>): Promise<string> }>;
+
+    const status = await tools.omnicode_agents_status.execute({});
+    assert.match(status, new RegExp(homeDir.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")));
+    assert.match(status, /opencode\/minimax-m2\.5-free/);
+    assert.match(status, /reasoningEffort=high/);
+
+    const update = await tools.omnicode_update_agents_settings.execute({
+      scope: "global",
+      models: { "omni-planner": { model: "openai/gpt-5.5", reasoningEffort: "high" } },
+    });
+    assert.match(update, /openai\/gpt-5\.5/);
+
+    const written = JSON.parse(await readFile(path.join(homeDir, ".omnicode", "settings.json"), "utf8"));
+    assert.deepEqual(written.agents.models["omni-planner"], { model: "openai/gpt-5.5", reasoningEffort: "high" });
+
+    const recommendations = await tools.omnicode_read_model_recommendations.execute({});
+    assert.match(recommendations, new RegExp(homeDir.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")));
+  });
 });

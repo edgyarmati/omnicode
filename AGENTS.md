@@ -22,15 +22,21 @@ Core idea:
 - load OmniCode as a plugin
 - preserve the Omni workflow:
   - `.omni/` durable memory
+  - collaboration-safe per-work memory direction for parallel branches
   - automatic grill-me clarification before change requests
+  - documentation-aware grilling for domain language and durable decisions
   - explicit skill-fit checkpoint before planning
   - planning before implementation
+  - TDD/red-green-refactor guidance for behavior-changing implementation slices
+  - diagnose workflow guidance for bugs and performance regressions
+  - architecture deepening review available as an explicit user-triggered command
   - bounded task slices
   - verification after implementation
+  - clean-context review before committing meaningful implementation slices
+  - single-writer orchestration where subagents contribute intelligence while the primary agent owns active-worktree writes and decisions
   - repo map for codebase awareness
   - skill discovery / required-skill guidance
 - launch OpenCode through an `omnicode` command that uses OmniCode-specific config without mutating the user's normal OpenCode setup
-- optionally enable native OpenCode sub-agents through `/omni-agents` without making them the default for every user
 
 ## Current architecture
 
@@ -58,7 +64,6 @@ Implemented in `packages/plugin/src/index.ts`.
 
 Current features:
 - registers default `omnicode` agent
-- optionally registers native OpenCode subagents (`omni-explorer`, `omni-planner`, `omni-verifier`, `omni-worker`) when enabled through OmniCode settings
 - loads OmniCode command markdown files from `src/resources/commands/`
 - exposes custom tools:
   - `omnicode_bootstrap`
@@ -73,13 +78,15 @@ Current features:
   - `omnicode_update_skills`
   - `omnicode_list_skills`
   - `omnicode_read_skill`
-  - `omnicode_agents_status`
-  - `omnicode_update_agents_settings`
-  - `omnicode_read_model_recommendations`
+  - `omnicode_collaboration_status`
+  - `omnicode_start_work`
+  - `omnicode_create_pr`
+  - `omnicode_migrate_root_plan`
 - bootstraps `.omni/` on `session.created`
-- adds `.omni/STATE.md` into compaction context
+- adds active `.omni/runtime/<branch-slug-or-root>/STATE.md` into compaction context
 - guards `write` / `edit` when Omni mode is on and planning artifacts are missing
 - placeholder bootstrap planning files are not enough; source edits require real planning content
+- optional native subagents follow a single-writer model: `omni-explorer`, `omni-planner`, and `omni-verifier` are read-only/advisory intelligence helpers; there is no writer subagent role
 
 Planning artifacts currently required before source editing:
 - `.omni/SPEC.md`
@@ -93,14 +100,20 @@ Under `packages/plugin/src/resources/`:
 - `commands/omni-init.md`
 - `commands/omni-mode.md`
 - `commands/omni-status.md`
-- `commands/omni-agents.md`
 - `commands/omni-import-standards.md`
 - `commands/omni-skills.md`
 - `commands/commit.md`
 - `commands/push.md`
+- `commands/improve-codebase-architecture.md`
+- `commands/clean-context-review.md`
 - workflow skills:
   - `grill-me.md`
+  - `grill-with-docs.md`
   - `find-skills.md`
+  - `skill-maker.md`
+  - `tdd.md`
+  - `diagnose.md`
+  - `improve-codebase-architecture.md`
   - `brainstorming.md`
   - `omni-planning.md`
   - `omni-execution.md`
@@ -132,7 +145,9 @@ Current behavior:
 ## Documents to read first
 
 - `README.md`
+- `docs/current-orchestration-model.md`
 - `docs/2026-04-24-omnicode-design.md`
+- `docs/2026-04-30-collaborative-memory-design.md`
 - `docs/implementation-plan.md`
 
 ## Smoke-tested behavior
@@ -146,9 +161,15 @@ Verified in a real OpenCode runtime:
 - ranked repo map output works and writes `.omni/REPO-MAP.md` plus `.omni/REPO-MAP.json`
 - skill suggestion/sync works and writes `.omni/SKILLS.md`
 - the write/edit guard blocks early writes until real planning content exists in `SPEC.md`, `TASKS.md`, and `TESTS.md`
+- bundled `grill-with-docs` guidance is available for domain-language and ADR-aware clarification
+- bundled `tdd` guidance is available for behavior-changing slices and records expectations in the active work `TESTS.md`
+- bundled `diagnose` guidance is available for bugs/performance regressions before patching
+- `/improve-codebase-architecture` is available as a review-only workflow command for architecture deepening opportunities
+- `/clean-context-review` is available as a review/adjudication-only workflow command for pre-commit diff review
+- optional native subagent guidance preserves a single active writer and adds clean-context review before commits
 - state/session-summary lifecycle tools work in tests and runtime
-- optional native subagents are controlled by `~/.omnicode/settings.json` with gitignored project overrides in `.omnicode/settings.json`
 - automated tests cover launcher config isolation, standards discovery/import, repo map generation, skill suggestion, lifecycle updates, and planning-artifact readiness
+- collaboration status reports the current branch, protected-branch policy, active `.omni/work/<branch-slug>/` planning path, and planning readiness
 
 ## Known gaps / next work
 
@@ -158,10 +179,15 @@ These are the next most valuable slices:
    - current enforcement blocks `write`/`edit` until `.omni/SPEC.md`, `.omni/TASKS.md`, and `.omni/TESTS.md` contain non-placeholder planning content
    - may need stronger or more precise guarding once more real OpenCode sessions are observed
 
-2. **Standards UX improvement**
+2. **Collaborative memory / branch workflow**
+   - implement the design in `docs/2026-04-30-collaborative-memory-design.md`
+   - select `.omni/work/<branch-slug>/` as active planning memory for collaborative work
+   - block protected-branch implementation by default unless OmniCode settings explicitly allow it
+
+3. **Standards UX improvement**
    - support friendlier selection/review flows beyond import-all or explicit relative paths
 
-3. **Repo map + skill routing refinement**
+4. **Repo map + skill routing refinement**
    - improve incrementality/ranking further and move beyond heuristic skill suggestion if needed
 
 ## Build / check
@@ -188,6 +214,8 @@ npm test
 
 For OmniCode, `.omni/` is intentionally split.
 
+Every committed change must also update `CHANGELOG.md` with the user-facing change, fix, test, documentation, or process note that should appear in the next release. Keep the changelog current during each slice so release prep is a cleanup pass, not archaeology.
+
 Durable `.omni` files may be committed when they reflect real project intent:
 - `PROJECT.md`
 - `SPEC.md`
@@ -201,6 +229,7 @@ Durable `.omni` files may be committed when they reflect real project intent:
 - `.gitignore`
 
 Runtime/generated `.omni` files stay out of git by default:
+- `runtime/`
 - `STATE.md`
 - `SESSION-SUMMARY.md`
 - `REPO-MAP.md`

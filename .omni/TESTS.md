@@ -57,19 +57,52 @@
 
 ---
 
-## Optional Native Sub-Agents Verification
+## Project-Local Skill Maker Verification
 
-- [x] Settings resolver reads `~/.omnicode/settings.json`, reads `<project>/.omnicode/settings.json`, and applies project override precedence.
-- [x] Invalid/missing settings safely fall back to disabled/default values.
-- [x] Project `.omnicode/` is added to the project `.gitignore` without overwriting existing entries.
-- [x] Plugin config does not register OmniCode subagents when the effective setting is disabled or absent.
-- [x] Plugin config registers `omni-explorer`, `omni-planner`, `omni-verifier`, and `omni-worker` as native subagents when enabled.
-- [x] Orchestrator task permissions allow the bundled Omni subagents without exposing arbitrary subagents by default.
-- [x] Model overrides from settings are applied without copying bundled prompts into settings.
-- [x] `/omni-agents` command resource exists and guides on/off/status/setup, including model inventory and recommendation markdown behavior.
-- [x] Slice 1: `npm run check` passes.
-- [x] Slice 1: `npm test` passes.
-- [x] Slice 2: `npm run check` passes.
-- [x] Slice 2: `npm test` passes.
-- [x] Slice 3: `npm run check` passes.
-- [x] Slice 3: `npm test` passes.
+- [x] `omnicode_list_skills`/skill listing includes `skill-maker`.
+- [x] Generated/default `.omni/SKILLS.md` bundled list includes `skill-maker`.
+- [x] `suggestSkills` returns `skill-maker` for missing/no-relevant-skill and create/write-skill requests.
+- [x] Agent instructions document `find-skills` before automatic project-local `skill-maker` fallback.
+- [x] README documents that generated missing skills are project-local under `.omni/skills/` and not global.
+- [x] `npm run check` passes.
+- [x] `npm test` passes.
+
+---
+
+## Changelog Update Discipline Verification
+
+- [x] `AGENTS.md` requires updating `CHANGELOG.md` for every committed change.
+- [x] `CHANGELOG.md` records this process/documentation update for the next release.
+- [x] `npm run check` passes.
+- [x] `npm test` passes.
+
+---
+
+## Collaborative Omni Memory Design Verification
+
+- [x] Design doc covers shared memory, per-work-item plans, runtime state, branch slug defaults, protected-branch settings, and non-Omni contributors.
+- [x] README/AGENTS reference or summarize the collaborative memory direction.
+- [x] CHANGELOG records the collaboration design update.
+- [x] `npm run check` passes.
+- [x] `npm test` passes.
+
+---
+
+## Collaborative Workflow Implementation Verification
+
+- [x] Slice 1: tests cover workflow settings defaults, global/project merge, invalid fallback, and status visibility.
+- [x] Slice 2: tests cover protected branch blocking for mutating tools and global/project override behavior.
+- [x] Slice 3: tests cover branch slug generation and active work planning path selection.
+- [x] Slice 4: tests cover active work planning readiness, root fallback, and guard messaging.
+- [x] Slice 5: tests/docs cover collaboration checkpoint output.
+- [x] Run `npm run check` and `npm test` after each slice.
+
+---
+
+## Collaboration Polish Follow-Ups Verification
+
+- [x] Slice 1: tests cover branch name validation, dirty status refusal/proposed solutions, existing branch switch, and new branch creation helper behavior.
+- [x] Slice 2: tests cover PR settings defaults/overrides, PR prerequisite summaries, and PR body generation without requiring GitHub network access.
+- [x] Slice 3: tests cover root plan copy, placeholder refusal, overwrite refusal, overwrite success, and migration notes.
+- [x] Slice 4: tests cover branch-scoped state/session paths, no-branch root runtime fallback, gitignore update, and compaction/read behavior.
+- [x] Run `npm run check` and `npm test` after each slice.

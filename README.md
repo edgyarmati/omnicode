@@ -35,11 +35,17 @@ omnicode
 
 - **Durable project memory** in `.omni/` — spec, tasks, tests, decisions, standards, and session summaries stay on disk between runs.
 - **Automatic grilling before changes** — for new features, fixes, refactors, and behavior changes, OmniCode asks one focused question at a time until the request is unambiguous.
-- **Skill-fit checkpoint** — after clarification, OmniCode checks whether available skills cover the task and uses `find-skills` when relevant skills are missing.
+- **Documentation-aware grilling when needed** — when a change exposes domain language or durable decisions, OmniCode can use an enhanced grill workflow that updates project context or ADRs instead of losing that reasoning in chat.
+- **Skill-fit checkpoint** — after clarification, OmniCode checks whether available skills cover the task, uses `find-skills` when relevant skills are missing, and can create a project-local skill when none exists.
+- **TDD implementation discipline** — behavior-changing slices can be guided by a bundled red-green-refactor workflow, recorded in the active work `TESTS.md` before implementation.
+- **Disciplined diagnosis** — bug and performance-regression work can route through a reproduce → minimize → hypothesize → instrument → fix → regression-test loop before patching.
+- **Architecture review command** — `/improve-codebase-architecture` finds deepening opportunities and asks what to explore before any refactor starts.
+- **Clean-context review command** — `/clean-context-review` reviews the current diff/tests with fresh eyes and requires finding adjudication before commit.
+- **Optional native subagents** — `/omni-agents` can opt into read-only intelligence helpers (`omni-explorer`, `omni-planner`, `omni-verifier`) while preserving OmniCode's single-writer default. There is no writer subagent role.
 - **Plan before edit** — when Omni mode is on, the agent can't touch your files until `SPEC.md`, `TASKS.md`, and `TESTS.md` have real content.
 - **Repo awareness** — a ranked repo map keeps the agent oriented in large codebases.
-- **Skill discovery** — relevant skills are surfaced and loaded automatically for the task at hand.
-- **Optional native sub-agents** — `/omni-agents setup` can enable OpenCode-native OmniCode workers for exploration, planning, verification, and bounded implementation slices.
+- **Skill discovery and local creation** — relevant skills are surfaced and loaded automatically; if discovery cannot find a fit, OmniCode can write a narrow local skill under `.omni/skills/` without touching global user skills.
+- **Collaboration-safe memory direction** — shared project knowledge stays durable, while active work is moving toward per-branch `.omni/work/<branch>/` plans and protected-branch guardrails.
 - **Token savings** — RTK is installed and wired up automatically, compressing bash command output by 60-90% so the agent uses fewer tokens on git, ls, test runs, and more.
 - **Zero impact on your normal setup** — the `omnicode` launcher uses its own isolated config, so regular `opencode` keeps working exactly as before.
 
@@ -48,13 +54,27 @@ OpenCode still owns the terminal UI, models, providers, auth, sessions, tools, a
 ## The Omni workflow
 
 1. **Bootstrap** — `.omni/` is seeded in your project the first time you run OmniCode there.
-2. **Grill** — for change requests, clarify one question at a time until behavior, constraints, non-goals, tests, and success criteria are concrete.
-3. **Check skills** — judge whether bundled/project skills cover the clarified task; if not, use `find-skills` before planning.
-4. **Plan** — write real `SPEC.md`, `TASKS.md`, and `TESTS.md`. Until you do, the edit/write guard is active.
-5. **Execute** — work bounded task slices guided by the plan.
-6. **Verify** — state and session summaries are updated through OmniCode tools so the next run picks up where you left off.
+2. **Grill** — for change requests, clarify one question at a time until behavior, constraints, non-goals, tests, and success criteria are concrete. Use the docs-aware variant when domain terms or durable decisions should be recorded.
+3. **Check skills** — judge whether bundled/project skills cover the clarified task; if not, use `find-skills`, then create a project-local `.omni/skills/` skill with `skill-maker` when no adequate skill exists.
+4. **Plan** — write real `SPEC.md`, `TASKS.md`, and `TESTS.md` in the active planning directory. Until you do, the edit/write guard is active.
+5. **Test-drive when applicable** — for behavior-changing slices, record the behavior, public seam, expected red failure, focused test command, and verification command in `TESTS.md`.
+6. **Diagnose before patching** — for unknown bugs and regressions, establish a feedback loop and cause before writing the fix.
+7. **Execute** — work bounded task slices guided by the plan, with the primary `omnicode` agent as the active-worktree writer and decision owner by default.
+8. **Review and verify** — run planned checks, use clean-context review for meaningful implementation diffs, adjudicate findings, then update state/session summaries so the next run picks up where you left off.
 
-`.omni/STATE.md` is also injected into OpenCode's compaction context, so active state survives long sessions.
+For the current subagent/orchestration model, see [`docs/current-orchestration-model.md`](docs/current-orchestration-model.md). For collaborative repositories, see the planned per-branch work-memory model in [`docs/2026-04-30-collaborative-memory-design.md`](docs/2026-04-30-collaborative-memory-design.md).
+OmniCode's collaboration checkpoint reports the current branch, protected-branch policy, active `.omni/work/<branch-slug>/` planning directory, planning readiness, and next recommended action when starting or resuming change work.
+Use `omnicode_start_work` to deliberately create or switch to a feature branch and initialize that branch's work-memory directory; it refuses dirty checkouts by default and suggests committing, stashing, or explicitly allowing dirty work.
+PR behavior is controlled by `workflow.offerPrOnCompletion` and `workflow.autoCreatePrOnCompletion`; by default OmniCode offers to open a PR when work is complete but does not create one unless asked.
+Use `omnicode_migrate_root_plan` to copy an existing non-placeholder root plan into the active branch-scoped `.omni/work/<branch-slug>/` directory while keeping root files intact for compatibility.
+
+Branch-scoped runtime state under `.omni/runtime/<branch-slug-or-root>/STATE.md` is injected into OpenCode's compaction context, so active state survives long sessions without creating a shared root-state bottleneck.
+
+Run `/improve-codebase-architecture` when you want a review-only architecture pass. OmniCode will inspect docs/code and return numbered deepening opportunities, then wait for you to choose a candidate before treating any refactor as an implementation change.
+
+Run `/clean-context-review` before committing meaningful implementation changes when you want the review loop explicit. It inspects the current diff/tests in blind or contract mode, reports findings by severity with evidence and confidence, and requires the primary orchestrator to accept, reject, or escalate each finding before commit.
+
+Run `/omni-agents` to review or update optional native subagent settings. Settings are read from `~/.omnicode/settings.json` plus a gitignored project override at `.omnicode/settings.json`; optional model guidance can live in `model-recommendations.md` in either settings directory. OmniCode treats subagents as intelligence contributors by default: `omni-explorer` returns discovery packets, `omni-planner` critiques plans as a smart friend, and `omni-verifier` runs checks or clean-context review. Writes, commits, PR decisions, and final verification judgments stay with the primary orchestrator. Writer subagents are not implemented.
 
 ## Quick usage
 
@@ -73,30 +93,6 @@ Then just talk to it. For example:
 OmniCode will bootstrap `.omni/` automatically on first use in a new project, then follow a plan → implement → verify workflow for every task. You don't need to pass inline prompts or CLI flags — just open it and have a conversation.
 
 Replace `<provider>/<model>` with any model identifier OpenCode supports (for example, `opencode/hy3-preview-free`).
-
-### Optional sub-agents
-
-OmniCode can opt into an orchestrator-and-workers workflow using OpenCode's native subagent support. It is off by default.
-
-Use:
-
-```bash
-/omni-agents status
-/omni-agents setup
-/omni-agents on
-/omni-agents off
-```
-
-By default, `/omni-agents on` and `/omni-agents off` write global settings to `~/.omnicode/settings.json`. Add `--project` to write a local project override to `.omnicode/settings.json`; OmniCode keeps project `.omnicode/` gitignored.
-
-When enabled, OmniCode registers native OpenCode subagents:
-
-- `omni-explorer` — read-only codebase discovery.
-- `omni-planner` — read-only planning/spec/test support.
-- `omni-verifier` — runs checks and reports pass/fail without source edits.
-- `omni-worker` — implements one bounded planned slice and reports back.
-
-For guided model choices, create `~/.omnicode/model-recommendations.md` or a project `.omnicode/model-recommendations.md`; `/omni-agents setup` reads that guidance and tries `opencode models` for available model inventory.
 
 ---
 
@@ -120,6 +116,13 @@ The `omnicode` launcher starts OpenCode with an OmniCode-specific config home so
 - `OPENCODE_CLIENT=omnicode`
 
 Both `omnicode` and your regular `opencode` use the same underlying OpenCode binary — they just point at different config roots.
+
+OmniCode behavior settings are resolved from:
+
+- global user settings: `~/.omnicode/settings.json`
+- optional project-local override: `.omnicode/settings.json`
+
+The current workflow policy supports protected-branch settings such as `workflow.protectedBranches`, `workflow.requireFeatureBranchForChanges`, and `workflow.allowProtectedBranchChanges`. When feature branches are required, OmniCode blocks source edits and mutating shell commands on protected branches such as `main`/`master` unless an explicit settings override allows them.
 
 ## Use OmniCode as a permanent OpenCode plugin
 
@@ -196,7 +199,7 @@ Commit these when they reflect real project intent:
 
 These stay out of git — they're regenerated each run:
 
-- `STATE.md`, `SESSION-SUMMARY.md`, `REPO-MAP.md`, `REPO-MAP.json`
+- `runtime/`, `STATE.md`, `SESSION-SUMMARY.md`, `REPO-MAP.md`, `REPO-MAP.json`
 
 `.pi/` also stays out of git.
 
@@ -244,5 +247,6 @@ Release artifacts are produced by `.github/workflows/release.yml` from tagged ve
 - [`docs/2026-04-24-omnicode-design.md`](docs/2026-04-24-omnicode-design.md) — original OmniCode design record.
 - [`docs/2026-04-24-native-launcher-design.md`](docs/2026-04-24-native-launcher-design.md) — native launcher design record.
 - [`docs/2026-04-24-release-setup-design.md`](docs/2026-04-24-release-setup-design.md) — release setup design record.
+- [`docs/2026-04-30-collaborative-memory-design.md`](docs/2026-04-30-collaborative-memory-design.md) — collaboration-safe memory and protected-branch design.
 - [`docs/implementation-plan.md`](docs/implementation-plan.md) — phased implementation plan.
 - [`docs/release-checklist.md`](docs/release-checklist.md) — release runbook.

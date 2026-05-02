@@ -133,9 +133,95 @@ fi
 
 info "OmniCode v${VERSION} installed successfully"
 printf '\n'
+
+# ── Install mode: launcher (recommended) or plugin ──────────────────────────
+
+INSTALL_MODE="${OMNICODE_INSTALL_MODE:-}"
+
+if [ -z "$INSTALL_MODE" ]; then
+  cat <<'MODE_EOF'
+OmniCode can be set up in two ways:
+
+  1) Launcher (recommended) — "omnicode" becomes a separate command.
+     Your normal "opencode" setup is left untouched. OmniCode runs in its
+     own isolated config with its own managed OpenCode runtime.
+
+  2) Plugin — OmniCode is added to your existing OpenCode config.
+     Every "opencode" session gets the Omni workflow automatically, but
+     there is no isolation from your normal OpenCode setup.
+
+MODE_EOF
+  printf 'Choose install mode [1/2] (default: 1): '
+  read -r _mode_answer </dev/tty 2>/dev/null || _mode_answer="1"
+  case "$_mode_answer" in
+    2*) INSTALL_MODE="plugin" ;;
+    *)  INSTALL_MODE="launcher" ;;
+  esac
+fi
+
+case "$INSTALL_MODE" in
+  plugin)
+    PLUGIN_PATH="${DATA_DIR}/lib/packages/plugin/dist/index.js"
+    if [ ! -f "$PLUGIN_PATH" ]; then
+      # Release bundles may have a different layout
+      PLUGIN_PATH="${DATA_DIR}/lib/plugin/index.js"
+    fi
+    printf '\n'
+    info "Plugin mode selected"
+    info "Plugin path: ${PLUGIN_PATH}"
+    printf '\n'
+    printf 'Add the following to your OpenCode config (usually ~/.config/opencode/opencode.json):\n\n'
+    printf '  {\n'
+    printf '    "default_agent": "omnicode",\n'
+    printf '    "plugin": ["file://%s"]\n' "$PLUGIN_PATH"
+    printf '  }\n\n'
+    printf 'Then just run: opencode\n'
+    ;;
+  launcher|*)
+    # Launcher mode is already set up above — wrapper was created.
+    ;;
+esac
+
+printf '\n'
+
+# ── Optional: offer RTK ──────────────────────────────────────────────────────
+
+if command -v rtk >/dev/null 2>&1; then
+  info "RTK is already installed ($(rtk --version 2>/dev/null || echo 'unknown version'))"
+elif command -v brew >/dev/null 2>&1; then
+  printf 'OmniCode can optionally use RTK, a CLI proxy that compresses bash output\n'
+  printf '(git, ls, test runners, etc.) for 60-90%% token savings. It is not required.\n'
+  printf '\n'
+  if [ -z "${OMNICODE_SKIP_RTK:-}" ]; then
+    printf 'Install RTK via Homebrew? [Y/n] '
+    read -r _rtk_answer </dev/tty 2>/dev/null || _rtk_answer="n"
+    case "$_rtk_answer" in
+      n*|N*) info "Skipping RTK. Install later with: brew install rtk" ;;
+      *)
+        info "Installing RTK via Homebrew"
+        if brew install rtk 2>/dev/null; then
+          info "RTK installed successfully"
+        else
+          warn "RTK installation failed. OmniCode will work without it. Install later with: brew install rtk"
+        fi
+        ;;
+    esac
+  else
+    info "Skipping RTK (OMNICODE_SKIP_RTK is set). Install later with: brew install rtk"
+  fi
+else
+  info "RTK (optional CLI output compression for 60-90% token savings) is available via Homebrew."
+  info "Install Homebrew (brew.sh) and then: brew install rtk"
+fi
+
+printf '\n'
 printf 'Next step:\n'
-printf '  omnicode\n\n'
-if ! command -v omnicode >/dev/null 2>&1; then
+if [ "$INSTALL_MODE" = "plugin" ]; then
+  printf '  Update your OpenCode config as shown above, then run: opencode\n\n'
+else
+  printf '  omnicode\n\n'
+fi
+if [ "$INSTALL_MODE" != "plugin" ] && ! command -v omnicode >/dev/null 2>&1; then
   printf 'Add %s to your PATH if not already there.\n' "$BIN_DIR"
   printf '  export PATH="%s:\$PATH"\n' "$BIN_DIR"
 fi

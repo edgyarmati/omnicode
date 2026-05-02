@@ -3,7 +3,12 @@
 ## Bundled
 
 - grill-me
+- grill-with-docs
 - find-skills
+- skill-maker
+- tdd
+- diagnose
+- improve-codebase-architecture
 - brainstorming
 - omni-planning
 - omni-execution
@@ -11,9 +16,9 @@
 
 ## Suggested For Current Work
 
-- grill-me: use automatically before change requests to reach shared understanding
-- omni-execution: use when implementing a planned slice
+- None inferred from the current task yet.
 
 ## Project Notes
 
 Record required and project-specific skills here.
+- Generated missing-task skills must stay project-local under `.omni/skills/<skill-name>/SKILL.md`; global/user skills are user-managed.

@@ -1,5 +1,65 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- **Project-local skill maker workflow** — when `find-skills` cannot find adequate coverage, OmniCode can create a narrow local skill under `.omni/skills/` for the current project without installing global user skills.
+- **Workflow settings primitives** — OmniCode now resolves protected-branch workflow policy from global `~/.omnicode/settings.json` plus optional project-local `.omnicode/settings.json` overrides and exposes the effective policy in state output.
+- **Protected-branch workflow guard** — source edits and mutating shell commands are blocked on protected branches such as `main`/`master` by default once planning is ready, unless global or project OmniCode settings explicitly allow direct protected-branch changes.
+- **Branch-scoped planning path helpers** — OmniCode can derive safe work IDs from git branch names and select `.omni/work/<branch-slug>/` planning paths with root planning fallback when no branch is available.
+- **Active work planning guard** — the plan-before-edit guard now prefers branch-scoped `.omni/work/<branch-slug>/SPEC.md`, `TASKS.md`, and `TESTS.md` while still accepting legacy root planning files as a migration fallback.
+- **Collaboration checkpoint status** — agents can now report the current branch, protected-branch policy, active Omni work-memory path, planning readiness, root fallback use, and next recommended action before starting or resuming change work.
+- **Explicit start-work workflow** — added `omnicode_start_work` to create or switch to a feature branch, initialize `.omni/work/<branch-slug>/`, and refuse dirty checkouts by default with proposed safe next steps.
+- **PR completion settings and tool** — added PR workflow settings for offering or auto-creating PRs on completion plus explicit `omnicode_create_pr` support that can push the branch when needed and builds a PR body from active planning context.
+- **Root plan migration tool** — added `omnicode_migrate_root_plan` to copy non-placeholder root `.omni` planning files into the active branch-scoped work directory with overwrite protection and migration notes.
+- **Branch-scoped runtime state** — runtime state and session summaries now write to `.omni/runtime/<branch-slug-or-root>/` instead of root singleton files, with runtime directories ignored by git.
+- **TDD workflow skill** — added bundled `tdd` guidance for behavior-changing slices, with active-work `TESTS.md` expectations for red-green-refactor planning and verification.
+- **Diagnose workflow skill** — added bundled bug/performance-regression guidance for reproduce, minimize, hypothesize, instrument, fix, and regression-test loops.
+- **Grill-with-docs workflow skill** — added a documentation-aware clarification variant for domain language, durable context, and ADR-worthy decisions.
+- **Architecture improvement command** — added `/improve-codebase-architecture` as a review-only workflow that surfaces deepening opportunities before any refactor begins.
+- **OpenCode runtime target update** — bumped OmniCode's managed OpenCode runtime target from `1.14.25` to `1.14.30`.
+- **Single-writer subagent orchestration** — optional native subagents now emphasize read-only discovery, smart-friend planning critique, clean-context verification review, and primary-agent ownership of active-worktree writes and decisions; the legacy writer subagent role was removed.
+- **Clean-context review command** — added `/clean-context-review` to standardize blind or contract diff review, finding severity/evidence/confidence reporting, and orchestrator adjudication before commit.
+- **Current orchestration model docs** — documented how the primary agent, optional read-only subagents, clean-context review, commit flow, and intentionally unimplemented writer-subagent mode work today.
+- **Per-agent passthrough provider options** — OmniCode agent settings now accept per-subagent passthrough options (e.g. `reasoningEffort`, `textVerbosity`) paired directly with the model in the `models` field. Each agent accepts either a model ID string or an object with `model` plus provider options (e.g. `{"model": "openai/gpt-5.5", "reasoningEffort": "high"}`), so options travel with the model they apply to.
+- **Mandatory enabled-subagent checkpoints** — when native subagents are enabled, non-trivial change requests now require explorer/planner/verifier checkpoints unless the agent records a skip reason, and `/omni-agents` setup/status guidance is clearer about exact model IDs and object configs.
+
+### Fixes
+
+- **Sanitize XDG_CONFIG_HOME from tool shells** — when OmniCode's launcher overrides `XDG_CONFIG_HOME` for OpenCode config isolation, bash tool commands now strip that override so user CLIs like `gh` see their normal auth/config.
+- **Offer RTK install in POSIX installer** — the `install.sh` installer now offers to install RTK via Homebrew when `brew` is available, for optional bash output compression. Skipped automatically when `OMNICODE_SKIP_RTK` is set or when Homebrew is not present. The Windows installer notes RTK availability.
+- **Choose launcher or plugin mode in installers** — both `install.sh` and `install.ps1` now offer an interactive choice between launcher mode (isolated, recommended) and plugin mode (integrated into existing OpenCode). Non-interactive installs can set `OMNICODE_INSTALL_MODE=launcher` or `OMNICODE_INSTALL_MODE=plugin`.
+- **Improved agents status output** — `/omni-agents status` now shows resolved per-agent model configs with provider options instead of raw JSON, uses compact output for update responses, and consistently uses injected settings home for all paths.
+
+### CI / Release
+
+- **Keep changelog updates with every committed change** — repository agent guidance now requires each committed slice to update `CHANGELOG.md` for the next release so release notes stay complete.
+- **Design collaboration-safe Omni memory** — documented the planned split between shared project memory, per-branch `.omni/work/<branch>/` planning, untracked runtime state, and protected-branch settings guardrails.
+
+### Tests
+
+- Added tests for `skill-maker` suggestion heuristics.
+- Added tests for workflow settings defaults, global/project override merge, invalid settings fallback, and status formatting.
+- Added tests for git branch detection, protected-branch blocking, and project settings overrides in the mutating-tool guard.
+- Added tests for branch slug generation and active `.omni/work/<branch-slug>/` planning path selection.
+- Added tests for active work planning readiness, legacy root fallback, and branch-aware planning guard messages.
+- Added tests for collaboration checkpoint status output on feature and protected branches.
+- Added tests for start-work branch validation, dirty checkout guidance, branch creation, branch switching, and planning-directory initialization.
+- Added tests for PR workflow settings, PR prerequisite summaries, and PR body generation without GitHub network access.
+- Added tests for root plan migration, placeholder refusal, overwrite refusal, overwrite success, and migration notes.
+- Added tests for branch-scoped runtime paths, root runtime fallback, gitignore updates, and state/session writes.
+- Added tests for `tdd` bundled skill memory and suggestion heuristics.
+- Added tests for `diagnose` bundled skill memory and suggestion heuristics.
+- Added tests for `grill-with-docs` bundled skill memory and suggestion heuristics.
+- Added tests for `improve-codebase-architecture` bundled skill memory, suggestion heuristics, and command registration.
+- Added a launcher test that pins the expected managed OpenCode runtime target version.
+- Added tests that lock optional subagent prompts and orchestration instructions to the single-writer model.
+- Added tests for `/clean-context-review` command registration and commit workflow guidance.
+- Added tests for resolved agent model display with object configs, defaultModel fallback, disabled checkpoint policy, and injected settings home.
+
+---
+
 ## 0.3.0
 
 ### Features

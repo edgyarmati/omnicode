@@ -1,7 +1,7 @@
 export const OMNICODE_REPOSITORY = "edgyarmati/omnicode";
 export const OMNICODE_RELEASE_CHANNEL = "latest";
 export const OMNICODE_BINARY_VERSION = "0.3.0";
-export const OPENCODE_VERSION_TARGET = "1.14.25";
+export const OPENCODE_VERSION_TARGET = "1.14.30";
 
 export function normalizePlatform(platform) {
   return platform;
