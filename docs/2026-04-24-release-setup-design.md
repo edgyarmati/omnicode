@@ -1,25 +1,25 @@
-# GedCode Release Setup Design
+# OmniCode Release Setup Design
 
 > Status: Historical design record (2026-04-24). This documents the original npx-bootstrap design; the release path has since moved to a single JS bundle + platform-agnostic installers (`install.sh` / `install.ps1` at the repo root). For the current install and release flow see [`README.md`](../README.md) and [`docs/release-checklist.md`](./release-checklist.md).
 
 ## Goal
 
-Ship a release-ready install path so a new user can run one setup command, then run `gedcode` and reach a working GedCode/OpenCode session with minimal manual steps.
+Ship a release-ready install path so a new user can run one setup command, then run `omnicode` and reach a working OmniCode/OpenCode session with minimal manual steps.
 
 ## Problem
 
-GedCode already has a working launcher and plugin, but the current onboarding flow is still contributor-oriented:
+OmniCode already has a working launcher and plugin, but the current onboarding flow is still contributor-oriented:
 
 - users need the repo or workspace context
 - there is no clear release installer story
-- there is no single documented setup path that ends with `gedcode` being available on `PATH`
+- there is no single documented setup path that ends with `omnicode` being available on `PATH`
 
-For a real release, GedCode needs a simple installation experience that matches the product boundary:
+For a real release, OmniCode needs a simple installation experience that matches the product boundary:
 
 - OpenCode remains the host runtime
-- GedCode remains the workflow layer
+- OmniCode remains the workflow layer
 - the launcher stays thin
-- setup gets the user to a working `gedcode` command quickly
+- setup gets the user to a working `omnicode` command quickly
 
 ## Primary User Experience
 
@@ -28,14 +28,14 @@ For a real release, GedCode needs a simple installation experience that matches 
 Users should be able to run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/edgyarmati/gedcode/main/scripts/install.sh | bash
-gedcode
+curl -fsSL https://raw.githubusercontent.com/edgyarmati/omnicode/main/scripts/install.sh | bash
+omnicode
 ```
 
 The installer should delegate to:
 
 ```bash
-npx gedcode@latest setup
+npx omnicode@latest setup
 ```
 
 ### Fallback paths
@@ -43,15 +43,15 @@ npx gedcode@latest setup
 Users should also be able to run:
 
 ```bash
-npx gedcode@latest setup
-gedcode
+npx omnicode@latest setup
+omnicode
 ```
 
 or:
 
 ```bash
-npm install -g gedcode@latest
-gedcode
+npm install -g omnicode@latest
+omnicode
 ```
 
 ### Contributor/dev path
@@ -59,10 +59,10 @@ gedcode
 Contributors and pre-release testers should be able to run:
 
 ```bash
-git clone https://github.com/edgyarmati/gedcode
-cd gedcode
+git clone https://github.com/edgyarmati/omnicode
+cd omnicode
 ./scripts/setup
-gedcode
+omnicode
 ```
 
 ## Recommended Approach
@@ -71,18 +71,18 @@ Use a **thin remote installer + npx bootstrap + npm fallback**.
 
 ### Why this approach
 
-- gives GedCode a polished one-command headline install
+- gives OmniCode a polished one-command headline install
 - uses `npx` for the one-time bootstrap step, which matches the setup mental model better than making global install the primary entrypoint
 - keeps distribution concerns separate from runtime concerns
 - preserves the current thin-launcher / thick-plugin architecture
-- avoids turning GedCode into a full machine bootstrapper
-- keeps OpenCode as the host product rather than something GedCode replaces
+- avoids turning OmniCode into a full machine bootstrapper
+- keeps OpenCode as the host product rather than something OmniCode replaces
 
 ### Rejected alternatives
 
 #### Fat installer that owns everything
 
-Rejected for v1 because it would try to install and configure too much: Node, OpenCode, GedCode, provider auth, and system state. That is brittle and crosses the product boundary.
+Rejected for v1 because it would try to install and configure too much: Node, OpenCode, OmniCode, provider auth, and system state. That is brittle and crosses the product boundary.
 
 #### npm-only with no installer script
 
@@ -92,12 +92,12 @@ Viable as a fallback, but not the best release UX. It should exist, but not be t
 
 ### 1. Release package path
 
-GedCode must be installable as a package that exposes an `gedcode` binary.
+OmniCode must be installable as a package that exposes an `omnicode` binary.
 
 Requirements:
 
 - package metadata must support global installation
-- the launcher package must expose the `gedcode` bin cleanly
+- the launcher package must expose the `omnicode` bin cleanly
 - the install path must not depend on the monorepo checkout after installation
 - published artifacts must include the built launcher and plugin resources needed at runtime
 
@@ -109,7 +109,7 @@ Responsibilities:
 
 - verify `node` is available and meets the minimum supported version
 - verify `npm` and `npx` are available
-- delegate to `npx gedcode@latest setup`
+- delegate to `npx omnicode@latest setup`
 - print clear next steps and actionable troubleshooting if verification fails
 
 Non-responsibilities:
@@ -121,14 +121,14 @@ Non-responsibilities:
 
 ### 3. CLI setup subcommand
 
-Add a real `setup` subcommand to the published `gedcode` CLI.
+Add a real `setup` subcommand to the published `omnicode` CLI.
 
 Responsibilities:
 
 - validate Node/npm prerequisites
-- install `gedcode` globally so the steady-state `gedcode` command exists after bootstrap
-- verify `gedcode` is available, or report the exact npm global bin path to add to `PATH`
-- print the next step to start GedCode
+- install `omnicode` globally so the steady-state `omnicode` command exists after bootstrap
+- verify `omnicode` is available, or report the exact npm global bin path to add to `PATH`
+- print the next step to start OmniCode
 
 This is the core one-time bootstrap path used by direct `npx` installs and by the curl installer.
 
@@ -140,24 +140,24 @@ Responsibilities:
 
 - install workspace dependencies
 - build the workspaces
-- link the local launcher so `gedcode` is immediately runnable
+- link the local launcher so `omnicode` is immediately runnable
 - verify the launcher command is available
-- print the next step to start GedCode
+- print the next step to start OmniCode
 
 This script is for local setup and smoke-testing, not the public release UX.
 
 ### 5. Launcher runtime responsibility
 
-The `gedcode` launcher should continue to own runtime setup on first launch.
+The `omnicode` launcher should continue to own runtime setup on first launch.
 
 It should keep doing the following:
 
-- create isolated config under `~/.config/gedcode/opencode`
+- create isolated config under `~/.config/omnicode/opencode`
 - write the plugin shim
 - write `opencode.json`
 - detect whether `opencode` is installed
 - attempt best-effort OpenCode installation if missing
-- launch OpenCode with GedCode-specific environment variables
+- launch OpenCode with OmniCode-specific environment variables
 
 This preserves a clean separation:
 
@@ -174,9 +174,9 @@ Expected flow:
 2. check `node --version`
 3. fail with a friendly message if Node is missing or too old
 4. check `npm --version`
-5. install GedCode globally from npm
-6. verify `gedcode` is on `PATH`
-7. print success message and tell the user to run `gedcode`
+5. install OmniCode globally from npm
+6. verify `omnicode` is on `PATH`
+7. print success message and tell the user to run `omnicode`
 
 ### `scripts/setup`
 
@@ -203,7 +203,7 @@ Expected documentation:
 - one-command install
 - npm fallback install
 - contributor setup
-- troubleshooting for missing Node, missing `gedcode` on `PATH`, and first-run OpenCode install behavior
+- troubleshooting for missing Node, missing `omnicode` on `PATH`, and first-run OpenCode install behavior
 
 ## Error Handling
 
@@ -215,7 +215,7 @@ The installer should fail fast with clear messages for:
 - unsupported Node version
 - missing `npm`
 - npm global install failure
-- `gedcode` not found after installation
+- `omnicode` not found after installation
 
 Each message should include the next manual step.
 
@@ -223,7 +223,7 @@ Each message should include the next manual step.
 
 The installer does not need to solve runtime launch failures directly, but docs should explain:
 
-- GedCode may install OpenCode on first run if it is missing
+- OmniCode may install OpenCode on first run if it is missing
 - if that step fails, the launcher prints a manual OpenCode install command
 
 ## Testing Strategy
@@ -242,10 +242,10 @@ Add coverage for:
 Before release, verify:
 
 1. repo-local setup works on a clean checkout
-2. `./scripts/setup` leaves a runnable local `gedcode` command
+2. `./scripts/setup` leaves a runnable local `omnicode` command
 3. installer script succeeds on a machine with Node/npm already present
-4. first `gedcode` launch creates isolated config automatically
-5. first `gedcode` launch handles missing OpenCode via best-effort install
+4. first `omnicode` launch creates isolated config automatically
+5. first `omnicode` launch handles missing OpenCode via best-effort install
 
 ## Non-goals
 
@@ -262,7 +262,7 @@ Not included in this slice:
 A new user can:
 
 1. run one install command
-2. type `gedcode`
-3. have GedCode set up its isolated OpenCode config automatically
+2. type `omnicode`
+3. have OmniCode set up its isolated OpenCode config automatically
 4. have OpenCode installed automatically if missing, or receive a clear manual fallback
-5. reach a working GedCode session without editing config files manually
+5. reach a working OmniCode session without editing config files manually

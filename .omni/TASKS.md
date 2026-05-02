@@ -2,7 +2,7 @@
 
 ## Planned slices
 
-- [x] Slice 1: add shared atomic write helper and route generated `.ged` / launcher metadata writes through it
+- [x] Slice 1: add shared atomic write helper and route generated `.omni` / launcher metadata writes through it
 - [x] Slice 2: sanitize generated markdown/state/session-summary/skills/standards/repo-map fragments and add regression tests
 - [x] Slice 3: harden launcher semver comparison for prerelease/build metadata and add tests
 - [x] Slice 4: evaluate and apply a bounded repo-map hardening/performance improvement if still separate from Slice 1
@@ -10,7 +10,7 @@
 ## Notes
 
 - Commit each verified slice before starting the next one.
-- Prefer narrow backports that match GedCode's simpler architecture rather than copying GedPi internals wholesale.
+- Prefer narrow backports that match OmniCode's simpler architecture rather than copying Omni-Pi internals wholesale.
 
 ---
 
@@ -48,7 +48,7 @@
 - [x] Add bundled `find-skills` skill resource and default skills listing.
 - [x] Update agent instructions so the post-grill step judges skill coverage before planning.
 - [x] Document that task/domain skills are only loaded during the checkpoint, not opportunistically earlier.
-- [x] Support remove/delete-skill instructions by documenting project memory cleanup in `.ged/SKILLS.md`.
+- [x] Support remove/delete-skill instructions by documenting project memory cleanup in `.omni/SKILLS.md`.
 - [x] Update suggestion heuristics/tests/docs for `find-skills`.
 - [x] Verify with `npm run check` and `npm test`, then commit.
 
@@ -76,7 +76,7 @@
 
 - [x] Slice 1: add workflow settings primitives and status visibility, verify, and commit.
 - [x] Slice 2: add branch detection plus protected-branch mutating-tool guard, verify, and commit.
-- [x] Slice 3: add active `.ged/work/<branch-slug>/` planning directory selection helpers, verify, and commit.
+- [x] Slice 3: add active `.omni/work/<branch-slug>/` planning directory selection helpers, verify, and commit.
 - [x] Slice 4: update planning-artifact guard to accept active work planning with root fallback, verify, and commit.
 - [x] Slice 5: add collaboration checkpoint UX/docs, verify, and commit.
 
@@ -84,7 +84,7 @@
 
 ## Collaboration Polish Follow-Ups
 
-- [x] Slice 1: add explicit `gedcode_start_work` branch workflow tool, dirty checkout guidance, tests, docs, verify, and commit.
+- [x] Slice 1: add explicit `omnicode_start_work` branch workflow tool, dirty checkout guidance, tests, docs, verify, and commit.
 - [x] Slice 2: add PR offer/auto settings and explicit PR creation support, tests, docs, verify, and commit.
 - [x] Slice 3: add root planning migration tool, tests, docs, verify, and commit.
-- [x] Slice 4: move runtime state/session summaries to branch-scoped `.ged/runtime/<id>/`, tests, docs, verify, and commit.
+- [x] Slice 4: move runtime state/session summaries to branch-scoped `.omni/runtime/<id>/`, tests, docs, verify, and commit.

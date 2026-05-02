@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# GedCode installer — works on macOS and Linux.
+# OmniCode installer — works on macOS and Linux.
 # Requires: curl, tar, Node.js >= 22
 #
 # Usage:
-#   curl -fsSL https://github.com/edgyarmati/gedcode/releases/latest/download/install.sh | bash
+#   curl -fsSL https://github.com/edgyarmati/omnicode/releases/latest/download/install.sh | bash
 #   # or pin a version:
-#   GEDCODE_VERSION=0.3.0 curl -fsSL ... | bash
+#   OMNICODE_VERSION=0.3.0 curl -fsSL ... | bash
 set -euo pipefail
 
-REPO_SLUG="edgyarmati/gedcode"
-VERSION="${GEDCODE_VERSION:-0.3.0}"
-DATA_DIR="${GEDCODE_DATA_DIR:-$HOME/.local/share/gedcode}"
-BIN_DIR="${GEDCODE_BIN_DIR:-$HOME/.local/bin}"
+REPO_SLUG="edgyarmati/omnicode"
+VERSION="${OMNICODE_VERSION:-0.3.0}"
+DATA_DIR="${OMNICODE_DATA_DIR:-$HOME/.local/share/omnicode}"
+BIN_DIR="${OMNICODE_BIN_DIR:-$HOME/.local/bin}"
 MINIMUM_NODE_MAJOR=22
 
 info()  { printf '==> %s\n' "$1"; }
@@ -64,13 +64,13 @@ mkdir -p "$DATA_DIR" "$BIN_DIR"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-ASSET_NAME="gedcode-${VERSION}.tar.gz"
+ASSET_NAME="omnicode-${VERSION}.tar.gz"
 ASSET_URL="https://github.com/${REPO_SLUG}/releases/download/v${VERSION}/${ASSET_NAME}"
 SUMS_URL="https://github.com/${REPO_SLUG}/releases/download/v${VERSION}/SHA256SUMS"
 ARCHIVE="$TMP_DIR/${ASSET_NAME}"
 SUMS_FILE="$TMP_DIR/SHA256SUMS"
 
-info "Downloading GedCode v${VERSION}"
+info "Downloading OmniCode v${VERSION}"
 curl -fsSL "$ASSET_URL" -o "$ARCHIVE" || fail "Download failed. Check that v${VERSION} exists at ${ASSET_URL}"
 
 info "Verifying SHA256 checksum"
@@ -100,10 +100,10 @@ info "Checksum OK"
 info "Extracting to ${DATA_DIR}"
 tar -xzf "$ARCHIVE" -C "$TMP_DIR"
 
-# The tarball contains gedcode-VERSION/...
-SRC_DIR="$TMP_DIR/gedcode-${VERSION}"
+# The tarball contains omnicode-VERSION/...
+SRC_DIR="$TMP_DIR/omnicode-${VERSION}"
 if [ ! -d "$SRC_DIR" ]; then
-  fail "Unexpected archive layout — expected gedcode-${VERSION}/ directory inside tarball"
+  fail "Unexpected archive layout — expected omnicode-${VERSION}/ directory inside tarball"
 fi
 
 # Remove previous install, replace with new
@@ -113,10 +113,10 @@ info "Installed to ${DATA_DIR}/lib"
 
 # ── Create shell wrapper ─────────────────────────────────────────────────────
 
-WRAPPER="${BIN_DIR}/gedcode"
+WRAPPER="${BIN_DIR}/omnicode"
 cat > "$WRAPPER" <<WRAPPER_EOF
 #!/usr/bin/env bash
-exec node "${DATA_DIR}/lib/bin/gedcode.js" "\$@"
+exec node "${DATA_DIR}/lib/bin/omnicode.js" "\$@"
 WRAPPER_EOF
 chmod +x "$WRAPPER"
 
@@ -124,29 +124,29 @@ info "Created launcher at ${WRAPPER}"
 
 # ── Verify ───────────────────────────────────────────────────────────────────
 
-if ! node "${DATA_DIR}/lib/bin/gedcode.js" --check >/dev/null 2>&1; then
+if ! node "${DATA_DIR}/lib/bin/omnicode.js" --check >/dev/null 2>&1; then
   # Fall back to syntax-only validation if the launcher check path changes.
-  if ! node --check "${DATA_DIR}/lib/bin/gedcode.js" 2>/dev/null; then
+  if ! node --check "${DATA_DIR}/lib/bin/omnicode.js" 2>/dev/null; then
     fail "Launcher script has syntax errors. Something went wrong with the install."
   fi
 fi
 
-info "GedCode v${VERSION} installed successfully"
+info "OmniCode v${VERSION} installed successfully"
 printf '\n'
 
 # ── Install mode: launcher (recommended) or plugin ──────────────────────────
 
-INSTALL_MODE="${GEDCODE_INSTALL_MODE:-}"
+INSTALL_MODE="${OMNICODE_INSTALL_MODE:-}"
 
 if [ -z "$INSTALL_MODE" ]; then
   cat <<'MODE_EOF'
-GedCode can be set up in two ways:
+OmniCode can be set up in two ways:
 
-  1) Launcher (recommended) — "gedcode" becomes a separate command.
-     Your normal "opencode" setup is left untouched. GedCode runs in its
+  1) Launcher (recommended) — "omnicode" becomes a separate command.
+     Your normal "opencode" setup is left untouched. OmniCode runs in its
      own isolated config with its own managed OpenCode runtime.
 
-  2) Plugin — GedCode is added to your existing OpenCode config.
+  2) Plugin — OmniCode is added to your existing OpenCode config.
      Every "opencode" session gets the Omni workflow automatically, but
      there is no isolation from your normal OpenCode setup.
 
@@ -172,7 +172,7 @@ case "$INSTALL_MODE" in
     printf '\n'
     printf 'Add the following to your OpenCode config (usually ~/.config/opencode/opencode.json):\n\n'
     printf '  {\n'
-    printf '    "default_agent": "gedcode",\n'
+    printf '    "default_agent": "omnicode",\n'
     printf '    "plugin": ["file://%s"]\n' "$PLUGIN_PATH"
     printf '  }\n\n'
     printf 'Then just run: opencode\n'
@@ -189,10 +189,10 @@ printf '\n'
 if command -v rtk >/dev/null 2>&1; then
   info "RTK is already installed ($(rtk --version 2>/dev/null || echo 'unknown version'))"
 elif command -v brew >/dev/null 2>&1; then
-  printf 'GedCode can optionally use RTK, a CLI proxy that compresses bash output\n'
+  printf 'OmniCode can optionally use RTK, a CLI proxy that compresses bash output\n'
   printf '(git, ls, test runners, etc.) for 60-90%% token savings. It is not required.\n'
   printf '\n'
-  if [ -z "${GEDCODE_SKIP_RTK:-}" ]; then
+  if [ -z "${OMNICODE_SKIP_RTK:-}" ]; then
     printf 'Install RTK via Homebrew? [Y/n] '
     read -r _rtk_answer </dev/tty 2>/dev/null || _rtk_answer="n"
     case "$_rtk_answer" in
@@ -202,12 +202,12 @@ elif command -v brew >/dev/null 2>&1; then
         if brew install rtk 2>/dev/null; then
           info "RTK installed successfully"
         else
-          warn "RTK installation failed. GedCode will work without it. Install later with: brew install rtk"
+          warn "RTK installation failed. OmniCode will work without it. Install later with: brew install rtk"
         fi
         ;;
     esac
   else
-    info "Skipping RTK (GEDCODE_SKIP_RTK is set). Install later with: brew install rtk"
+    info "Skipping RTK (OMNICODE_SKIP_RTK is set). Install later with: brew install rtk"
   fi
 else
   info "RTK (optional CLI output compression for 60-90% token savings) is available via Homebrew."
@@ -219,9 +219,9 @@ printf 'Next step:\n'
 if [ "$INSTALL_MODE" = "plugin" ]; then
   printf '  Update your OpenCode config as shown above, then run: opencode\n\n'
 else
-  printf '  gedcode\n\n'
+  printf '  omnicode\n\n'
 fi
-if [ "$INSTALL_MODE" != "plugin" ] && ! command -v gedcode >/dev/null 2>&1; then
+if [ "$INSTALL_MODE" != "plugin" ] && ! command -v omnicode >/dev/null 2>&1; then
   printf 'Add %s to your PATH if not already there.\n' "$BIN_DIR"
   printf '  export PATH="%s:\$PATH"\n' "$BIN_DIR"
 fi

@@ -1,6 +1,6 @@
 # Release Checklist
 
-Runbook for cutting a tagged GedCode release. Work top-to-bottom; each section is a gate for the next.
+Runbook for cutting a tagged OmniCode release. Work top-to-bottom; each section is a gate for the next.
 
 ## Pre-release
 
@@ -10,7 +10,7 @@ Runbook for cutting a tagged GedCode release. Work top-to-bottom; each section i
 
 ## Version bump
 
-- [ ] update `GEDCODE_BINARY_VERSION` in `packages/launcher/src/release.js`
+- [ ] update `OMNICODE_BINARY_VERSION` in `packages/launcher/src/release.js`
 - [ ] update `version` in `package.json`
 - [ ] update `version` in `packages/launcher/package.json`
 - [ ] update `version` in `packages/plugin/package.json`
@@ -26,7 +26,7 @@ Runbook for cutting a tagged GedCode release. Work top-to-bottom; each section i
 
 - [ ] release workflow completes (single job: build-and-release)
 - [ ] release assets exist:
-  - `gedcode-X.Y.Z.tar.gz`
+  - `omnicode-X.Y.Z.tar.gz`
   - `SHA256SUMS`
   - `install.sh`
   - `install.ps1`
@@ -35,14 +35,14 @@ Runbook for cutting a tagged GedCode release. Work top-to-bottom; each section i
 
 - [ ] macOS / Linux:
   ```sh
-  GEDCODE_VERSION=X.Y.Z bash install.sh
-  gedcode
+  OMNICODE_VERSION=X.Y.Z bash install.sh
+  omnicode
   ```
 - [ ] Windows (PowerShell):
   ```powershell
-  $env:GEDCODE_VERSION = 'X.Y.Z'; irm https://github.com/edgyarmati/gedcode/releases/latest/download/install.ps1 | iex
-  gedcode
+  $env:OMNICODE_VERSION = 'X.Y.Z'; irm https://github.com/edgyarmati/omnicode/releases/latest/download/install.ps1 | iex
+  omnicode
   ```
 - [ ] verify managed OpenCode runtime installs and launches on first run
-- [ ] verify plugin loads (agent name is `gedcode`, commands and tools register)
+- [ ] verify plugin loads (agent name is `omnicode`, commands and tools register)
 - [ ] verify normal global `opencode` is unaffected

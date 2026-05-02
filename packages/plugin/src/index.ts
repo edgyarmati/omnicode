@@ -83,7 +83,7 @@ export type RuntimePaths = {
   sessionSummaryPath: string;
 };
 
-export type OmniSubagentName = "ged-explorer" | "ged-planner" | "ged-verifier";
+export type OmniSubagentName = "omni-explorer" | "omni-planner" | "omni-verifier";
 
 export type WorkflowSettings = {
   protectedBranches: string[];
@@ -95,7 +95,7 @@ export type WorkflowSettings = {
 
 export type AgentModelConfig = string | { model: string; [key: string]: unknown };
 
-export type GedCodeSettings = {
+export type OmniCodeSettings = {
   workflow: WorkflowSettings;
   agents: {
     enabled: boolean;
@@ -104,21 +104,21 @@ export type GedCodeSettings = {
   };
 };
 
-export type GedCodeSettingsScope = "global" | "project";
+export type OmniCodeSettingsScope = "global" | "project";
 
-export type GedCodeAgentsSettingsPatch = {
-  scope?: GedCodeSettingsScope;
+export type OmniCodeAgentsSettingsPatch = {
+  scope?: OmniCodeSettingsScope;
   enabled?: boolean;
   defaultModel?: string;
   models?: Partial<Record<OmniSubagentName, AgentModelConfig>>;
 };
 
-export type GedCodeModelRecommendations = {
+export type OmniCodeModelRecommendations = {
   sourcePath?: string;
   content: string;
 };
 
-type RawGedCodeSettings = {
+type RawOmniCodeSettings = {
   workflow?: unknown;
   agents?: {
     enabled?: unknown;
@@ -140,14 +140,14 @@ const RESOURCE_ROOT_CANDIDATES = [
   path.join(import.meta.dirname, "..", "src", "resources"),
 ];
 
-const GEDCODE_SETTINGS_DIR = ".gedcode";
-const GEDCODE_SETTINGS_FILE = "settings.json";
-const GEDCODE_MODEL_RECOMMENDATIONS_FILE = "model-recommendations.md";
-const GEDCODE_PROJECT_GITIGNORE_ENTRY = `${GEDCODE_SETTINGS_DIR}/`;
+const OMNICODE_SETTINGS_DIR = ".omnicode";
+const OMNICODE_SETTINGS_FILE = "settings.json";
+const OMNICODE_MODEL_RECOMMENDATIONS_FILE = "model-recommendations.md";
+const OMNICODE_PROJECT_GITIGNORE_ENTRY = `${OMNICODE_SETTINGS_DIR}/`;
 const OMNI_SUBAGENT_NAMES: OmniSubagentName[] = [
-  "ged-explorer",
-  "ged-planner",
-  "ged-verifier",
+  "omni-explorer",
+  "omni-planner",
+  "omni-verifier",
 ];
 
 type OmniAgentConfig = {
@@ -159,31 +159,31 @@ type OmniAgentConfig = {
 };
 
 const OMNI_SUBAGENT_DEFAULTS: Record<OmniSubagentName, OmniAgentConfig> = {
-  "ged-explorer": {
-    description: "Read-only scout that returns evidence-backed discovery packets to the single-writer GedCode orchestrator.",
+  "omni-explorer": {
+    description: "Read-only scout that returns evidence-backed discovery packets to the single-writer OmniCode orchestrator.",
     mode: "subagent",
     prompt: [
-      "You are ged-explorer, a read-only discovery subagent for GedCode.",
+      "You are omni-explorer, a read-only discovery subagent for OmniCode.",
       "Find files, inspect code, search for relevant patterns, and report a discovery packet with Findings, Evidence, Risks / edge cases, Open questions, and Suggested next inspection.",
-      "Do not edit files, run mutating shell commands, commit, or continue into implementation. The primary gedcode orchestrator is the single writer and decision owner.",
+      "Do not edit files, run mutating shell commands, commit, or continue into implementation. The primary omnicode orchestrator is the single writer and decision owner.",
     ].join("\n\n"),
     permission: { read: "allow", glob: "allow", grep: "allow", list: "allow", edit: "deny", bash: "deny", task: "deny", todowrite: "deny" },
   },
-  "ged-planner": {
+  "omni-planner": {
     description: "Read-only planning/smart-friend subagent that critiques specs, slices, tests, edge cases, and non-goals for the orchestrator.",
     mode: "subagent",
     prompt: [
-      "You are ged-planner, a planning subagent for GedCode.",
+      "You are omni-planner, a planning subagent for OmniCode.",
       "Help the orchestrator turn clarified requirements into a concrete spec, bounded task slices, test strategy, edge cases, and success criteria. Act as a smart-friend critic for risky or ambiguous plans, and identify missing context or files the orchestrator should inspect before proceeding.",
       "Do not edit files or implement source changes; report recommended planning updates back to the orchestrator. If context is missing, say what to inspect and ask to be consulted again rather than guessing.",
     ].join("\n\n"),
     permission: { read: "allow", glob: "allow", grep: "allow", list: "allow", edit: "deny", bash: "deny", task: "deny", todowrite: "deny" },
   },
-  "ged-verifier": {
+  "omni-verifier": {
     description: "Verification and clean-context review subagent that checks results and reports blockers without editing source.",
     mode: "subagent",
     prompt: [
-      "You are ged-verifier, a verification subagent for GedCode.",
+      "You are omni-verifier, a verification subagent for OmniCode.",
       "Run the checks requested by the orchestrator, inspect failures, and report exact pass/fail status plus the first actionable failure. When asked for clean-context review, inspect the diff/tests with minimal prior assumptions and report bugs, edge cases, security risks, and test gaps by severity.",
       "Do not edit source files, relax tests, commit, or decide scope; report findings back so the orchestrator can adjudicate accepted vs rejected findings.",
     ].join("\n\n"),
@@ -236,8 +236,8 @@ export const REPO_MAP_IGNORE = new Set([
   "dist",
   "build",
   ".pi",
-  ".ged",
-  ".gedcode",
+  ".omni",
+  ".omnicode",
   ".turbo",
   "coverage",
 ]);
@@ -325,19 +325,19 @@ const SKILL_RULES: Array<{ name: string; patterns: RegExp[]; reason: string; sco
     score: 3,
   },
   {
-    name: "ged-planning",
+    name: "omni-planning",
     patterns: [/\b(plan|spec|task|slice|break down|roadmap|implementation plan)\b/iu],
     reason: "use before implementation to refine spec, tasks, and tests",
     score: 4,
   },
   {
-    name: "ged-execution",
+    name: "omni-execution",
     patterns: [/\b(implement|execute|code|fix|do the task|build it|make it work)\b/iu],
     reason: "use when implementing a planned slice",
     score: 4,
   },
   {
-    name: "ged-verification",
+    name: "omni-verification",
     patterns: [/\b(test|verify|check|validate|did it work|smoke test|regression)\b/iu],
     reason: "use after implementation to verify and summarize pass/fail",
     score: 4,
@@ -352,7 +352,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function taskPermissionForOmniSubagents(): Record<string, "allow" | "deny"> {
-  return { "*": "deny", "ged-explorer": "allow", "ged-planner": "allow", "ged-verifier": "allow" };
+  return { "*": "deny", "omni-explorer": "allow", "omni-planner": "allow", "omni-verifier": "allow" };
 }
 
 function modelIdFromConfig(config: AgentModelConfig | undefined): string | undefined {
@@ -361,7 +361,7 @@ function modelIdFromConfig(config: AgentModelConfig | undefined): string | undef
   return undefined;
 }
 
-function buildSubagentConfig(settings: GedCodeSettings, agentName: OmniSubagentName): OmniAgentConfig {
+function buildSubagentConfig(settings: OmniCodeSettings, agentName: OmniSubagentName): OmniAgentConfig {
   const agentModelConfig = settings.agents.models[agentName];
   const fallbackModel = settings.agents.defaultModel;
   if (typeof agentModelConfig === "string") {
@@ -389,7 +389,7 @@ function formatAgentModelConfig(config: AgentModelConfig | undefined, fallbackMo
   return fallbackModel ? `model=${fallbackModel} (shared default)` : "model=inherit invoking model";
 }
 
-export function formatAgentsSettingsStatus(settings: GedCodeSettings, paths: { globalPath: string; projectPath: string; recommendationsPath?: string | null; compact?: boolean }): string {
+export function formatAgentsSettingsStatus(settings: OmniCodeSettings, paths: { globalPath: string; projectPath: string; recommendationsPath?: string | null; compact?: boolean }): string {
   const checkpointState = settings.agents.enabled
     ? "active for non-trivial change requests; skip only with a recorded reason when trivial, unavailable, or user-disabled"
     : "inactive because native subagents are disabled";
@@ -415,11 +415,11 @@ function orchestrationPrompt(basePrompt: string): string {
   return [
     basePrompt,
     "## Optional native sub-agent orchestration",
-    "Single-writer invariant: the primary gedcode agent is the writer, synthesizer, and decision owner in the active worktree by default. Subagents inject intelligence; they do not own product decisions, commits, PR decisions, or final verification judgments.",
-    "When native subagents are enabled, use mandatory intelligence checkpoints for non-trivial change requests: ged-explorer for codebase discovery when relevant context is not already known, ged-planner before finalizing or materially changing SPEC/TASKS/TESTS, and ged-verifier for checks or clean-context review before committing meaningful implementation changes.",
+    "Single-writer invariant: the primary omnicode agent is the writer, synthesizer, and decision owner in the active worktree by default. Subagents inject intelligence; they do not own product decisions, commits, PR decisions, or final verification judgments.",
+    "When native subagents are enabled, use mandatory intelligence checkpoints for non-trivial change requests: omni-explorer for codebase discovery when relevant context is not already known, omni-planner before finalizing or materially changing SPEC/TASKS/TESTS, and omni-verifier for checks or clean-context review before committing meaningful implementation changes.",
     "If a checkpoint is skipped because the task is trivial, subagents are disabled or unavailable, or the user asked not to delegate, record a concise skip reason in the response and active planning or verification notes. Require subagent reports with evidence, uncertainty, risks, and recommended next inspection.",
     "Before committing meaningful implementation slices, run planned checks, request clean-context review of the diff/tests, adjudicate accepted vs rejected findings, fix accepted issues, and rerun verification.",
-    "There is no writer subagent role. Do not delegate source edits or implementation ownership to subagents; the primary gedcode agent remains the only active-worktree writer.",
+    "There is no writer subagent role. Do not delegate source edits or implementation ownership to subagents; the primary omnicode agent remains the only active-worktree writer.",
   ].join("\n\n");
 }
 
@@ -437,13 +437,13 @@ function normalizeAgentModels(value: unknown): Partial<Record<OmniSubagentName, 
   return models;
 }
 
-function defaultAgentsSettings(): GedCodeSettings["agents"] {
+function defaultAgentsSettings(): OmniCodeSettings["agents"] {
   return { enabled: false, models: {} };
 }
 
-function parseAgentsSettings(value: unknown): Partial<GedCodeSettings["agents"]> {
+function parseAgentsSettings(value: unknown): Partial<OmniCodeSettings["agents"]> {
   if (!isRecord(value)) return {};
-  const parsed: Partial<GedCodeSettings["agents"]> = {};
+  const parsed: Partial<OmniCodeSettings["agents"]> = {};
   if (typeof value.enabled === "boolean") parsed.enabled = value.enabled;
   if (typeof value.defaultModel === "string" && value.defaultModel.trim().length > 0) parsed.defaultModel = value.defaultModel.trim();
   parsed.models = normalizeAgentModels(value.models);
@@ -479,15 +479,15 @@ function parseWorkflowSettings(value: unknown): Partial<WorkflowSettings> {
   return parsed;
 }
 
-async function readSettingsFile(filePath: string): Promise<Partial<GedCodeSettings>> {
+async function readSettingsFile(filePath: string): Promise<Partial<OmniCodeSettings>> {
   try {
     const content = await readFile(filePath, "utf8");
     const parsed = JSON.parse(content) as unknown;
     if (!isRecord(parsed)) return {};
-    const raw = parsed as RawGedCodeSettings;
+    const raw = parsed as RawOmniCodeSettings;
     return {
       workflow: parseWorkflowSettings(raw.workflow) as WorkflowSettings,
-      agents: parseAgentsSettings(raw.agents) as GedCodeSettings["agents"],
+      agents: parseAgentsSettings(raw.agents) as OmniCodeSettings["agents"],
     };
   } catch {
     return {};
@@ -495,28 +495,28 @@ async function readSettingsFile(filePath: string): Promise<Partial<GedCodeSettin
 }
 
 export function resolveGlobalSettingsPath(homeDir = os.homedir()): string {
-  return path.join(homeDir, GEDCODE_SETTINGS_DIR, GEDCODE_SETTINGS_FILE);
+  return path.join(homeDir, OMNICODE_SETTINGS_DIR, OMNICODE_SETTINGS_FILE);
 }
 
 export function resolveProjectSettingsPath(directory: string): string {
-  return path.join(directory, GEDCODE_SETTINGS_DIR, GEDCODE_SETTINGS_FILE);
+  return path.join(directory, OMNICODE_SETTINGS_DIR, OMNICODE_SETTINGS_FILE);
 }
 
-export const globalGedCodeSettingsPath = resolveGlobalSettingsPath;
-export const projectGedCodeSettingsPath = resolveProjectSettingsPath;
+export const globalOmniCodeSettingsPath = resolveGlobalSettingsPath;
+export const projectOmniCodeSettingsPath = resolveProjectSettingsPath;
 
-export function globalGedCodeModelRecommendationsPath(homeDir = os.homedir()): string {
-  return path.join(homeDir, GEDCODE_SETTINGS_DIR, GEDCODE_MODEL_RECOMMENDATIONS_FILE);
+export function globalOmniCodeModelRecommendationsPath(homeDir = os.homedir()): string {
+  return path.join(homeDir, OMNICODE_SETTINGS_DIR, OMNICODE_MODEL_RECOMMENDATIONS_FILE);
 }
 
-export function projectGedCodeModelRecommendationsPath(directory: string): string {
-  return path.join(directory, GEDCODE_SETTINGS_DIR, GEDCODE_MODEL_RECOMMENDATIONS_FILE);
+export function projectOmniCodeModelRecommendationsPath(directory: string): string {
+  return path.join(directory, OMNICODE_SETTINGS_DIR, OMNICODE_MODEL_RECOMMENDATIONS_FILE);
 }
 
-export async function readGedCodeSettings(
+export async function readOmniCodeSettings(
   directory: string,
   options: { homeDir?: string } = {},
-): Promise<GedCodeSettings> {
+): Promise<OmniCodeSettings> {
   const globalSettings = await readSettingsFile(resolveGlobalSettingsPath(options.homeDir));
   const projectSettings = await readSettingsFile(resolveProjectSettingsPath(directory));
   return {
@@ -537,9 +537,9 @@ export async function readGedCodeSettings(
   };
 }
 
-export function formatWorkflowSettingsStatus(settings: GedCodeSettings): string {
+export function formatWorkflowSettingsStatus(settings: OmniCodeSettings): string {
   return [
-    "## GedCode Workflow Settings",
+    "## OmniCode Workflow Settings",
     "",
     `Protected Branches: ${settings.workflow.protectedBranches.join(", ")}`,
     `Require Feature Branch For Changes: ${settings.workflow.requireFeatureBranchForChanges ? "yes" : "no"}`,
@@ -559,7 +559,7 @@ async function readJsonObjectFile(filePath: string): Promise<Record<string, unkn
   }
 }
 
-function settingsPathForScope(directory: string, scope: GedCodeSettingsScope, homeDir = os.homedir()): string {
+function settingsPathForScope(directory: string, scope: OmniCodeSettingsScope, homeDir = os.homedir()): string {
   return scope === "project" ? resolveProjectSettingsPath(directory) : resolveGlobalSettingsPath(homeDir);
 }
 
@@ -576,18 +576,18 @@ function cleanModelPatch(models: Partial<Record<OmniSubagentName, AgentModelConf
   return cleaned;
 }
 
-export async function ensureGedCodeProjectGitignore(directory: string): Promise<string> {
+export async function ensureOmniCodeProjectGitignore(directory: string): Promise<string> {
   const gitignorePath = path.join(directory, ".gitignore");
   let existing = "";
   try { existing = await readFile(gitignorePath, "utf8"); } catch { existing = ""; }
   const lines = existing.split(/\r?\n/u).map((line) => line.trim());
-  if (lines.includes(GEDCODE_PROJECT_GITIGNORE_ENTRY)) return gitignorePath;
+  if (lines.includes(OMNICODE_PROJECT_GITIGNORE_ENTRY)) return gitignorePath;
   const prefix = existing.length === 0 || existing.endsWith("\n") ? existing : `${existing}\n`;
-  await writeFileAtomic(gitignorePath, `${prefix}${GEDCODE_PROJECT_GITIGNORE_ENTRY}\n`);
+  await writeFileAtomic(gitignorePath, `${prefix}${OMNICODE_PROJECT_GITIGNORE_ENTRY}\n`);
   return gitignorePath;
 }
 
-export async function updateGedCodeAgentsSettings(directory: string, patch: GedCodeAgentsSettingsPatch, options: { homeDir?: string } = {}): Promise<{ scope: GedCodeSettingsScope; outputPath: string; settings: GedCodeSettings }> {
+export async function updateOmniCodeAgentsSettings(directory: string, patch: OmniCodeAgentsSettingsPatch, options: { homeDir?: string } = {}): Promise<{ scope: OmniCodeSettingsScope; outputPath: string; settings: OmniCodeSettings }> {
   const scope = patch.scope ?? "global";
   const outputPath = settingsPathForScope(directory, scope, options.homeDir);
   const rawSettings = await readJsonObjectFile(outputPath);
@@ -602,12 +602,12 @@ export async function updateGedCodeAgentsSettings(directory: string, patch: GedC
     else delete nextAgents.models;
   }
   await writeFileAtomic(outputPath, `${JSON.stringify({ ...rawSettings, agents: nextAgents }, null, 2)}\n`);
-  if (scope === "project") await ensureGedCodeProjectGitignore(directory);
-  return { scope, outputPath, settings: await readGedCodeSettings(directory, options) };
+  if (scope === "project") await ensureOmniCodeProjectGitignore(directory);
+  return { scope, outputPath, settings: await readOmniCodeSettings(directory, options) };
 }
 
-export async function readGedCodeModelRecommendations(directory: string, options: { homeDir?: string } = {}): Promise<GedCodeModelRecommendations> {
-  const candidates = [projectGedCodeModelRecommendationsPath(directory), globalGedCodeModelRecommendationsPath(options.homeDir)];
+export async function readOmniCodeModelRecommendations(directory: string, options: { homeDir?: string } = {}): Promise<OmniCodeModelRecommendations> {
+  const candidates = [projectOmniCodeModelRecommendationsPath(directory), globalOmniCodeModelRecommendationsPath(options.homeDir)];
   for (const candidate of candidates) {
     try { return { sourcePath: candidate, content: await readFile(candidate, "utf8") }; } catch { /* try next */ }
   }
@@ -640,21 +640,21 @@ export async function readCurrentGitBranch(directory: string): Promise<string | 
   }
 }
 
-export function isProtectedBranch(branch: string | null, settings: GedCodeSettings): boolean {
+export function isProtectedBranch(branch: string | null, settings: OmniCodeSettings): boolean {
   if (!branch) return false;
   return settings.workflow.protectedBranches.includes(branch);
 }
 
 export function protectedBranchGuardMessage(branch: string): string {
   return [
-    `GedCode guard: change requests should run on a feature branch, not ${branch}.`,
-    "Create or switch to a branch, or set workflow.allowProtectedBranchChanges=true in GedCode settings if this project intentionally allows direct protected-branch work.",
+    `OmniCode guard: change requests should run on a feature branch, not ${branch}.`,
+    "Create or switch to a branch, or set workflow.allowProtectedBranchChanges=true in OmniCode settings if this project intentionally allows direct protected-branch work.",
   ].join(" ");
 }
 
 export async function assertProtectedBranchAllowsMutation(
   directory: string,
-  settings: GedCodeSettings,
+  settings: OmniCodeSettings,
 ): Promise<void> {
   if (!settings.workflow.requireFeatureBranchForChanges) return;
   if (settings.workflow.allowProtectedBranchChanges) return;
@@ -672,7 +672,7 @@ export function branchNameToWorkId(branch: string): string {
     .replace(/[-_.]{2,}/gu, "-")
     .replace(/^[-_.]+|[-_.]+$/gu, "");
   if (slug.length === 0) {
-    throw new Error(`GedCode: cannot derive work id from branch name: ${branch}`);
+    throw new Error(`OmniCode: cannot derive work id from branch name: ${branch}`);
   }
   return slug;
 }
@@ -680,7 +680,7 @@ export function branchNameToWorkId(branch: string): string {
 export function validateWorkBranchName(branch: string): string {
   const trimmed = branch.trim();
   if (!/^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$/u.test(trimmed)) {
-    throw new Error(`GedCode: invalid branch name: ${branch}`);
+    throw new Error(`OmniCode: invalid branch name: ${branch}`);
   }
   if (
     trimmed.includes("..") ||
@@ -690,7 +690,7 @@ export function validateWorkBranchName(branch: string): string {
     trimmed.endsWith(".lock") ||
     trimmed.split("/").some((segment) => segment.length === 0 || segment.startsWith("."))
   ) {
-    throw new Error(`GedCode: invalid branch name: ${branch}`);
+    throw new Error(`OmniCode: invalid branch name: ${branch}`);
   }
   return trimmed;
 }
@@ -709,16 +709,16 @@ function planningArtifactPaths(baseDir: string, workId: string | null, source: "
 export async function activePlanningArtifactPaths(directory: string): Promise<PlanningArtifactPaths> {
   const branch = await readCurrentGitBranch(directory);
   if (!branch) {
-    return planningArtifactPaths(path.join(directory, ".ged"), null, "root");
+    return planningArtifactPaths(path.join(directory, ".omni"), null, "root");
   }
   const workId = branchNameToWorkId(branch);
-  return planningArtifactPaths(path.join(directory, ".ged", "work", workId), workId, "work");
+  return planningArtifactPaths(path.join(directory, ".omni", "work", workId), workId, "work");
 }
 
 export async function activeRuntimePaths(directory: string): Promise<RuntimePaths> {
   const branch = await readCurrentGitBranch(directory);
   const runtimeId = branch ? branchNameToWorkId(branch) : "root";
-  const baseDir = path.join(directory, ".ged", "runtime", runtimeId);
+  const baseDir = path.join(directory, ".omni", "runtime", runtimeId);
   return {
     runtimeId,
     baseDir,
@@ -762,7 +762,7 @@ function runGit(directory: string, args: string[]): Promise<{ stdout: string; st
 async function runGitOrThrow(directory: string, args: string[]): Promise<string> {
   const result = await runGit(directory, args);
   if (result.code !== 0) {
-    throw new Error(`GedCode: git ${args.join(" ")} failed: ${(result.stderr || result.stdout).trim()}`);
+    throw new Error(`OmniCode: git ${args.join(" ")} failed: ${(result.stderr || result.stdout).trim()}`);
   }
   return result.stdout;
 }
@@ -774,7 +774,7 @@ async function gitBranchExists(directory: string, branch: string): Promise<boole
 
 export function dirtyWorktreeGuidance(status: string): string {
   return [
-    "GedCode start-work blocked because the working tree has uncommitted changes:",
+    "OmniCode start-work blocked because the working tree has uncommitted changes:",
     "",
     status.trimEnd(),
     "",
@@ -823,7 +823,7 @@ export async function startWorkBranch(
     dirtyStatus: status,
     activePaths,
     message: [
-      `GedCode start-work ${action} branch ${branch}.`,
+      `OmniCode start-work ${action} branch ${branch}.`,
       `Active planning directory: ${path.relative(directory, activePaths.baseDir).split(path.sep).join("/")}`,
     ].join("\n"),
   };
@@ -924,7 +924,7 @@ export async function createPullRequest(
     child.on("close", (code) => resolve({ stdout, stderr, code: code ?? 1 }));
   });
   if (result.code !== 0) {
-    throw new Error(`GedCode: gh pr create failed: ${(result.stderr || result.stdout).trim()}`);
+    throw new Error(`OmniCode: gh pr create failed: ${(result.stderr || result.stdout).trim()}`);
   }
   return result.stdout.trim();
 }
@@ -944,11 +944,11 @@ export async function migrateRootPlanToActiveWork(
 ): Promise<MigrateRootPlanResult> {
   const activePaths = await activePlanningArtifactPaths(directory);
   if (activePaths.source !== "work") {
-    throw new Error("GedCode: root planning migration requires a branch-backed active work directory.");
+    throw new Error("OmniCode: root planning migration requires a branch-backed active work directory.");
   }
   const rootPaths = rootPlanningArtifactPaths(directory);
   if (!(await planningArtifactsReadyAt(rootPaths))) {
-    throw new Error("GedCode: root planning artifacts are missing or still placeholders; nothing to migrate.");
+    throw new Error("OmniCode: root planning artifacts are missing or still placeholders; nothing to migrate.");
   }
   const targets = [activePaths.specPath, activePaths.tasksPath, activePaths.testsPath];
   const existingTargets = [];
@@ -958,7 +958,7 @@ export async function migrateRootPlanToActiveWork(
   if (existingTargets.length > 0 && !options.overwrite) {
     throw new Error(
       [
-        "GedCode: active work planning files already exist; refusing to overwrite.",
+        "OmniCode: active work planning files already exist; refusing to overwrite.",
         ...existingTargets.map((target) => `- ${target}`),
         "Rerun with overwrite: true to replace them.",
       ].join("\n"),
@@ -980,7 +980,7 @@ export async function migrateRootPlanToActiveWork(
   const note = [
     "# Notes",
     "",
-    `- Migrated root planning files from .ged/ into ${relativeDisplayPath(directory, activePaths.baseDir)} on ${new Date().toISOString()}.`,
+    `- Migrated root planning files from .omni/ into ${relativeDisplayPath(directory, activePaths.baseDir)} on ${new Date().toISOString()}.`,
     "- Root planning files were left intact for compatibility.",
     "",
   ].join("\n");
@@ -998,7 +998,7 @@ export async function migrateRootPlanToActiveWork(
 }
 
 function rootPlanningArtifactPaths(directory: string): PlanningArtifactPaths {
-  return planningArtifactPaths(path.join(directory, ".ged"), null, "root");
+  return planningArtifactPaths(path.join(directory, ".omni"), null, "root");
 }
 
 function tempPathFor(filePath: string): string {
@@ -1061,9 +1061,9 @@ export const OMNI_RUNTIME_FILES = [
   "REPO-MAP.json",
 ] as const;
 
-const STATE_TEMPLATE = "# State\n\nCurrent Phase: discovery\nActive Task: bootstrap\nStatus Summary: GedCode workspace bootstrapped and ready for planning.\nBlockers: None\nNext Step: Clarify scope, write spec, define tests, and break work into tasks before implementation.\n";
+const STATE_TEMPLATE = "# State\n\nCurrent Phase: discovery\nActive Task: bootstrap\nStatus Summary: OmniCode workspace bootstrapped and ready for planning.\nBlockers: None\nNext Step: Clarify scope, write spec, define tests, and break work into tasks before implementation.\n";
 
-const SESSION_SUMMARY_TEMPLATE = "# Session Summary\n\n## Progress Made\n\n- Bootstrapped GedCode durable memory for this project.\n\n## Remaining Work\n\n- Clarify the request and write the first real spec, tasks, and tests.\n\n## Notes\n\nUse this file for concise cross-session handoff notes.\n";
+const SESSION_SUMMARY_TEMPLATE = "# Session Summary\n\n## Progress Made\n\n- Bootstrapped OmniCode durable memory for this project.\n\n## Remaining Work\n\n- Clarify the request and write the first real spec, tasks, and tests.\n\n## Notes\n\nUse this file for concise cross-session handoff notes.\n";
 
 export const OMNI_DURABLE_FILES = [
   "PROJECT.md",
@@ -1078,14 +1078,14 @@ export const OMNI_DURABLE_FILES = [
 ] as const;
 
 export const OMNI_GITIGNORE = [
-  "# Runtime GedCode state: keep out of git by default.",
+  "# Runtime OmniCode state: keep out of git by default.",
   "STATE.md",
   "SESSION-SUMMARY.md",
   "REPO-MAP.md",
   "REPO-MAP.json",
   "runtime/",
   "",
-  "# Durable GedCode memory may be committed when it reflects real project intent.",
+  "# Durable OmniCode memory may be committed when it reflects real project intent.",
 ].join("\n");
 
 export const OMNI_FILES: Record<string, string> = {
@@ -1095,7 +1095,7 @@ export const OMNI_FILES: Record<string, string> = {
   "TESTS.md": "# Tests\n\n## Checks\n\n- [ ] define the checks to run after each implementation slice\n\n## Expected outcomes\n\nDescribe what passing looks like.\n",
   "DECISIONS.md": "# Decisions\n\nRecord important choices and why they were made.\n",
   "STANDARDS.md": "# Imported Standards\n\nRecord imported standards from AGENTS.md, CLAUDE.md, Cursor rules, and similar files.\n",
-  "SKILLS.md": "# Skills\n\n## Bundled\n\n- grill-me\n- grill-with-docs\n- find-skills\n- skill-maker\n- tdd\n- diagnose\n- improve-codebase-architecture\n- brainstorming\n- ged-planning\n- ged-execution\n- ged-verification\n\n## Suggested For Current Work\n\n- None inferred from the current task yet.\n\n## Project Notes\n\nRecord required and project-specific skills here.\n",
+  "SKILLS.md": "# Skills\n\n## Bundled\n\n- grill-me\n- grill-with-docs\n- find-skills\n- skill-maker\n- tdd\n- diagnose\n- improve-codebase-architecture\n- brainstorming\n- omni-planning\n- omni-execution\n- omni-verification\n\n## Suggested For Current Work\n\n- None inferred from the current task yet.\n\n## Project Notes\n\nRecord required and project-specific skills here.\n",
   "CONFIG.md": "# Omni Configuration\n\nOmni Mode: on\n",
   VERSION: `${OMNI_VERSION}\n`,
 };
@@ -1136,7 +1136,7 @@ async function resolveResourcePath(...parts: string[]): Promise<string> {
   }
 
   throw new Error(
-    `GedCode resources not found for ${parts.join("/")}. Checked: ${RESOURCE_ROOT_CANDIDATES.join(", ")}`,
+    `OmniCode resources not found for ${parts.join("/")}. Checked: ${RESOURCE_ROOT_CANDIDATES.join(", ")}`,
   );
 }
 
@@ -1161,7 +1161,7 @@ async function loadCommands(): Promise<ParsedCommand[]> {
 }
 
 export async function ensureOmniDir(directory: string): Promise<string> {
-  const omniDir = path.join(directory, ".ged");
+  const omniDir = path.join(directory, ".omni");
   await mkdir(omniDir, { recursive: true });
   for (const [fileName, content] of Object.entries(OMNI_FILES)) {
     const filePath = path.join(omniDir, fileName);
@@ -1184,7 +1184,7 @@ export async function ensureOmniDir(directory: string): Promise<string> {
 
 async function readOmniConfig(directory: string): Promise<string> {
   try {
-    return await readFile(path.join(directory, ".ged", "CONFIG.md"), "utf8");
+    return await readFile(path.join(directory, ".omni", "CONFIG.md"), "utf8");
   } catch {
     return "";
   }
@@ -1264,7 +1264,7 @@ export async function setOmniMode(directory: string, mode: OmniMode): Promise<vo
   await updateStateFile(directory, {
     currentPhase: "passive",
     activeTask: "",
-    statusSummary: "Omni mode disabled. Durable .ged context remains available as passive guidance.",
+    statusSummary: "Omni mode disabled. Durable .omni context remains available as passive guidance.",
     blockers: [],
     nextStep: "Re-enable Omni mode when you want the full planning and verification workflow.",
   });
@@ -1276,7 +1276,7 @@ async function readStateSummary(directory: string): Promise<string> {
     return await readFile(runtimePaths.statePath, "utf8");
   } catch {
     try {
-      return await readFile(path.join(directory, ".ged", "STATE.md"), "utf8");
+      return await readFile(path.join(directory, ".omni", "STATE.md"), "utf8");
     } catch {
       return `No ${relativeDisplayPath(directory, runtimePaths.statePath)} found.`;
     }
@@ -1289,7 +1289,7 @@ async function readSessionSummary(directory: string): Promise<string> {
     return await readFile(runtimePaths.sessionSummaryPath, "utf8");
   } catch {
     try {
-      return await readFile(path.join(directory, ".ged", "SESSION-SUMMARY.md"), "utf8");
+      return await readFile(path.join(directory, ".omni", "SESSION-SUMMARY.md"), "utf8");
     } catch {
       return SESSION_SUMMARY_TEMPLATE;
     }
@@ -1318,7 +1318,7 @@ export async function updateStateFile(
     activeTask: updates.activeTask ? sanitizeMarkdownInline(updates.activeTask, 160) : "",
     statusSummary: updates.statusSummary
       ? sanitizeMarkdownInline(updates.statusSummary, 300)
-      : "GedCode workspace bootstrapped and ready for planning.",
+      : "OmniCode workspace bootstrapped and ready for planning.",
     blockers: normalizeListItems(updates.blockers ?? []),
     nextStep: updates.nextStep
       ? sanitizeMarkdownInline(updates.nextStep, 300)
@@ -1387,14 +1387,14 @@ async function listSkills(): Promise<SkillInfo[]> {
   return skills.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-// Skill names are user-controllable through the gedcode_read_skill tool, and
+// Skill names are user-controllable through the omnicode_read_skill tool, and
 // the resolved path is read from disk. Restrict to a safe character set so
 // `..` / slashes / null bytes can't escape the bundled skills directory.
 const SAFE_SKILL_NAME = /^[A-Za-z0-9_][A-Za-z0-9_-]{0,63}$/u;
 
 async function readSkill(name: string): Promise<string> {
   if (!SAFE_SKILL_NAME.test(name)) {
-    throw new Error(`GedCode: refusing to read skill with unsafe name: ${name}`);
+    throw new Error(`OmniCode: refusing to read skill with unsafe name: ${name}`);
   }
   const filePath = await resolveResourcePath("skills", `${name}.md`);
   return readFile(filePath, "utf8");
@@ -1577,9 +1577,9 @@ export async function updateSkillsFile(
     "- diagnose",
     "- improve-codebase-architecture",
     "- brainstorming",
-    "- ged-planning",
-    "- ged-execution",
-    "- ged-verification",
+    "- omni-planning",
+    "- omni-execution",
+    "- omni-verification",
     "",
     "## Suggested For Current Work",
     "",
@@ -1604,7 +1604,7 @@ export async function discoverStandards(directory: string): Promise<StandardCand
     "dist",
     "build",
     ".pi",
-    ".ged",
+    ".omni",
     ".turbo",
     "coverage",
   ]);
@@ -1663,7 +1663,7 @@ export async function importStandards(
     sections.push("No external standards were discovered.");
   } else {
     sections.push(
-      "These standards were discovered from common agent-instruction locations and imported into GedCode durable memory.",
+      "These standards were discovered from common agent-instruction locations and imported into OmniCode durable memory.",
       "",
     );
 
@@ -1672,7 +1672,7 @@ export async function importStandards(
       const realFullPath = await realpath(fullPath);
       if (realFullPath !== resolvedRoot && !realFullPath.startsWith(resolvedRoot + path.sep)) {
         throw new Error(
-          `GedCode: refusing to import standards file outside project root: ${candidate.path}`,
+          `OmniCode: refusing to import standards file outside project root: ${candidate.path}`,
         );
       }
       const content = await readFile(realFullPath, "utf8");
@@ -1696,7 +1696,7 @@ export async function importStandards(
 async function readInstructionPrompt(): Promise<string> {
   const instructionFile = await resolveResourcePath(
     "instructions",
-    "gedcode-agent.md",
+    "omnicode-agent.md",
   );
   return readFile(instructionFile, "utf8");
 }
@@ -1760,9 +1760,9 @@ export async function planningArtifactsReady(directory: string): Promise<boolean
 
 export function planningGuardMessage(readiness: PlanningArtifactReadiness): string {
   if (readiness.activePaths.source === "work") {
-    return `GedCode guard: before editing source files or running mutating shell commands, write real planning content into ${readiness.activePaths.baseDir}/SPEC.md, TASKS.md, and TESTS.md. Legacy root .ged/SPEC.md, .ged/TASKS.md, and .ged/TESTS.md can still satisfy this guard during migration.`;
+    return `OmniCode guard: before editing source files or running mutating shell commands, write real planning content into ${readiness.activePaths.baseDir}/SPEC.md, TASKS.md, and TESTS.md. Legacy root .omni/SPEC.md, .omni/TASKS.md, and .omni/TESTS.md can still satisfy this guard during migration.`;
   }
-  return "GedCode guard: before editing source files or running mutating shell commands, write real planning content into .ged/SPEC.md, .ged/TASKS.md, and .ged/TESTS.md (placeholder bootstrap files are not enough).";
+  return "OmniCode guard: before editing source files or running mutating shell commands, write real planning content into .omni/SPEC.md, .omni/TASKS.md, and .omni/TESTS.md (placeholder bootstrap files are not enough).";
 }
 
 function relativeDisplayPath(directory: string, filePath: string): string {
@@ -1771,7 +1771,7 @@ function relativeDisplayPath(directory: string, filePath: string): string {
 
 export async function buildCollaborationCheckpoint(directory: string): Promise<string> {
   const [settings, branch, readiness] = await Promise.all([
-    readGedCodeSettings(directory),
+    readOmniCodeSettings(directory),
     readCurrentGitBranch(directory),
     resolvePlanningArtifactReadiness(directory),
   ]);
@@ -1790,7 +1790,7 @@ export async function buildCollaborationCheckpoint(directory: string): Promise<s
     : `not ready (${relativeDisplayPath(directory, readiness.activePaths.baseDir)})`;
   const nextStep = readiness.ready
     ? protectedBranchStatus === "blocked for change implementation"
-      ? "Create or switch to a feature branch, or explicitly allow protected branch changes in GedCode settings."
+      ? "Create or switch to a feature branch, or explicitly allow protected branch changes in OmniCode settings."
       : "Proceed with the planned slice and verify before committing."
     : `Write real SPEC.md, TASKS.md, and TESTS.md in ${relativeDisplayPath(directory, readiness.activePaths.baseDir)}.`;
 
@@ -1819,24 +1819,24 @@ function extractFilePath(args: Record<string, unknown>): string | null {
 
 async function isInsideProjectOmniDir(directory: string, targetPath: string): Promise<boolean> {
   const absoluteTarget = path.resolve(directory, targetPath);
-  const omniDir = path.resolve(directory, ".ged");
+  const omniDir = path.resolve(directory, ".omni");
   const relative = path.relative(omniDir, absoluteTarget);
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
-function isGedCodeXdgOverride(): boolean {
+function isOmniCodeXdgOverride(): boolean {
   const xdg = process.env.XDG_CONFIG_HOME;
   if (!xdg) return false;
-  // GedCode launcher sets XDG_CONFIG_HOME to ~/.config/gedcode.
+  // OmniCode launcher sets XDG_CONFIG_HOME to ~/.config/omnicode.
   // Detect this pattern so we can strip it from child tool shells.
-  return xdg.endsWith(path.join(".config", "gedcode"));
+  return xdg.endsWith(path.join(".config", "omnicode"));
 }
 
 function sanitizeBashEnv(command: string): string {
-  // When GedCode's launcher overrides XDG_CONFIG_HOME, child bash shells
+  // When OmniCode's launcher overrides XDG_CONFIG_HOME, child bash shells
   // inherit the isolated path and user CLIs like `gh` lose their normal config.
   // Prefix with `env -u XDG_CONFIG_HOME` so user tools see the default config.
-  if (!isGedCodeXdgOverride()) return command;
+  if (!isOmniCodeXdgOverride()) return command;
   if (command.trimStart().startsWith("env ")) return command;
   return `env -u XDG_CONFIG_HOME ${command}`;
 }
@@ -1851,7 +1851,7 @@ function isPotentiallyMutatingBashCommand(command: string): boolean {
   );
 }
 
-export const GedCodePlugin: Plugin = async ({ directory }, options) => {
+export const OmniCodePlugin: Plugin = async ({ directory }, options) => {
   const settingsHomeDir = options?.homeDir as string | undefined;
   const commands = await loadCommands();
   const instructionPrompt = await readInstructionPrompt();
@@ -1859,40 +1859,40 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
 
   return {
     async config(config) {
-      const settings = await readGedCodeSettings(directory, { homeDir: settingsHomeDir });
+      const settings = await readOmniCodeSettings(directory, { homeDir: settingsHomeDir });
       config.agent = config.agent ?? {};
       config.command = config.command ?? {};
       config.instructions = Array.isArray(config.instructions)
         ? config.instructions
         : [];
 
-      const gedcodeAgentConfig: OmniAgentConfig = {
+      const omnicodeAgentConfig: OmniAgentConfig = {
         description:
-          "GedCode workflow agent: clarify, spec, task, implement in bounded slices, then verify.",
+          "OmniCode workflow agent: clarify, spec, task, implement in bounded slices, then verify.",
         mode: "primary",
         prompt: settings.agents.enabled ? orchestrationPrompt(instructionPrompt) : instructionPrompt,
         ...(settings.agents.enabled
           ? { permission: { task: taskPermissionForOmniSubagents() } }
           : {}),
       };
-      config.agent.gedcode = gedcodeAgentConfig as unknown as typeof config.agent.gedcode;
+      config.agent.omnicode = omnicodeAgentConfig as unknown as typeof config.agent.omnicode;
 
       if (settings.agents.enabled) {
         for (const agentName of OMNI_SUBAGENT_NAMES) {
-          config.agent[agentName] = buildSubagentConfig(settings, agentName) as unknown as typeof config.agent.gedcode;
+          config.agent[agentName] = buildSubagentConfig(settings, agentName) as unknown as typeof config.agent.omnicode;
         }
       }
 
       const mutableConfig = config as Record<string, unknown>;
       if (typeof mutableConfig.default_agent !== "string") {
-        mutableConfig.default_agent = "gedcode";
+        mutableConfig.default_agent = "omnicode";
       }
 
       for (const command of commands) {
         config.command[command.name] = {
           template: command.template,
           description: command.frontmatter.description,
-          agent: command.frontmatter.agent ?? "gedcode",
+          agent: command.frontmatter.agent ?? "omnicode",
           model: command.frontmatter.model,
           subtask: command.frontmatter.subtask,
         };
@@ -1910,7 +1910,7 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
     "experimental.session.compacting": async (_input, output) => {
       output.context.push(
         [
-          "## GedCode Durable State",
+          "## OmniCode Durable State",
           await readStateSummary(directory),
         ].join("\n\n"),
       );
@@ -1958,7 +1958,7 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
         throw new Error(planningGuardMessage(planningReadiness));
       }
 
-      const settings = await readGedCodeSettings(directory, { homeDir: settingsHomeDir });
+      const settings = await readOmniCodeSettings(directory, { homeDir: settingsHomeDir });
       await assertProtectedBranchAllowsMutation(directory, settings);
 
       if (input.tool === "bash" && commandKey && typeof args[commandKey] === "string") {
@@ -1974,9 +1974,9 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
     },
 
     tool: {
-      gedcode_bootstrap: tool({
+      omnicode_bootstrap: tool({
         description:
-          "Create the .ged durable-memory folder and default GedCode workflow files in the current project.",
+          "Create the .omni durable-memory folder and default OmniCode workflow files in the current project.",
         args: {
           mode: tool.schema.enum(["on", "off"]).optional().describe("Initial Omni mode; defaults to on."),
         },
@@ -1987,15 +1987,15 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
           await appendSessionSummary(directory, {
             title: "Bootstrap",
             bullets: [
-              "Initialized .ged durable memory for the project.",
+              "Initialized .omni durable memory for the project.",
               `Set Omni mode to ${(args.mode as OmniMode | undefined) ?? "on"}.`,
             ],
           });
-          return `Bootstrapped ${path.join(directory, ".ged")}`;
+          return `Bootstrapped ${path.join(directory, ".omni")}`;
         },
       }),
 
-      gedcode_set_mode: tool({
+      omnicode_set_mode: tool({
         description: "Turn Omni mode on or off for the current project.",
         args: {
           mode: tool.schema.enum(["on", "off"]).describe("Desired Omni mode."),
@@ -2006,12 +2006,12 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
         },
       }),
 
-      gedcode_agents_status: tool({
-        description: "Read effective GedCode sub-agent settings from global and project settings files.",
+      omnicode_agents_status: tool({
+        description: "Read effective OmniCode sub-agent settings from global and project settings files.",
         args: {},
         async execute() {
-          const settings = await readGedCodeSettings(directory, { homeDir: settingsHomeDir });
-          const recommendations = await readGedCodeModelRecommendations(directory, { homeDir: settingsHomeDir });
+          const settings = await readOmniCodeSettings(directory, { homeDir: settingsHomeDir });
+          const recommendations = await readOmniCodeModelRecommendations(directory, { homeDir: settingsHomeDir });
           return formatAgentsSettingsStatus(settings, {
             globalPath: resolveGlobalSettingsPath(settingsHomeDir),
             projectPath: resolveProjectSettingsPath(directory),
@@ -2020,31 +2020,31 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
         },
       }),
 
-      gedcode_update_agents_settings: tool({
-        description: "Update GedCode sub-agent settings globally or for the current project override.",
+      omnicode_update_agents_settings: tool({
+        description: "Update OmniCode sub-agent settings globally or for the current project override.",
         args: {
           scope: tool.schema.enum(["global", "project"]).optional().describe("Where to write settings; defaults to global."),
-          enabled: tool.schema.boolean().optional().describe("Enable or disable GedCode native subagents."),
-          defaultModel: tool.schema.string().optional().describe("Optional shared model for GedCode subagents."),
+          enabled: tool.schema.boolean().optional().describe("Enable or disable OmniCode native subagents."),
+          defaultModel: tool.schema.string().optional().describe("Optional shared model for OmniCode subagents."),
           models: tool.schema
             .object({
-              "ged-explorer": tool.schema.unknown().optional(),
-              "ged-planner": tool.schema.unknown().optional(),
-              "ged-verifier": tool.schema.unknown().optional(),
+              "omni-explorer": tool.schema.unknown().optional(),
+              "omni-planner": tool.schema.unknown().optional(),
+              "omni-verifier": tool.schema.unknown().optional(),
             })
             .optional()
             .describe("Per-subagent model config. Each agent accepts a model ID string or an object with 'model' plus provider options (e.g. {\"model\": \"openai/gpt-5.5\", \"reasoningEffort\": \"high\"})."),
         },
         async execute(args) {
-          const result = await updateGedCodeAgentsSettings(directory, {
-            scope: args.scope as GedCodeSettingsScope | undefined,
+          const result = await updateOmniCodeAgentsSettings(directory, {
+            scope: args.scope as OmniCodeSettingsScope | undefined,
             enabled: args.enabled,
             defaultModel: args.defaultModel,
             models: args.models as Partial<Record<OmniSubagentName, AgentModelConfig>> | undefined,
           }, { homeDir: settingsHomeDir });
-          const recommendations = await readGedCodeModelRecommendations(directory, { homeDir: settingsHomeDir });
+          const recommendations = await readOmniCodeModelRecommendations(directory, { homeDir: settingsHomeDir });
           return [
-            `Updated ${result.scope} GedCode agent settings: ${result.outputPath}`,
+            `Updated ${result.scope} OmniCode agent settings: ${result.outputPath}`,
             formatAgentsSettingsStatus(result.settings, {
               globalPath: resolveGlobalSettingsPath(settingsHomeDir),
               projectPath: resolveProjectSettingsPath(directory),
@@ -2055,35 +2055,35 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
         },
       }),
 
-      gedcode_read_model_recommendations: tool({
-        description: "Read optional GedCode model recommendation markdown for guided sub-agent setup.",
+      omnicode_read_model_recommendations: tool({
+        description: "Read optional OmniCode model recommendation markdown for guided sub-agent setup.",
         args: {},
         async execute() {
-          const recommendations = await readGedCodeModelRecommendations(directory, { homeDir: settingsHomeDir });
+          const recommendations = await readOmniCodeModelRecommendations(directory, { homeDir: settingsHomeDir });
           if (!recommendations.sourcePath) {
             return [
-              "No GedCode model recommendation markdown found.",
-              `Create ${globalGedCodeModelRecommendationsPath(settingsHomeDir)} for global guidance or ${projectGedCodeModelRecommendationsPath(directory)} for this project.`,
+              "No OmniCode model recommendation markdown found.",
+              `Create ${globalOmniCodeModelRecommendationsPath(settingsHomeDir)} for global guidance or ${projectOmniCodeModelRecommendationsPath(directory)} for this project.`,
             ].join("\n");
           }
           return [`Source: ${recommendations.sourcePath}`, "", recommendations.content].join("\n");
         },
       }),
 
-      gedcode_state: tool({
-        description: "Read the current GedCode runtime state summary from the active .ged/runtime directory.",
+      omnicode_state: tool({
+        description: "Read the current OmniCode runtime state summary from the active .omni/runtime directory.",
         args: {},
         async execute() {
           await ensureOmniDir(directory);
           const [stateSummary, settings] = await Promise.all([
             readStateSummary(directory),
-            readGedCodeSettings(directory, { homeDir: settingsHomeDir }),
+            readOmniCodeSettings(directory, { homeDir: settingsHomeDir }),
           ]);
           return `${stateSummary.trimEnd()}\n\n${formatWorkflowSettingsStatus(settings)}`;
         },
       }),
 
-      gedcode_collaboration_status: tool({
+      omnicode_collaboration_status: tool({
         description:
           "Report current branch, protected-branch policy, active Omni work-memory path, and planning readiness.",
         args: {},
@@ -2093,9 +2093,9 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
         },
       }),
 
-      gedcode_start_work: tool({
+      omnicode_start_work: tool({
         description:
-          "Explicitly create or switch to a feature branch and initialize the active .ged/work planning directory.",
+          "Explicitly create or switch to a feature branch and initialize the active .omni/work planning directory.",
         args: {
           branch: tool.schema.string().describe("Feature branch name to create or switch to."),
           base: tool.schema.string().optional().describe("Optional base ref for creating a new branch."),
@@ -2111,12 +2111,12 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
         },
       }),
 
-      gedcode_create_pr: tool({
+      omnicode_create_pr: tool({
         description:
           "Create a GitHub pull request for the current branch when the user requests it or PR auto-creation is enabled.",
         args: {
           title: tool.schema.string().optional().describe("Optional PR title. Defaults to a title derived from the branch."),
-          body: tool.schema.string().optional().describe("Optional PR body. Defaults to GedCode planning summary."),
+          body: tool.schema.string().optional().describe("Optional PR body. Defaults to OmniCode planning summary."),
           base: tool.schema.string().optional().describe("Optional base branch for the PR."),
           draft: tool.schema.boolean().optional().describe("Create the PR as a draft."),
           push: tool.schema.boolean().optional().describe("Push the branch if it has no upstream. Defaults to true."),
@@ -2132,9 +2132,9 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
         },
       }),
 
-      gedcode_migrate_root_plan: tool({
+      omnicode_migrate_root_plan: tool({
         description:
-          "Copy non-placeholder root .ged planning files into the active branch-scoped .ged/work directory.",
+          "Copy non-placeholder root .omni planning files into the active branch-scoped .omni/work directory.",
         args: {
           overwrite: tool.schema.boolean().optional().describe("Overwrite existing active work planning files."),
         },
@@ -2144,8 +2144,8 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
         },
       }),
 
-      gedcode_update_state: tool({
-        description: "Update the active branch-scoped .ged/runtime STATE.md with the current phase, active task, blockers, and next step.",
+      omnicode_update_state: tool({
+        description: "Update the active branch-scoped .omni/runtime STATE.md with the current phase, active task, blockers, and next step.",
         args: {
           currentPhase: tool.schema.string().optional().describe("Current workflow phase."),
           activeTask: tool.schema.string().optional().describe("Current active task."),
@@ -2159,8 +2159,8 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
         },
       }),
 
-      gedcode_append_session_summary: tool({
-        description: "Append a concise titled update to the active branch-scoped .ged/runtime SESSION-SUMMARY.md.",
+      omnicode_append_session_summary: tool({
+        description: "Append a concise titled update to the active branch-scoped .omni/runtime SESSION-SUMMARY.md.",
         args: {
           title: tool.schema.string().describe("Short heading for the update."),
           bullets: tool.schema.array(tool.schema.string()).describe("Concise bullet points to append."),
@@ -2171,16 +2171,16 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
         },
       }),
 
-      gedcode_repo_map: tool({
+      omnicode_repo_map: tool({
         description:
-          "Generate a lightweight repo map for the current project and save it to .ged/REPO-MAP.md.",
+          "Generate a lightweight repo map for the current project and save it to .omni/REPO-MAP.md.",
         args: {},
         async execute() {
           return buildRepoMap(directory);
         },
       }),
 
-      gedcode_discover_standards: tool({
+      omnicode_discover_standards: tool({
         description:
           "Discover external instruction files such as AGENTS.md, CLAUDE.md, Cursor rules, and similar standards files in the current project.",
         args: {},
@@ -2195,9 +2195,9 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
         },
       }),
 
-      gedcode_import_standards: tool({
+      omnicode_import_standards: tool({
         description:
-          "Import discovered external standards into .ged/STANDARDS.md. Optionally limit the import to selected relative paths.",
+          "Import discovered external standards into .omni/STANDARDS.md. Optionally limit the import to selected relative paths.",
         args: {
           paths: tool.schema
             .array(tool.schema.string())
@@ -2216,9 +2216,9 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
         },
       }),
 
-      gedcode_suggest_skills: tool({
+      omnicode_suggest_skills: tool({
         description:
-          "Suggest bundled GedCode skills based on the current task or request text.",
+          "Suggest bundled OmniCode skills based on the current task or request text.",
         args: {
           task: tool.schema.string().describe("Task, request, or work summary to analyze."),
         },
@@ -2233,9 +2233,9 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
         },
       }),
 
-      gedcode_update_skills: tool({
+      omnicode_update_skills: tool({
         description:
-          "Update .ged/SKILLS.md with bundled skills and suggestions for the current work.",
+          "Update .omni/SKILLS.md with bundled skills and suggestions for the current work.",
         args: {
           task: tool.schema.string().describe("Task, request, or work summary to analyze."),
         },
@@ -2251,8 +2251,8 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
         },
       }),
 
-      gedcode_list_skills: tool({
-        description: "List bundled GedCode workflow skills available to the agent.",
+      omnicode_list_skills: tool({
+        description: "List bundled OmniCode workflow skills available to the agent.",
         args: {},
         async execute() {
           const skills = await listSkills();
@@ -2262,8 +2262,8 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
         },
       }),
 
-      gedcode_read_skill: tool({
-        description: "Read a bundled GedCode skill by name.",
+      omnicode_read_skill: tool({
+        description: "Read a bundled OmniCode skill by name.",
         args: {
           name: tool.schema.string().describe("Skill name without .md extension."),
         },
@@ -2275,4 +2275,4 @@ export const GedCodePlugin: Plugin = async ({ directory }, options) => {
   };
 };
 
-export default GedCodePlugin;
+export default OmniCodePlugin;

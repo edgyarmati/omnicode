@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Sync the GedCode version from the root package.json into every
+// Sync the OmniCode version from the root package.json into every
 // downstream place that hardcodes it (workspace package.jsons, the
 // release.js launcher constant, and the installers' default version).
 //
@@ -39,20 +39,20 @@ const TARGETS = [
   {
     file: "packages/launcher/src/release.js",
     transforms: [
-      { pattern: /GEDCODE_BINARY_VERSION\s*=\s*"([^"]+)"/u, label: "GEDCODE_BINARY_VERSION" },
+      { pattern: /OMNICODE_BINARY_VERSION\s*=\s*"([^"]+)"/u, label: "OMNICODE_BINARY_VERSION" },
     ],
   },
   {
     file: "install.sh",
     transforms: [
-      { pattern: /GEDCODE_VERSION=(\d+\.\d+\.\d+)\s+curl/u, label: "doc-comment example" },
-      { pattern: /VERSION="\$\{GEDCODE_VERSION:-(\d+\.\d+\.\d+)\}"/u, label: "VERSION default" },
+      { pattern: /OMNICODE_VERSION=(\d+\.\d+\.\d+)\s+curl/u, label: "doc-comment example" },
+      { pattern: /VERSION="\$\{OMNICODE_VERSION:-(\d+\.\d+\.\d+)\}"/u, label: "VERSION default" },
     ],
   },
   {
     file: "install.ps1",
     transforms: [
-      { pattern: /\$env:GEDCODE_VERSION\s*=\s*'(\d+\.\d+\.\d+)'/u, label: "doc-comment example" },
+      { pattern: /\$env:OMNICODE_VERSION\s*=\s*'(\d+\.\d+\.\d+)'/u, label: "doc-comment example" },
       { pattern: /\}\s*else\s*\{\s*'(\d+\.\d+\.\d+)'\s*\}/u, label: "Version default" },
     ],
   },

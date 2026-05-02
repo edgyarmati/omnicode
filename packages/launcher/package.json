@@ -1,14 +1,14 @@
 {
-  "name": "gedcode",
+  "name": "omnicode",
   "version": "0.3.0",
-  "description": "Launcher that starts OpenCode with GedCode config and plugin loading.",
+  "description": "Launcher that starts OpenCode with OmniCode config and plugin loading.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/edgyarmati/gedcode"
+    "url": "https://github.com/edgyarmati/omnicode"
   },
-  "homepage": "https://github.com/edgyarmati/gedcode#readme",
+  "homepage": "https://github.com/edgyarmati/omnicode#readme",
   "bugs": {
-    "url": "https://github.com/edgyarmati/gedcode/issues"
+    "url": "https://github.com/edgyarmati/omnicode/issues"
   },
   "type": "module",
   "files": [
@@ -16,10 +16,10 @@
     "src"
   ],
   "bin": {
-    "gedcode": "./bin/gedcode.js"
+    "omnicode": "./bin/omnicode.js"
   },
   "scripts": {
-    "check": "node --check ./bin/gedcode.js",
+    "check": "node --check ./bin/omnicode.js",
     "test": "node --test test/**/*.test.js"
   },
   "engines": {

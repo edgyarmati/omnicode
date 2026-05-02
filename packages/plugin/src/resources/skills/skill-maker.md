@@ -4,15 +4,15 @@ Use during the post-grill skill-fit checkpoint after `find-skills` cannot identi
 
 Purpose:
 - Turn missing task expertise into a reusable local skill before planning or implementation.
-- Keep generated skills project-local under `.ged/skills/<skill-name>/SKILL.md`; never install global/user skills.
+- Keep generated skills project-local under `.omni/skills/<skill-name>/SKILL.md`; never install global/user skills.
 - Capture enough research, constraints, examples, and verification guidance for future agents or workers to use the skill from the start.
 
 Workflow:
 1. Confirm the gap: state why bundled/project skills and `find-skills` results do not adequately cover the clarified task.
 2. Research first. Prefer a research/explore subagent when subagent-driven development is available; otherwise research inline using repo context, project standards, official docs, and reputable references.
 3. Choose a short kebab-case skill name that describes the missing capability.
-4. Create `.ged/skills/<skill-name>/SKILL.md` with YAML frontmatter and concise instructions.
-5. Record the new skill in `.ged/SKILLS.md` under project notes or current-work suggestions, including when to load it.
+4. Create `.omni/skills/<skill-name>/SKILL.md` with YAML frontmatter and concise instructions.
+5. Record the new skill in `.omni/SKILLS.md` under project notes or current-work suggestions, including when to load it.
 6. Load/use the local skill before final planning.
 
 Skill shape:
@@ -49,6 +49,6 @@ Writing guidance:
 Review checklist:
 - Description includes clear "Use when..." triggers.
 - Skill is narrow to the current missing expertise, not a generic catch-all.
-- Skill is project-local in `.ged/skills/` and no global install was attempted.
-- `.ged/SKILLS.md` points future agents/workers to the new local skill.
+- Skill is project-local in `.omni/skills/` and no global install was attempted.
+- `.omni/SKILLS.md` points future agents/workers to the new local skill.
 - Planning artifacts can now reference the new skill before implementation starts.

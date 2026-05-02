@@ -1,23 +1,23 @@
-# GedCode Design
+# OmniCode Design
 
 > Status: Historical design record (2026-04-24). Implemented. For current behavior see [`README.md`](../README.md) and [`AGENTS.md`](../AGENTS.md).
 
 ## Goal
 
-Build GedCode as an OpenCode plugin plus a thin `gedcode` launcher, preserving the Omni workflow while dropping the custom GedPi shell direction.
+Build OmniCode as an OpenCode plugin plus a thin `omnicode` launcher, preserving the Omni workflow while dropping the custom Omni-Pi shell direction.
 
 ## Product shape
 
-GedCode is not a custom terminal app and not a fork of OpenCode.
+OmniCode is not a custom terminal app and not a fork of OpenCode.
 
 It is:
 - an OpenCode plugin package
-- a launcher command that starts OpenCode with GedCode-specific config and plugin loading
+- a launcher command that starts OpenCode with OmniCode-specific config and plugin loading
 
 ## Scope for v1
 
 ### In scope
-- `.ged/` bootstrap and durable memory files
+- `.omni/` bootstrap and durable memory files
 - passive standards/context support when Omni mode is off
 - active Omni workflow when Omni mode is on
 - repo map generation and prompt-usable tool access
@@ -28,43 +28,43 @@ It is:
 ### Out of scope
 - custom provider management
 - custom OpenTUI or standalone shell work
-- GedPi-specific status widgets, themes, or updater UX
+- Omni-Pi-specific status widgets, themes, or updater UX
 
 ## Architecture
 
-### `@gedcode/plugin`
+### `@omnicode/plugin`
 Owns the Omni workflow behavior inside OpenCode.
 
 Responsibilities:
-- register a default `gedcode` agent with Omni workflow instructions
-- bootstrap `.ged/` files in the current project
+- register a default `omnicode` agent with Omni workflow instructions
+- bootstrap `.omni/` files in the current project
 - expose custom tools for workspace bootstrap, repo map, state, and skills
-- add custom commands for common GedCode actions
+- add custom commands for common OmniCode actions
 - guard file-modifying tool usage when the project has not yet been planned
-- inject better compaction context from `.ged/STATE.md`
+- inject better compaction context from `.omni/STATE.md`
 
-### `gedcode` launcher
+### `omnicode` launcher
 Owns environment preparation and OpenCode startup.
 
 Responsibilities:
 - locate `opencode` on PATH
 - best-effort install OpenCode if missing
-- create an GedCode-specific OpenCode config directory
-- write a local plugin shim that loads `@gedcode/plugin`
-- launch OpenCode with `OPENCODE_CONFIG`, `OPENCODE_CONFIG_DIR`, and `OPENCODE_CLIENT=gedcode`
+- create an OmniCode-specific OpenCode config directory
+- write a local plugin shim that loads `@omnicode/plugin`
+- launch OpenCode with `OPENCODE_CONFIG`, `OPENCODE_CONFIG_DIR`, and `OPENCODE_CLIENT=omnicode`
 
 ## Enforcement model
 
 Workflow enforcement uses three layers:
 
 1. **Agent instructions**
-   - the default `gedcode` agent explains the mandatory workflow
+   - the default `omnicode` agent explains the mandatory workflow
 2. **Custom tools**
-   - the agent gets first-class tools for `.ged` bootstrap, state, repo map, and skills
+   - the agent gets first-class tools for `.omni` bootstrap, state, repo map, and skills
 3. **Tool guards**
    - when Omni mode is on, direct file edits/writes are blocked until planning artifacts exist
 
-## Initial file model under `.ged/`
+## Initial file model under `.omni/`
 
 - `PROJECT.md`
 - `SPEC.md`
@@ -86,8 +86,8 @@ Workflow enforcement uses three layers:
 
 ## Success criteria
 
-- `gedcode` launches OpenCode with GedCode loaded without changing normal OpenCode behavior
-- a project can be bootstrapped into `.ged/`
-- the default GedCode agent knows and follows the Omni workflow
+- `omnicode` launches OpenCode with OmniCode loaded without changing normal OpenCode behavior
+- a project can be bootstrapped into `.omni/`
+- the default OmniCode agent knows and follows the Omni workflow
 - editing is guarded when planning artifacts are missing
 - repo map and skill tools are available to the agent

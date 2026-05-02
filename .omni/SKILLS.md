@@ -10,9 +10,9 @@
 - diagnose
 - improve-codebase-architecture
 - brainstorming
-- ged-planning
-- ged-execution
-- ged-verification
+- omni-planning
+- omni-execution
+- omni-verification
 
 ## Suggested For Current Work
 
@@ -21,4 +21,4 @@
 ## Project Notes
 
 Record required and project-specific skills here.
-- Generated missing-task skills must stay project-local under `.ged/skills/<skill-name>/SKILL.md`; global/user skills are user-managed.
+- Generated missing-task skills must stay project-local under `.omni/skills/<skill-name>/SKILL.md`; global/user skills are user-managed.

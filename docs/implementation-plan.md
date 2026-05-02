@@ -1,4 +1,4 @@
-# GedCode Implementation Plan
+# OmniCode Implementation Plan
 
 > Status: Phases 1–3 complete. This file is the historical phase log; active follow-up work lives in [AGENTS.md](../AGENTS.md#known-gaps--next-work) and the [release checklist](./release-checklist.md).
 
@@ -11,7 +11,7 @@
 - [x] install dependencies and type-check
 - [x] verify launcher-generated config flow
 - [x] smoke-test plugin loading in OpenCode
-- [x] harden `.ged` lifecycle, mode state, and durable/runtime policy
+- [x] harden `.omni` lifecycle, mode state, and durable/runtime policy
 
 ## Phase 2 — Release setup
 
@@ -24,7 +24,7 @@
 
 ## Phase 3 — Native launcher foundation
 
-- [x] define release metadata for GedCode binaries and compatible OpenCode runtime targets
+- [x] define release metadata for OmniCode binaries and compatible OpenCode runtime targets
 - [x] add per-user managed-runtime path resolution and OpenCode version metadata helpers
 - [x] add macOS/Linux `install.sh` and Windows `install.ps1` installer scaffolding around release artifacts
 - [x] refactor launcher runtime logic so it can target a managed OpenCode binary path instead of only PATH lookup
@@ -34,13 +34,13 @@
 
 ## Verified
 
-- launcher-generated config loads only the GedCode plugin when started through `gedcode`
-- OpenCode resolves `default_agent: gedcode`
-- GedCode commands and tools are registered in a real OpenCode runtime
+- launcher-generated config loads only the OmniCode plugin when started through `omnicode`
+- OpenCode resolves `default_agent: omnicode`
+- OmniCode commands and tools are registered in a real OpenCode runtime
 - end-to-end run succeeded: bootstrap → guard blocks early write → planning files updated → write succeeds
-- standards import works in a live run and writes `.ged/STANDARDS.md`
-- ranked repo map output works in a live run and writes `.ged/REPO-MAP.md` plus `.ged/REPO-MAP.json`
-- skill suggestion/sync works in a live run and writes `.ged/SKILLS.md`
+- standards import works in a live run and writes `.omni/STANDARDS.md`
+- ranked repo map output works in a live run and writes `.omni/REPO-MAP.md` plus `.omni/REPO-MAP.json`
+- skill suggestion/sync works in a live run and writes `.omni/SKILLS.md`
 - automated tests cover launcher config isolation, release setup assets/package assumptions, Node-version prerequisite helpers, standards discovery/import, repo map generation, skill suggestion, lifecycle updates, and planning-artifact guard readiness
 
 ## Next slices after native-launcher foundation

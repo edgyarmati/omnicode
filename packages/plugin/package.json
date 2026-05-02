@@ -1,14 +1,14 @@
 {
-  "name": "@gedcode/plugin",
+  "name": "@omnicode/plugin",
   "version": "0.3.0",
   "description": "OpenCode plugin that brings the Omni workflow into OpenCode.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/edgyarmati/gedcode"
+    "url": "https://github.com/edgyarmati/omnicode"
   },
-  "homepage": "https://github.com/edgyarmati/gedcode#readme",
+  "homepage": "https://github.com/edgyarmati/omnicode#readme",
   "bugs": {
-    "url": "https://github.com/edgyarmati/gedcode/issues"
+    "url": "https://github.com/edgyarmati/omnicode/issues"
   },
   "type": "module",
   "exports": {

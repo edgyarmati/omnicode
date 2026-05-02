@@ -9,9 +9,9 @@
 
 ## Notes
 
-- Keep each workflow resource concise and GedCode-native.
+- Keep each workflow resource concise and OmniCode-native.
 - Do not create hard tool-level TDD/diagnose guards in this pass.
-- `TESTS.md` means the active planning directory's tests artifact, usually `.ged/work/<branch-slug>/TESTS.md`, with root `.ged/TESTS.md` only as migration fallback.
+- `TESTS.md` means the active planning directory's tests artifact, usually `.omni/work/<branch-slug>/TESTS.md`, with root `.omni/TESTS.md` only as migration fallback.
 
 ---
 
@@ -39,4 +39,4 @@
 ## Per-Agent Passthrough Provider Options
 
 - [x] Slice 11: extend settings types with per-agent `options`, update parse/normalize/buildSubagentConfig, update tool schemas and output, add tests, update CHANGELOG, verify, clean-review, and commit.
-- [x] Slice 12: tighten enabled-subagent checkpoint guidance, make `/ged-agents` setup preserve exact model IDs/object configs, improve status output, add tests, verify, clean-review, and commit.
+- [x] Slice 12: tighten enabled-subagent checkpoint guidance, make `/omni-agents` setup preserve exact model IDs/object configs, improve status output, add tests, verify, clean-review, and commit.

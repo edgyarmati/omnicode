@@ -1,10 +1,10 @@
-# GedCode Native Launcher Design
+# OmniCode Native Launcher Design
 
 > Status: Historical design record (2026-04-24). Foundation implemented; native binary distribution is the active direction (see [`docs/release-checklist.md`](./release-checklist.md)). For current launcher behavior see [`README.md`](../README.md) and [`AGENTS.md`](../AGENTS.md).
 
 ## Goal
 
-Ship GedCode as a standalone cross-platform launcher binary with polished installers, while keeping OpenCode as the upstream host runtime that GedCode acquires and orchestrates rather than owns.
+Ship OmniCode as a standalone cross-platform launcher binary with polished installers, while keeping OpenCode as the upstream host runtime that OmniCode acquires and orchestrates rather than owns.
 
 ## Problem
 
@@ -15,40 +15,40 @@ The npm/npx-based setup flow is too fragile and too dependent on Node package ex
 - setup failures are tied to npm package publishing and executable resolution details
 - end users still effectively need a Node-centric environment just to get started
 
-GedCode needs a more product-like installation story for macOS, Linux, and Windows.
+OmniCode needs a more product-like installation story for macOS, Linux, and Windows.
 
 ## Product Boundary
 
-GedCode should **not** become a fork or bundled distribution of OpenCode.
+OmniCode should **not** become a fork or bundled distribution of OpenCode.
 
 Instead:
 
-- GedCode owns the installer, launcher, workflow layer, `.ged/` memory, and runtime orchestration
+- OmniCode owns the installer, launcher, workflow layer, `.omni/` memory, and runtime orchestration
 - OpenCode remains the upstream host app/runtime
-- GedCode acquires a compatible upstream OpenCode release when needed
-- GedCode does not mutate or depend on the user’s normal global `opencode` installation by default
+- OmniCode acquires a compatible upstream OpenCode release when needed
+- OmniCode does not mutate or depend on the user’s normal global `opencode` installation by default
 
 This preserves the boundary:
 
-- **GedCode** = productized workflow launcher
+- **OmniCode** = productized workflow launcher
 - **OpenCode** = upstream conversational host runtime
 
 ## Version Policy
 
 ### OpenCode compatibility model
 
-GedCode uses a **pinned default, optional upgrade** policy.
+OmniCode uses a **pinned default, optional upgrade** policy.
 
 That means:
 
-- each GedCode release declares a tested default OpenCode version or version range
-- GedCode installs that compatible version into an GedCode-managed user-level location
-- if the managed OpenCode runtime is missing or older than required, GedCode upgrades it
+- each OmniCode release declares a tested default OpenCode version or version range
+- OmniCode installs that compatible version into an OmniCode-managed user-level location
+- if the managed OpenCode runtime is missing or older than required, OmniCode upgrades it
 - advanced/manual upgrades can happen later, but the default path is the tested version
 
 ### Runtime ownership
 
-GedCode should manage **one per-user OpenCode runtime**, not one per project.
+OmniCode should manage **one per-user OpenCode runtime**, not one per project.
 
 Reasons:
 
@@ -62,11 +62,11 @@ Reasons:
 
 By default:
 
-- GedCode should **not** overwrite the user’s normal/global `opencode`
-- GedCode should **not** automatically prefer a newer system `opencode`
-- GedCode should use its own managed OpenCode runtime
+- OmniCode should **not** overwrite the user’s normal/global `opencode`
+- OmniCode should **not** automatically prefer a newer system `opencode`
+- OmniCode should use its own managed OpenCode runtime
 
-This avoids ambiguity and protects the user’s normal OpenCode usage from GedCode-specific compatibility decisions.
+This avoids ambiguity and protects the user’s normal OpenCode usage from OmniCode-specific compatibility decisions.
 
 ## Primary User Experience
 
@@ -75,8 +75,8 @@ This avoids ambiguity and protects the user’s normal OpenCode usage from GedCo
 Users should be able to run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/edgyarmati/gedcode/main/install.sh | bash
-gedcode
+curl -fsSL https://raw.githubusercontent.com/edgyarmati/omnicode/main/install.sh | bash
+omnicode
 ```
 
 ### Windows
@@ -84,28 +84,28 @@ gedcode
 Users should be able to run a PowerShell installer such as:
 
 ```powershell
-irm https://raw.githubusercontent.com/edgyarmati/gedcode/main/install.ps1 | iex
-gedcode
+irm https://raw.githubusercontent.com/edgyarmati/omnicode/main/install.ps1 | iex
+omnicode
 ```
 
 ### First run
 
-On first launch, `gedcode` should:
+On first launch, `omnicode` should:
 
-1. check for an GedCode-managed OpenCode runtime
+1. check for an OmniCode-managed OpenCode runtime
 2. install or upgrade that runtime if needed
-3. write GedCode-specific isolated OpenCode config/plugin wiring
+3. write OmniCode-specific isolated OpenCode config/plugin wiring
 4. launch the managed OpenCode runtime
 
 ## Recommended Approach
 
-Use a **native/self-contained GedCode launcher binary** plus **platform-specific installers**.
+Use a **native/self-contained OmniCode launcher binary** plus **platform-specific installers**.
 
 ### Why this approach
 
 - removes end-user dependency on Node/npm/npx for installation
 - gives Windows a first-class install path
-- keeps GedCode responsible for setup/orchestration, not OpenCode internals
+- keeps OmniCode responsible for setup/orchestration, not OpenCode internals
 - produces a more stable, supportable release channel
 - avoids the fragility of npm executable resolution during bootstrap
 
@@ -115,9 +115,9 @@ Use a **native/self-contained GedCode launcher binary** plus **platform-specific
 
 Rejected because it is too fragile, too Node-centric, and not a clean cross-platform product install story.
 
-#### Bundle OpenCode inside GedCode releases
+#### Bundle OpenCode inside OmniCode releases
 
-Rejected because it would make GedCode responsible for distributing and effectively maintaining an OpenCode payload rather than orchestrating upstream releases.
+Rejected because it would make OmniCode responsible for distributing and effectively maintaining an OpenCode payload rather than orchestrating upstream releases.
 
 #### Fork OpenCode
 
@@ -125,21 +125,21 @@ Explicitly rejected. It breaks the product boundary and creates long-term mainte
 
 ## System Design
 
-### 1. GedCode launcher binary
+### 1. OmniCode launcher binary
 
-Ship `gedcode` as a standalone binary for supported platforms.
+Ship `omnicode` as a standalone binary for supported platforms.
 
 Responsibilities:
 
-- implement the GedCode launcher behavior without requiring a user-managed Node install
+- implement the OmniCode launcher behavior without requiring a user-managed Node install
 - know the current compatible OpenCode version target
 - acquire/install/update the managed OpenCode runtime when needed
-- prepare isolated GedCode config/plugin state
+- prepare isolated OmniCode config/plugin state
 - launch the managed OpenCode process with the right environment
 
 ### 2. Managed OpenCode runtime
 
-GedCode keeps a per-user managed OpenCode runtime in an GedCode-owned location.
+OmniCode keeps a per-user managed OpenCode runtime in an OmniCode-owned location.
 
 Suggested shape:
 
@@ -149,7 +149,7 @@ Suggested shape:
 
 Responsibilities:
 
-- store the tested OpenCode version GedCode wants to use
+- store the tested OpenCode version OmniCode wants to use
 - support install, upgrade, and integrity checks
 - stay separate from the user’s normal global `opencode`
 
@@ -163,9 +163,9 @@ Provide platform-native installers:
 Installer responsibilities:
 
 - detect platform/architecture
-- download the appropriate GedCode launcher binary from release artifacts
+- download the appropriate OmniCode launcher binary from release artifacts
 - place it in a user-appropriate install location
-- ensure it is invokable as `gedcode`
+- ensure it is invokable as `omnicode`
 - print clear next steps and PATH guidance if needed
 
 Installer non-responsibilities:
@@ -187,11 +187,11 @@ Responsibilities:
 
 ### 5. Isolated configuration
 
-The launcher should continue using isolated GedCode config state, conceptually similar to the current config model:
+The launcher should continue using isolated OmniCode config state, conceptually similar to the current config model:
 
-- GedCode-owned config root
-- GedCode-owned plugin/config wiring
-- environment overrides only inside `gedcode` launches
+- OmniCode-owned config root
+- OmniCode-owned plugin/config wiring
+- environment overrides only inside `omnicode` launches
 
 This ensures normal `opencode` remains untouched.
 
@@ -201,11 +201,11 @@ This ensures normal `opencode` remains untouched.
 
 Expected artifacts per release:
 
-- macOS arm64 GedCode binary
-- macOS x64 GedCode binary
-- Linux x64 GedCode binary
-- Linux arm64 GedCode binary
-- Windows x64 GedCode binary
+- macOS arm64 OmniCode binary
+- macOS x64 OmniCode binary
+- Linux x64 OmniCode binary
+- Linux arm64 OmniCode binary
+- Windows x64 OmniCode binary
 - install scripts (`install.sh`, `install.ps1`)
 - release metadata describing the compatible OpenCode version target
 
@@ -216,31 +216,31 @@ Expected artifacts per release:
 Expected flow:
 
 1. detect OS and architecture
-2. download the matching GedCode binary
+2. download the matching OmniCode binary
 3. install it into a user-level bin location
 4. print PATH instructions if needed
-5. verify `gedcode --help`
+5. verify `omnicode --help`
 
 #### `install.ps1`
 
 Expected flow:
 
 1. detect OS and architecture
-2. download the matching GedCode binary
+2. download the matching OmniCode binary
 3. install it into a user-level location on Windows
 4. ensure the launcher location is on PATH or print instructions
-5. verify `gedcode --help`
+5. verify `omnicode --help`
 
 ### Launcher runtime flow
 
-Expected flow inside `gedcode`:
+Expected flow inside `omnicode`:
 
-1. resolve the user-scoped GedCode home/config/runtime directories
-2. read GedCode release metadata for the compatible OpenCode version target
+1. resolve the user-scoped OmniCode home/config/runtime directories
+2. read OmniCode release metadata for the compatible OpenCode version target
 3. inspect the currently managed OpenCode runtime
 4. install or upgrade OpenCode if missing or too old
-5. write GedCode-specific config/plugin shim files
-6. launch the managed OpenCode runtime with GedCode environment overrides
+5. write OmniCode-specific config/plugin shim files
+6. launch the managed OpenCode runtime with OmniCode environment overrides
 
 ## Error Handling
 
@@ -294,7 +294,7 @@ Before release, verify:
 
 Not included in the first native-launcher slice:
 
-- bundling OpenCode into GedCode release artifacts
+- bundling OpenCode into OmniCode release artifacts
 - forking OpenCode
 - per-project OpenCode runtime overrides
 - provider credential automation
@@ -304,8 +304,8 @@ Not included in the first native-launcher slice:
 
 A new user can:
 
-1. install GedCode on macOS, Linux, or Windows with a platform-native installer
-2. run `gedcode` without needing Node/npm/npx installed first
-3. have GedCode acquire and manage one compatible OpenCode runtime per user
+1. install OmniCode on macOS, Linux, or Windows with a platform-native installer
+2. run `omnicode` without needing Node/npm/npx installed first
+3. have OmniCode acquire and manage one compatible OpenCode runtime per user
 4. have normal `opencode` remain untouched
-5. reach a working GedCode session through the managed OpenCode runtime
+5. reach a working OmniCode session through the managed OpenCode runtime
