@@ -1,11 +1,9 @@
 # Changelog
 
-## 0.3.0
+## Unreleased
 
 ### Features
 
-- **Automatic grill-me clarification** — change requests (new features, fixes, refactors, migrations) now automatically trigger a one-question-at-a-time interview until behavior, constraints, non-goals, edge cases, and success criteria are concrete enough to plan safely.
-- **Enforced skill-fit checkpoint** — after clarification, the agent judges whether bundled/project skills cover the task. If not, it uses `find-skills` to discover relevant external skills before planning. Supports removing skills from project memory when the user requests it.
 - **Project-local skill maker workflow** — when `find-skills` cannot find adequate coverage, OmniCode can create a narrow local skill under `.omni/skills/` for the current project without installing global user skills.
 - **Workflow settings primitives** — OmniCode now resolves protected-branch workflow policy from global `~/.omnicode/settings.json` plus optional project-local `.omnicode/settings.json` overrides and exposes the effective policy in state output.
 - **Protected-branch workflow guard** — source edits and mutating shell commands are blocked on protected branches such as `main`/`master` by default once planning is ready, unless global or project OmniCode settings explicitly allow direct protected-branch changes.
@@ -26,7 +24,46 @@
 - **Current orchestration model docs** — documented how the primary agent, optional read-only subagents, clean-context review, commit flow, and intentionally unimplemented writer-subagent mode work today.
 - **Per-agent passthrough provider options** — OmniCode agent settings now accept per-subagent passthrough options (e.g. `reasoningEffort`, `textVerbosity`) paired directly with the model in the `models` field. Each agent accepts either a model ID string or an object with `model` plus provider options (e.g. `{"model": "openai/gpt-5.5", "reasoningEffort": "high"}`), so options travel with the model they apply to.
 - **Mandatory enabled-subagent checkpoints** — when native subagents are enabled, non-trivial change requests now require explorer/planner/verifier checkpoints unless the agent records a skip reason, and `/omni-agents` setup/status guidance is clearer about exact model IDs and object configs.
+
+### Fixes
+
 - **Sanitize XDG_CONFIG_HOME from tool shells** — when OmniCode's launcher overrides `XDG_CONFIG_HOME` for OpenCode config isolation, bash tool commands now strip that override so user CLIs like `gh` see their normal auth/config.
+- **Improved agents status output** — `/omni-agents status` now shows resolved per-agent model configs with provider options instead of raw JSON, uses compact output for update responses, and consistently uses injected settings home for all paths.
+
+### CI / Release
+
+- **Keep changelog updates with every committed change** — repository agent guidance now requires each committed slice to update `CHANGELOG.md` for the next release so release notes stay complete.
+- **Design collaboration-safe Omni memory** — documented the planned split between shared project memory, per-branch `.omni/work/<branch>/` planning, untracked runtime state, and protected-branch settings guardrails.
+
+### Tests
+
+- Added tests for `skill-maker` suggestion heuristics.
+- Added tests for workflow settings defaults, global/project override merge, invalid settings fallback, and status formatting.
+- Added tests for git branch detection, protected-branch blocking, and project settings overrides in the mutating-tool guard.
+- Added tests for branch slug generation and active `.omni/work/<branch-slug>/` planning path selection.
+- Added tests for active work planning readiness, legacy root fallback, and branch-aware planning guard messages.
+- Added tests for collaboration checkpoint status output on feature and protected branches.
+- Added tests for start-work branch validation, dirty checkout guidance, branch creation, branch switching, and planning-directory initialization.
+- Added tests for PR workflow settings, PR prerequisite summaries, and PR body generation without GitHub network access.
+- Added tests for root plan migration, placeholder refusal, overwrite refusal, overwrite success, and migration notes.
+- Added tests for branch-scoped runtime paths, root runtime fallback, gitignore updates, and state/session writes.
+- Added tests for `tdd` bundled skill memory and suggestion heuristics.
+- Added tests for `diagnose` bundled skill memory and suggestion heuristics.
+- Added tests for `grill-with-docs` bundled skill memory and suggestion heuristics.
+- Added tests for `improve-codebase-architecture` bundled skill memory, suggestion heuristics, and command registration.
+- Added a launcher test that pins the expected managed OpenCode runtime target version.
+- Added tests that lock optional subagent prompts and orchestration instructions to the single-writer model.
+- Added tests for `/clean-context-review` command registration and commit workflow guidance.
+- Added tests for resolved agent model display with object configs, defaultModel fallback, disabled checkpoint policy, and injected settings home.
+
+---
+
+## 0.3.0
+
+### Features
+
+- **Automatic grill-me clarification** — change requests (new features, fixes, refactors, migrations) now automatically trigger a one-question-at-a-time interview until behavior, constraints, non-goals, edge cases, and success criteria are concrete enough to plan safely.
+- **Enforced skill-fit checkpoint** — after clarification, the agent judges whether bundled/project skills cover the task. If not, it uses `find-skills` to discover relevant external skills before planning. Supports removing skills from project memory when the user requests it.
 
 ### Fixes
 
@@ -51,8 +88,6 @@
 - **Publish installer scripts as release assets** — `install.sh` and `install.ps1` are uploaded alongside the tarball and `SHA256SUMS`.
 - **Verify SHA256SUMS in installers** — both POSIX and Windows installers download and verify checksums before extracting the release archive.
 - **Align release bundle documentation** — release metadata, workflow, installers, README, AGENTS, and release checklist now consistently describe the current generic JS bundle artifact.
-- **Keep changelog updates with every committed change** — repository agent guidance now requires each committed slice to update `CHANGELOG.md` for the next release so release notes stay complete.
-- **Design collaboration-safe Omni memory** — documented the planned split between shared project memory, per-branch `.omni/work/<branch>/` planning, untracked runtime state, and protected-branch settings guardrails.
 
 ### Tests
 
@@ -62,23 +97,6 @@
 - Added tests for markdown sanitization and embedded fence handling.
 - Added tests for semver prerelease ordering and build metadata.
 - Added tests for `grill-me` and `find-skills` suggestion heuristics.
-- Added tests for `skill-maker` suggestion heuristics.
-- Added tests for workflow settings defaults, global/project override merge, invalid settings fallback, and status formatting.
-- Added tests for git branch detection, protected-branch blocking, and project settings overrides in the mutating-tool guard.
-- Added tests for branch slug generation and active `.omni/work/<branch-slug>/` planning path selection.
-- Added tests for active work planning readiness, legacy root fallback, and branch-aware planning guard messages.
-- Added tests for collaboration checkpoint status output on feature and protected branches.
-- Added tests for start-work branch validation, dirty checkout guidance, branch creation, branch switching, and planning-directory initialization.
-- Added tests for PR workflow settings, PR prerequisite summaries, and PR body generation without GitHub network access.
-- Added tests for root plan migration, placeholder refusal, overwrite refusal, overwrite success, and migration notes.
-- Added tests for branch-scoped runtime paths, root runtime fallback, gitignore updates, and state/session writes.
-- Added tests for `tdd` bundled skill memory and suggestion heuristics.
-- Added tests for `diagnose` bundled skill memory and suggestion heuristics.
-- Added tests for `grill-with-docs` bundled skill memory and suggestion heuristics.
-- Added tests for `improve-codebase-architecture` bundled skill memory, suggestion heuristics, and command registration.
-- Added a launcher test that pins the expected managed OpenCode runtime target version.
-- Added tests that lock optional subagent prompts and orchestration instructions to the single-writer model.
-- Added tests for `/clean-context-review` command registration and commit workflow guidance.
 - Added tests for SKILLS project notes preservation and large repo-map file skipping.
 - Added tests for launcher `--check`/`--version` non-launching behavior.
 - Added tests for Windows-safe plugin shim import specifiers.
