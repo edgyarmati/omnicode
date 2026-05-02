@@ -154,6 +154,49 @@ node "$EntryJs" @args
   Write-Host "==> OmniCode v$Version installed successfully"
   Write-Host ''
 
+  # ── Install mode: launcher (recommended) or plugin ────────────────────────
+
+  $InstallMode = $env:OMNICODE_INSTALL_MODE
+  if (-not $InstallMode) {
+    Write-Host 'OmniCode can be set up in two ways:'
+    Write-Host ''
+    Write-Host '  1) Launcher (recommended) -- "omnicode" becomes a separate command.'
+    Write-Host '     Your normal "opencode" setup is left untouched. OmniCode runs in its'
+    Write-Host '     own isolated config with its own managed OpenCode runtime.'
+    Write-Host ''
+    Write-Host '  2) Plugin -- OmniCode is added to your existing OpenCode config.'
+    Write-Host '     Every "opencode" session gets the Omni workflow automatically, but'
+    Write-Host '     there is no isolation from your normal OpenCode setup.'
+    Write-Host ''
+    $modeAnswer = Read-Host 'Choose install mode [1/2] (default: 1)'
+    if ($modeAnswer -eq '2') {
+      $InstallMode = 'plugin'
+    } else {
+      $InstallMode = 'launcher'
+    }
+  }
+
+  if ($InstallMode -eq 'plugin') {
+    $PluginPath = Join-Path $LibDir 'packages\plugin\dist\index.js'
+    if (-not (Test-Path $PluginPath)) {
+      $PluginPath = Join-Path $LibDir 'plugin\index.js'
+    }
+    Write-Host ''
+    Write-Host '==> Plugin mode selected'
+    Write-Host "    Plugin path: $PluginPath"
+    Write-Host ''
+    Write-Host 'Add the following to your OpenCode config (usually %APPDATA%\opencode\opencode.json):'
+    Write-Host ''
+    Write-Host '  {'
+    Write-Host '    "default_agent": "omnicode",'
+    Write-Host "    `"plugin`": [`"file:///$($PluginPath -replace '\\','/')`"]
+    Write-Host '  }'
+    Write-Host ''
+    Write-Host 'Then just run: opencode'
+  }
+
+  Write-Host ''
+
   # ── Optional: mention RTK ──────────────────────────────────────────────────
 
   $rtkCmd = Get-Command rtk -ErrorAction SilentlyContinue
@@ -164,15 +207,21 @@ node "$EntryJs" @args
     Write-Host '    OmniCode works fine without it. If RTK becomes available for Windows,'
     Write-Host '    install it for automatic bash output compression.'
   }
-  Write-Host ''
 
-  Write-Host 'Next step:'
-  Write-Host '  omnicode'
   Write-Host ''
-  $omnicodeCmd = Get-Command omnicode -ErrorAction SilentlyContinue
-  if (-not $omnicodeCmd) {
-    Write-Host "Add $BinDir to your PATH if not already there."
-    Write-Host "  `$env:PATH = `"$BinDir;`$(`$env:PATH)`""
+  Write-Host 'Next step:'
+  if ($InstallMode -eq 'plugin') {
+    Write-Host '  Update your OpenCode config as shown above, then run: opencode'
+  } else {
+    Write-Host '  omnicode'
+  }
+  Write-Host ''
+  if ($InstallMode -ne 'plugin') {
+    $omnicodeCmd = Get-Command omnicode -ErrorAction SilentlyContinue
+    if (-not $omnicodeCmd) {
+      Write-Host "Add $BinDir to your PATH if not already there."
+      Write-Host "  `$env:PATH = `"$BinDir;`$(`$env:PATH)`""
+    }
   }
 }
 finally {

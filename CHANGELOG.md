@@ -29,6 +29,7 @@
 
 - **Sanitize XDG_CONFIG_HOME from tool shells** — when OmniCode's launcher overrides `XDG_CONFIG_HOME` for OpenCode config isolation, bash tool commands now strip that override so user CLIs like `gh` see their normal auth/config.
 - **Offer RTK install in POSIX installer** — the `install.sh` installer now offers to install RTK via Homebrew when `brew` is available, for optional bash output compression. Skipped automatically when `OMNICODE_SKIP_RTK` is set or when Homebrew is not present. The Windows installer notes RTK availability.
+- **Choose launcher or plugin mode in installers** — both `install.sh` and `install.ps1` now offer an interactive choice between launcher mode (isolated, recommended) and plugin mode (integrated into existing OpenCode). Non-interactive installs can set `OMNICODE_INSTALL_MODE=launcher` or `OMNICODE_INSTALL_MODE=plugin`.
 - **Improved agents status output** — `/omni-agents status` now shows resolved per-agent model configs with provider options instead of raw JSON, uses compact output for update responses, and consistently uses injected settings home for all paths.
 
 ### CI / Release
