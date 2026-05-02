@@ -389,16 +389,21 @@ function formatAgentModelConfig(config: AgentModelConfig | undefined, fallbackMo
   return fallbackModel ? `model=${fallbackModel} (shared default)` : "model=inherit invoking model";
 }
 
-export function formatAgentsSettingsStatus(settings: OmniCodeSettings, paths: { globalPath: string; projectPath: string; recommendationsPath?: string | null }): string {
+export function formatAgentsSettingsStatus(settings: OmniCodeSettings, paths: { globalPath: string; projectPath: string; recommendationsPath?: string | null; compact?: boolean }): string {
   const checkpointState = settings.agents.enabled
     ? "active for non-trivial change requests; skip only with a recorded reason when trivial, unavailable, or user-disabled"
     : "inactive because native subagents are disabled";
+  const headerLines = paths.compact
+    ? [] as string[]
+    : [
+        `Global settings: ${paths.globalPath}`,
+        `Project override: ${paths.projectPath}`,
+      ];
   return [
     `Effective agents.enabled: ${settings.agents.enabled}`,
-    `Global settings: ${paths.globalPath}`,
-    `Project override: ${paths.projectPath}`,
+    ...headerLines,
     `Default model: ${settings.agents.defaultModel ?? "inherit invoking model"}`,
-    `Per-agent models: ${Object.keys(settings.agents.models).length > 0 ? JSON.stringify(settings.agents.models) : "none"}`,
+    `Per-agent models: ${Object.keys(settings.agents.models).length > 0 ? `${Object.keys(settings.agents.models).length} configured` : "none"}`,
     "Resolved subagent configs:",
     ...OMNI_SUBAGENT_NAMES.map((agentName) => `- ${agentName}: ${formatAgentModelConfig(settings.agents.models[agentName], settings.agents.defaultModel)}`),
     `Checkpoint policy: ${checkpointState}`,
@@ -2019,6 +2024,7 @@ export const OmniCodePlugin: Plugin = async ({ directory }, options) => {
               globalPath: resolveGlobalSettingsPath(settingsHomeDir),
               projectPath: resolveProjectSettingsPath(directory),
               recommendationsPath: recommendations.sourcePath,
+              compact: true,
             }),
           ].join("\n");
         },

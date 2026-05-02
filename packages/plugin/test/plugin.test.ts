@@ -335,11 +335,54 @@ test("formatAgentsSettingsStatus exposes object model configs and checkpoint pol
     recommendationsPath: null,
   });
 
+  assert.match(status, /3 configured/);
+  assert.match(status, /Global settings: \/home\/test/);
   assert.match(status, /opencode\/minimax-m2\.5-free/);
   assert.match(status, /omni-planner: model=openai\/gpt-5\.5, reasoningEffort=high, textVerbosity=low/);
   assert.match(status, /omni-verifier: model=openai\/gpt-5\.5/);
   assert.match(status, /Checkpoint policy: active for non-trivial change requests/);
   assert.match(status, /skip only with a recorded reason/);
+  assert.doesNotMatch(status, /\{.*"model".*\}/);
+});
+
+test("formatAgentsSettingsStatus shows defaultModel fallback for unconfigured agents", () => {
+  const status = formatAgentsSettingsStatus({
+    workflow: DEFAULT_WORKFLOW_SETTINGS,
+    agents: {
+      enabled: true,
+      defaultModel: "anthropic/shared-default",
+      models: {
+        "omni-explorer": "opencode/minimax-m2.5-free",
+      },
+    },
+  }, {
+    globalPath: "/home/test/.omnicode/settings.json",
+    projectPath: "/repo/.omnicode/settings.json",
+  });
+
+  assert.match(status, /omni-explorer: model=opencode\/minimax-m2\.5-free/);
+  assert.match(status, /omni-planner: model=anthropic\/shared-default \(shared default\)/);
+  assert.match(status, /omni-verifier: model=anthropic\/shared-default \(shared default\)/);
+});
+
+test("formatAgentsSettingsStatus shows disabled checkpoint policy", () => {
+  const status = formatAgentsSettingsStatus({
+    workflow: DEFAULT_WORKFLOW_SETTINGS,
+    agents: {
+      enabled: false,
+      models: {},
+    },
+  }, {
+    globalPath: "/home/test/.omnicode/settings.json",
+    projectPath: "/repo/.omnicode/settings.json",
+    compact: true,
+  });
+
+  assert.match(status, /Effective agents.enabled: false/);
+  assert.match(status, /Checkpoint policy: inactive because native subagents are disabled/);
+  assert.match(status, /Per-agent models: none/);
+  assert.match(status, /inherit invoking model/);
+  assert.doesNotMatch(status, /Global settings:/);
 });
 
 test("summarizePullRequestPrerequisites reports missing PR requirements", () => {
